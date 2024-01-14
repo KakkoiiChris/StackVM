@@ -1,13 +1,11 @@
-package stackvm.asm
+package kakkoiichris.stackvm.asm
 
-class Lexer(private val src: String) : Iterator<Token> {
+class ASMLexer(private val src: String) : Iterator<ASMToken> {
     private var pos = 0
-    private var row = 1
-    private var col = 1
 
     override fun hasNext() = pos < src.length
 
-    override fun next(): Token {
+    override fun next(): ASMToken {
         while (!match('\u0000')) {
             if (match(Char::isWhitespace)) {
                 skipWhitespace()
@@ -32,7 +30,7 @@ class Lexer(private val src: String) : Iterator<Token> {
             error("Unknown char '${peek()}'!")
         }
 
-        return Token(row, col, End)
+        return ASMToken( ASMTokenType.End)
     }
 
     private fun peek() = if (pos < src.length) src[pos] else '\u0000'
@@ -44,14 +42,6 @@ class Lexer(private val src: String) : Iterator<Token> {
         predicate(peek())
 
     private fun step() {
-        if (match('\n')) {
-            row++
-            col = 1
-        }
-        else {
-            col++
-        }
-
         pos++
     }
 
@@ -75,10 +65,7 @@ class Lexer(private val src: String) : Iterator<Token> {
         while (!match('\n'))
     }
 
-    private fun keyword(): Token {
-        val row = row
-        val col = col
-
+    private fun keyword(): ASMToken {
         val result = buildString {
             do {
                 take()
@@ -86,15 +73,12 @@ class Lexer(private val src: String) : Iterator<Token> {
             while (match(Char::isLetter))
         }
 
-        val keyword = Keyword.values().first { it.name.equals(result, ignoreCase = true) }
+        val keyword = ASMTokenType.Keyword.entries.first { it.name.equals(result, ignoreCase = true) }
 
-        return Token(row, col, keyword)
+        return ASMToken(keyword)
     }
 
-    private fun value(): Token {
-        val row = row
-        val col = col
-
+    private fun value(): ASMToken {
         val result = buildString {
             do {
                 take()
@@ -111,6 +95,6 @@ class Lexer(private val src: String) : Iterator<Token> {
 
         val value = result.toFloatOrNull() ?: error("Number too big!")
 
-        return Token(row, col, Value(value))
+        return ASMToken(ASMTokenType.Value(value))
     }
 }

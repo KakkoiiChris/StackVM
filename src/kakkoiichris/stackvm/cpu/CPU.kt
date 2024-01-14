@@ -1,6 +1,6 @@
-package stackvm.cpu
+package kakkoiichris.stackvm.cpu
 
-import stackvm.asm.Lexer
+import kakkoiichris.stackvm.asm.ASMLexer
 import kotlin.math.pow
 
 object CPU {
@@ -10,19 +10,7 @@ object CPU {
     private var stackPointer = 0
     private var variablePointer = 0
 
-    fun load(vararg program: Float) {
-        memory.fill(0F)
-
-        instructionPointer = 0
-        stackPointer = program.size
-        variablePointer = memory.size / 2
-
-        for (i in program.indices) {
-            memory[i] = program[i]
-        }
-    }
-
-    fun load(lexer: Lexer) {
+    fun load(lexer: ASMLexer) {
         memory.fill(0F)
 
         instructionPointer = 0
@@ -55,7 +43,7 @@ object CPU {
         var running = true
 
         while (running) {
-            when (Instruction.values()[fetch().toInt()]) {
+            when (Instruction.entries[fetch().toInt()]) {
                 Instruction.HALT  -> running = false
 
                 Instruction.PUSH  -> push(fetch())

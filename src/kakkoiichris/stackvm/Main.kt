@@ -1,7 +1,7 @@
-package stackvm
+package kakkoiichris.stackvm
 
-import stackvm.asm.Lexer
-import stackvm.cpu.CPU
+import kakkoiichris.stackvm.asm.ASMLexer
+import kakkoiichris.stackvm.cpu.CPU
 
 /**
  * Stack VM
@@ -28,7 +28,7 @@ fun main() {
         HALT
     """.trimIndent()
 
-    val lexer = Lexer(src)
+    val lexer = ASMLexer(src)
 
     CPU.load(lexer)
 

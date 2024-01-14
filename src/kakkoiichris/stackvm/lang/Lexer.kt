@@ -1,4 +1,4 @@
-package stackvm.lang
+package kakkoiichris.stackvm.lang
 
 class Lexer(private val src: String) : Iterator<Token> {
     private var pos = 0
@@ -32,8 +32,10 @@ class Lexer(private val src: String) : Iterator<Token> {
             return symbol()
         }
 
-        return Token(row, col, End)
+        return Token(here(), TokenType.End)
     }
+
+    private fun here() = Location(row, col)
 
     private fun peek() = if (pos < src.length) src[pos] else '\u0000'
 
@@ -84,8 +86,7 @@ class Lexer(private val src: String) : Iterator<Token> {
     }
 
     private fun keyword(): Token {
-        val row = row
-        val col = col
+        val location = here()
 
         val result = buildString {
             do {
@@ -94,14 +95,13 @@ class Lexer(private val src: String) : Iterator<Token> {
             while (match(Char::isLetter))
         }
 
-        val keyword = Keyword.values().first { it.name.equals(result, ignoreCase = true) }
+        val keyword = TokenType.Keyword.entries.first { it.name.equals(result, ignoreCase = true) }
 
-        return Token(row, col, keyword)
+        return Token(location, keyword)
     }
 
     private fun value(): Token {
-        val row = row
-        val col = col
+        val location = here()
 
         val result = buildString {
             do {
@@ -119,65 +119,72 @@ class Lexer(private val src: String) : Iterator<Token> {
 
         val value = result.toFloatOrNull() ?: error("Number too big!")
 
-        return Token(row, col, Value(value))
+        return Token(location, TokenType.Value(value))
     }
 
     private fun symbol(): Token {
-        val row = row
-        val col = col
+        val location = here()
 
         val symbol = when {
-            skip('+') -> Symbol.PLUS
+            skip('+') -> TokenType.Symbol.PLUS
 
-            skip('-') -> Symbol.DASH
+            skip('-') -> TokenType.Symbol.DASH
 
-            skip('*') -> Symbol.STAR
+            skip('*') -> TokenType.Symbol.STAR
 
-            skip('/') -> Symbol.SLASH
+            skip('/') -> TokenType.Symbol.SLASH
 
-            skip('%') -> Symbol.PERCENT
+            skip('%') -> TokenType.Symbol.PERCENT
 
             skip('<') -> when {
-                skip('=') -> Symbol.LESS_EQUAL
+                skip('=') -> TokenType.Symbol.LESS_EQUAL
 
-                else      -> Symbol.LESS
+                else      -> TokenType.Symbol.LESS
             }
 
             skip('>') -> when {
-                skip('=') -> Symbol.GREATER_EQUAL
+                skip('=') -> TokenType.Symbol.GREATER_EQUAL
 
-                else      -> Symbol.GREATER
+                else      -> TokenType.Symbol.GREATER
             }
 
             skip('=') -> when {
-                skip('=') -> Symbol.DOUBLE_EQUAL
+                skip('=') -> TokenType.Symbol.DOUBLE_EQUAL
 
-                else      -> Symbol.EQUAL
+                else      -> TokenType.Symbol.EQUAL
             }
 
             skip('!') -> when {
-                skip('=') -> Symbol.EXCLAMATION_EQUAL
+                skip('=') -> TokenType.Symbol.EXCLAMATION_EQUAL
 
-                else      -> Symbol.EXCLAMATION
+                else      -> TokenType.Symbol.EXCLAMATION
             }
 
-            skip('&') -> Symbol.AND
+            skip('&') -> when {
+                skip('&') -> TokenType.Symbol.DOUBLE_AMPERSAND
 
-            skip('|') -> Symbol.PIPE
+                else      -> error("No single ampersand.")
+            }
 
-            skip('(') -> Symbol.LEFT_PAREN
+            skip('|') -> when {
+                skip('|') -> TokenType.Symbol.DOUBLE_PIPE
 
-            skip(')') -> Symbol.RIGHT_PAREN
+                else      -> error("No single pipe.")
+            }
 
-            skip('{') -> Symbol.LEFT_BRACE
+            skip('(') -> TokenType.Symbol.LEFT_PAREN
 
-            skip('}') -> Symbol.RIGHT_BRACE
+            skip(')') -> TokenType.Symbol.RIGHT_PAREN
 
-            skip(';') -> Symbol.SEMICOLON
+            skip('{') -> TokenType.Symbol.LEFT_BRACE
+
+            skip('}') -> TokenType.Symbol.RIGHT_BRACE
+
+            skip(';') -> TokenType.Symbol.SEMICOLON
 
             else      -> error("Unknown symbol '${peek()}'!")
         }
 
-        return Token(row, col, symbol)
+        return Token(location, symbol)
     }
 }

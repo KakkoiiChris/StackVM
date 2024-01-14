@@ -1,3 +1,3 @@
-package stackvm.lang
+package kakkoiichris.stackvm.lang
 
-data class Token(val row: Int, val col: Int, val type: TokenType)
+data class Token(val location: Location, val type: TokenType)

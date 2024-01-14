@@ -1,4 +1,4 @@
-package stackvm.cpu
+package kakkoiichris.stackvm.cpu
 
 enum class Instruction {
     HALT, //  0
