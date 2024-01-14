@@ -4,7 +4,7 @@ class Parser(private val lexer: Lexer) : Iterator<Node> {
     private var token = lexer.next()
 
     override fun hasNext() =
-        lexer.hasNext()
+        !match(TokenType.End)
 
     override fun next() =
         statement()
@@ -42,6 +42,10 @@ class Parser(private val lexer: Lexer) : Iterator<Node> {
 
     private inline fun <reified T : TokenType> get(): T? {
         if (match<T>()) {
+            val token = token
+
+            step()
+
             return token.type as T
         }
 
@@ -104,6 +108,7 @@ class Parser(private val lexer: Lexer) : Iterator<Node> {
         val location = here()
 
         mustSkip(TokenType.Keyword.BREAK)
+        mustSkip(TokenType.Symbol.SEMICOLON)
 
         return Node.Break(location)
     }
@@ -112,6 +117,7 @@ class Parser(private val lexer: Lexer) : Iterator<Node> {
         val location = here()
 
         mustSkip(TokenType.Keyword.CONTINUE)
+        mustSkip(TokenType.Symbol.SEMICOLON)
 
         return Node.Continue(location)
     }
@@ -120,6 +126,8 @@ class Parser(private val lexer: Lexer) : Iterator<Node> {
         val location = here()
 
         val expr = expr()
+
+        mustSkip(TokenType.Symbol.SEMICOLON)
 
         return Node.Expression(location, expr)
     }
@@ -130,14 +138,15 @@ class Parser(private val lexer: Lexer) : Iterator<Node> {
     private fun assign(): Node {
         var expr = or()
 
-        if (match(TokenType.Symbol.EQUAL) && expr is Node.Name) {
+        if (match(TokenType.Symbol.EQUAL)) {
+            if (expr !is Node.Name) error("Invalid assign.")
+
             val (location, operator) = token
 
             mustSkip(operator)
 
             expr = Node.Assign(location, expr, or())
         }
-        else error("Invalid assign.")
 
         return expr
     }
@@ -150,7 +159,7 @@ class Parser(private val lexer: Lexer) : Iterator<Node> {
 
             mustSkip(operator)
 
-            expr = Node.Binary(location, operator, expr, and())
+            expr = Node.Binary(location, operator as TokenType.Symbol, expr, and())
         }
 
         return expr
@@ -164,7 +173,7 @@ class Parser(private val lexer: Lexer) : Iterator<Node> {
 
             mustSkip(operator)
 
-            expr = Node.Binary(location, operator, expr, equality())
+            expr = Node.Binary(location, operator as TokenType.Symbol, expr, equality())
         }
 
         return expr
@@ -178,7 +187,7 @@ class Parser(private val lexer: Lexer) : Iterator<Node> {
 
             mustSkip(operator)
 
-            expr = Node.Binary(location, operator, expr, relation())
+            expr = Node.Binary(location, operator as TokenType.Symbol, expr, relation())
         }
 
         return expr
@@ -198,7 +207,7 @@ class Parser(private val lexer: Lexer) : Iterator<Node> {
 
             mustSkip(operator)
 
-            expr = Node.Binary(location, operator, expr, additive())
+            expr = Node.Binary(location, operator as TokenType.Symbol, expr, additive())
         }
 
         return expr
@@ -212,7 +221,7 @@ class Parser(private val lexer: Lexer) : Iterator<Node> {
 
             mustSkip(operator)
 
-            expr = Node.Binary(location, operator, expr, multiplicative())
+            expr = Node.Binary(location, operator as TokenType.Symbol, expr, multiplicative())
         }
 
         return expr
@@ -226,7 +235,7 @@ class Parser(private val lexer: Lexer) : Iterator<Node> {
 
             mustSkip(operator)
 
-            expr = Node.Binary(location, operator, expr, unary())
+            expr = Node.Binary(location, operator as TokenType.Symbol, expr, unary())
         }
 
         return expr
@@ -238,7 +247,7 @@ class Parser(private val lexer: Lexer) : Iterator<Node> {
 
             mustSkip(operator)
 
-            return Node.Unary(location, operator, unary())
+            return Node.Unary(location, operator as TokenType.Symbol, unary())
         }
 
         return terminal()

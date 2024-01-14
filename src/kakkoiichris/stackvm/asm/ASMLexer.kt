@@ -30,7 +30,7 @@ class ASMLexer(private val src: String) : Iterator<ASMToken> {
             error("Unknown char '${peek()}'!")
         }
 
-        return ASMToken( ASMTokenType.End)
+        return ASMToken.End
     }
 
     private fun peek() = if (pos < src.length) src[pos] else '\u0000'
@@ -73,9 +73,7 @@ class ASMLexer(private val src: String) : Iterator<ASMToken> {
             while (match(Char::isLetter))
         }
 
-        val keyword = ASMTokenType.Keyword.entries.first { it.name.equals(result, ignoreCase = true) }
-
-        return ASMToken(keyword)
+        return ASMToken.Keyword.entries.first { it.name.equals(result, ignoreCase = true) }
     }
 
     private fun value(): ASMToken {
@@ -95,6 +93,6 @@ class ASMLexer(private val src: String) : Iterator<ASMToken> {
 
         val value = result.toFloatOrNull() ?: error("Number too big!")
 
-        return ASMToken(ASMTokenType.Value(value))
+        return ASMToken.Value(value)
     }
 }

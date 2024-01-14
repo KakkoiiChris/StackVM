@@ -65,12 +65,12 @@ interface Node {
             visitor.visitName(this)
     }
 
-    class Unary(override val location: Location, val operator: TokenType, val operand: Node) : Node {
+    class Unary(override val location: Location, val operator: TokenType.Symbol, val operand: Node) : Node {
         override fun <X> accept(visitor: Visitor<X>): X =
             visitor.visitUnary(this)
     }
 
-    class Binary(override val location: Location, val operator: TokenType, val operandLeft: Node, val operandRight: Node) :
+    class Binary(override val location: Location, val operator: TokenType.Symbol, val operandLeft: Node, val operandRight: Node) :
         Node {
         override fun <X> accept(visitor: Visitor<X>): X =
             visitor.visitBinary(this)

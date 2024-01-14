@@ -1,7 +1,9 @@
 package kakkoiichris.stackvm
 
-import kakkoiichris.stackvm.asm.ASMLexer
 import kakkoiichris.stackvm.cpu.CPU
+import kakkoiichris.stackvm.lang.ASMConverter
+import kakkoiichris.stackvm.lang.Lexer
+import kakkoiichris.stackvm.lang.Parser
 
 /**
  * Stack VM
@@ -15,22 +17,21 @@ import kakkoiichris.stackvm.cpu.CPU
  * @author Christian Bryce Alexander
  */
 fun main() {
-    val src = """
-        ;JMP 10
-        PUSH 5
-        PUSH 3
-        MUL
-        DUP
-        ADD
-        NEG
-        JMP 12
-        PUSH 5
-        HALT
-    """.trimIndent()
+    while (true) {
+        print("> ")
 
-    val lexer = ASMLexer(src)
+        val src = readln().takeIf { it.isNotEmpty() } ?: break
 
-    CPU.load(lexer)
+        val lexer = Lexer(src)
 
-    println(CPU.run())
+        val parser = Parser(lexer)
+
+        val converter = ASMConverter(parser)
+
+        val tokens = converter.convert()
+
+        CPU.load(tokens.iterator())
+
+        println("\n< ${CPU.run()}\n")
+    }
 }

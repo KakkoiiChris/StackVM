@@ -1,6 +1,6 @@
 package kakkoiichris.stackvm.cpu
 
-import kakkoiichris.stackvm.asm.ASMLexer
+import kakkoiichris.stackvm.asm.ASMToken
 import kotlin.math.pow
 
 object CPU {
@@ -10,7 +10,7 @@ object CPU {
     private var stackPointer = 0
     private var variablePointer = 0
 
-    fun load(lexer: ASMLexer) {
+    fun load(tokenizer: Iterator<ASMToken>) {
         memory.fill(0F)
 
         instructionPointer = 0
@@ -18,8 +18,8 @@ object CPU {
 
         var i = 0
 
-        for (token in lexer) {
-            memory[i++] = token.toFloat()
+        for (token in tokenizer) {
+            memory[i++] = token.value
         }
 
         stackPointer = i

@@ -103,9 +103,13 @@ class Lexer(private val src: String) : Iterator<Token> {
             return Token(location, TokenType.Value(0F))
         }
 
-        val keyword = TokenType.Keyword.entries.first { it.name.equals(result, ignoreCase = true) }
+        val keyword = TokenType.Keyword.entries.firstOrNull { it.name.equals(result, ignoreCase = true) }
 
-        return Token(location, keyword)
+        if (keyword != null) {
+            return Token(location, keyword)
+        }
+
+        return Token(location, TokenType.Name(result))
     }
 
     private fun value(): Token {

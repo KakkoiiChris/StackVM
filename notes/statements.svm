@@ -1,0 +1,23 @@
+;;; IF STATEMENT
+
+; Condition Code
+PUSH NOT JIF <END_POS>
+;Body Code
+
+;;; WHILE STATEMENT
+
+; Condition Code
+PUSH NOT JIF <END_POS>
+; Body Code
+JMP <START_POS>
+
+;;; BREAK STATEMENT
+JMP <END_POS>
+
+;;; CONTINUE STATEMENT
+JMP <START_POS>
+
+;;; EXPRESSION STATEMENT
+
+; Expr Code
+POP
