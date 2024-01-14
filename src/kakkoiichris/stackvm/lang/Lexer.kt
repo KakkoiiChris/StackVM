@@ -22,7 +22,7 @@ class Lexer(private val src: String) : Iterator<Token> {
             }
 
             if (match(Char::isLetter)) {
-                return keyword()
+                return word()
             }
 
             if (match(Char::isDigit)) {
@@ -85,7 +85,7 @@ class Lexer(private val src: String) : Iterator<Token> {
         while (!match('\n'))
     }
 
-    private fun keyword(): Token {
+    private fun word(): Token {
         val location = here()
 
         val result = buildString {
@@ -93,6 +93,14 @@ class Lexer(private val src: String) : Iterator<Token> {
                 take()
             }
             while (match(Char::isLetter))
+        }
+
+        if (result.equals("true", ignoreCase = true)) {
+            return Token(location, TokenType.Value(1F))
+        }
+
+        if (result.equals("false", ignoreCase = true)) {
+            return Token(location, TokenType.Value(0F))
         }
 
         val keyword = TokenType.Keyword.entries.first { it.name.equals(result, ignoreCase = true) }
