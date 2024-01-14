@@ -139,9 +139,9 @@ class ASMConverter(private val parser: Parser) : Node.Visitor<List<IASMToken>> {
     override fun visitBinary(node: Node.Binary): List<IASMToken> {
         val iTokens = mutableListOf<IASMToken>()
 
-        iTokens += visit(node.operandRight)
-
         iTokens += visit(node.operandLeft)
+
+        iTokens += visit(node.operandRight)
 
         val additional = when (node.operator) {
             PLUS              -> listOf(ADD.iasm)
