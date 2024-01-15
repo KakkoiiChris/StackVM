@@ -43,6 +43,18 @@ class ASMConverter(private val parser: Parser) : Node.Visitor<List<IASMToken>> {
 
         start.push(pos)
 
+        iTokens += visit(node.condition)
+
+        iTokens += NOT.iasm
+        iTokens += JIF.iasm
+        iTokens += IASMToken.AwaitEnd
+
+        pos += 3
+
+        for (stmt in node.body) {
+            iTokens += visit(stmt)
+        }
+
         end.push(pos)
 
         return resolve(iTokens)
@@ -52,6 +64,23 @@ class ASMConverter(private val parser: Parser) : Node.Visitor<List<IASMToken>> {
         val iTokens = mutableListOf<IASMToken>()
 
         start.push(pos)
+
+        iTokens += visit(node.condition)
+
+        iTokens += NOT.iasm
+        iTokens += JIF.iasm
+        iTokens += IASMToken.AwaitEnd
+
+        pos += 3
+
+        for (stmt in node.body) {
+            iTokens += visit(stmt)
+        }
+
+        iTokens += JMP.iasm
+        iTokens += IASMToken.AwaitStart
+
+        pos += 2
 
         end.push(pos)
 
@@ -83,10 +112,10 @@ class ASMConverter(private val parser: Parser) : Node.Visitor<List<IASMToken>> {
     override fun visitExpression(node: Node.Expression): List<IASMToken> {
         val iTokens = mutableListOf<IASMToken>()
 
+        iTokens += POP.iasm
         iTokens += visit(node.node)
-        //iTokens += POP.iasm
 
-        pos++// += 2
+        pos += 2
 
         return iTokens
     }

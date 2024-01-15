@@ -30,6 +30,8 @@ fun main() {
 
         val tokens = converter.convert()
 
+        tokens.forEach(::println)
+
         CPU.load(tokens.iterator())
 
         println("\n< ${CPU.run()}\n")

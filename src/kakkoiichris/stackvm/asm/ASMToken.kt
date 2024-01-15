@@ -28,7 +28,10 @@ interface ASMToken {
         override val value get() = ordinal.toFloat()
     }
 
-    data class Value(override val value: Float) : ASMToken
+    data class Value(override val value: Float) : ASMToken {
+        override fun toString() =
+                value.toString()
+    }
 
     data object End : ASMToken {
         override val value = 0F
