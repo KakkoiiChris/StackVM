@@ -75,7 +75,7 @@ class Parser(private val lexer: Lexer) : Iterator<Node> {
 
         mustSkip(TokenType.Symbol.LEFT_BRACE)
 
-        if (!match(TokenType.Symbol.RIGHT_BRACE)) {
+        while (!match(TokenType.Symbol.RIGHT_BRACE)) {
             body += statement()
         }
 
@@ -95,7 +95,7 @@ class Parser(private val lexer: Lexer) : Iterator<Node> {
 
         mustSkip(TokenType.Symbol.LEFT_BRACE)
 
-        if (!match(TokenType.Symbol.RIGHT_BRACE)) {
+        while (!match(TokenType.Symbol.RIGHT_BRACE)) {
             body += statement()
         }
 
