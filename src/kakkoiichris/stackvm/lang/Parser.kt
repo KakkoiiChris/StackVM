@@ -254,11 +254,13 @@ class Parser(private val lexer: Lexer) : Iterator<Node> {
     }
 
     private fun terminal() = when {
-        match<TokenType.Value>() -> value()
+        match<TokenType.Value>()           -> value()
 
-        match<TokenType.Name>()  -> name()
+        match<TokenType.Name>()            -> name()
 
-        else                     -> error("Not a terminal.")
+        match(TokenType.Symbol.LEFT_PAREN) -> nested()
+
+        else                               -> error("Not a terminal.")
     }
 
     private fun value(): Node.Value {
@@ -275,5 +277,15 @@ class Parser(private val lexer: Lexer) : Iterator<Node> {
         val name = get<TokenType.Name>() ?: error("Not a name.")
 
         return Node.Name(location, name)
+    }
+
+    private fun nested(): Node {
+        mustSkip(TokenType.Symbol.LEFT_PAREN)
+
+        val node = expr()
+
+        mustSkip(TokenType.Symbol.RIGHT_PAREN)
+
+        return node
     }
 }
