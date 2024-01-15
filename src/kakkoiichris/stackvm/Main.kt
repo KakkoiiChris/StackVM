@@ -30,7 +30,9 @@ fun main() {
 
         val tokens = converter.convert()
 
-        tokens.forEach(::println)
+        for ((i,token) in tokens.withIndex()) {
+            System.out.printf("%02d) %s%n", i, token)
+        }
 
         CPU.load(tokens.iterator())
 
