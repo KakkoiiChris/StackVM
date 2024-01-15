@@ -24,13 +24,13 @@ fun main() {
 
         val lexer = Lexer(src)
 
-        val parser = Parser(lexer)
+        val parser = Parser(lexer,true)
 
-        val converter = ASMConverter(parser)
+        val converter = ASMConverter(parser, true)
 
         val tokens = converter.convert()
 
-        for ((i,token) in tokens.withIndex()) {
+        for ((i, token) in tokens.withIndex()) {
             System.out.printf("%02d) %s%n", i, token)
         }
 

@@ -1,8 +1,8 @@
 package kakkoiichris.stackvm.lang
 
 interface Node {
-    val location:Location
-    
+    val location: Location
+
     fun <X> accept(visitor: Visitor<X>): X
 
     interface Visitor<X> {
@@ -70,7 +70,12 @@ interface Node {
             visitor.visitUnary(this)
     }
 
-    class Binary(override val location: Location, val operator: TokenType.Symbol, val operandLeft: Node, val operandRight: Node) :
+    class Binary(
+        override val location: Location,
+        val operator: TokenType.Symbol,
+        val operandLeft: Node,
+        val operandRight: Node
+    ) :
         Node {
         override fun <X> accept(visitor: Visitor<X>): X =
             visitor.visitBinary(this)

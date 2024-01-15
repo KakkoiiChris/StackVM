@@ -1,6 +1,6 @@
 package kakkoiichris.stackvm.lang
 
-class Parser(private val lexer: Lexer) : Iterator<Node> {
+class Parser(private val lexer: Lexer, private val optimize:Boolean) : Iterator<Node> {
     private var token = lexer.next()
 
     override fun hasNext() =

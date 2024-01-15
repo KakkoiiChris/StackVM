@@ -30,7 +30,7 @@ interface ASMToken {
 
     data class Value(override val value: Float) : ASMToken {
         override fun toString() =
-                value.toString()
+            value.toString()
     }
 
     data object End : ASMToken {

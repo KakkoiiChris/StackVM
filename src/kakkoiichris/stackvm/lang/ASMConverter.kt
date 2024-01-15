@@ -5,7 +5,7 @@ import kakkoiichris.stackvm.asm.ASMToken.Keyword.*
 import kakkoiichris.stackvm.lang.TokenType.Symbol.*
 import java.util.*
 
-class ASMConverter(private val parser: Parser) : Node.Visitor<List<IASMToken>> {
+class ASMConverter(private val parser: Parser, private val optimize: Boolean) : Node.Visitor<List<IASMToken>> {
     private var pos = 0
 
     private val start = Stack<Int>()
@@ -27,6 +27,22 @@ class ASMConverter(private val parser: Parser) : Node.Visitor<List<IASMToken>> {
         }
 
         tokens.add(HALT)
+
+        if (optimize) {
+            var i = 0
+
+            while (i < tokens.lastIndex) {
+                val a = tokens[i]
+                val b = tokens[i + 1]
+
+                if (a === b && (a in listOf(NOT, NEG))) {
+                    repeat(2) { tokens.removeAt(i) }
+                }
+                else {
+                    i++
+                }
+            }
+        }
 
         return tokens
     }
@@ -169,30 +185,51 @@ class ASMConverter(private val parser: Parser) : Node.Visitor<List<IASMToken>> {
     override fun visitBinary(node: Node.Binary): List<IASMToken> {
         val iTokens = mutableListOf<IASMToken>()
 
-        iTokens += visit(node.operandLeft)
-
-        iTokens += visit(node.operandRight)
+        val left = node.operandLeft
+        val right = node.operandRight
 
         val additional = when (node.operator) {
-            PLUS              -> listOf(ADD.iasm)
+            PLUS              -> {
+                if ((left is Node.Value && left.value.value == 0F) || (right is Node.Value && right.value.value == 0F)) {
+                    return iTokens
+                }
+
+                listOf(ADD.iasm)
+            }
+
             DASH              -> listOf(SUB.iasm)
+
             STAR              -> listOf(MUL.iasm)
+
             SLASH             -> listOf(DIV.iasm)
+
             PERCENT           -> listOf(MOD.iasm)
+
             LESS              -> listOf(GEQ.iasm, NOT.iasm)
+
             LESS_EQUAL        -> listOf(GRT.iasm, NOT.iasm)
+
             GREATER           -> listOf(GRT.iasm)
+
             GREATER_EQUAL     -> listOf(GEQ.iasm)
+
             DOUBLE_AMPERSAND  -> listOf(AND.iasm)
+
             DOUBLE_PIPE       -> listOf(OR.iasm)
+
             DOUBLE_EQUAL      -> listOf(EQU.iasm)
+
             EXCLAMATION_EQUAL -> listOf(EQU.iasm, NOT.iasm)
+
             else              -> error("Not a binary operator '${node.operator}'.")
         }
 
-        pos += additional.size
-
+        iTokens += visit(node.operandLeft)
+        iTokens += visit(node.operandRight)
         iTokens += additional
+
+
+        pos += additional.size
 
         return iTokens
     }
