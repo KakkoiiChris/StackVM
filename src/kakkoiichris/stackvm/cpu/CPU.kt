@@ -1,12 +1,14 @@
 package kakkoiichris.stackvm.cpu
 
 import kakkoiichris.stackvm.asm.ASMToken
+import kotlin.math.max
 import kotlin.math.pow
 
 object CPU {
     private val memory = FloatArray(2.0.pow(16.0).toInt())
 
     private var instructionPointer = 0
+    private var stackPointerOffset = 0
     private var stackPointer = 0
     private var variablePointer = 0
 
@@ -22,16 +24,22 @@ object CPU {
             memory[i++] = token.value
         }
 
-        stackPointer = i
+        stackPointerOffset = i
     }
 
     private fun fetch() = memory[instructionPointer++]
 
     private fun push(value: Float) {
-        memory[++stackPointer] = value
+        memory[stackPointerOffset + ++stackPointer] = value
     }
 
-    private fun pop() = memory[stackPointer--]
+    private fun pop(): Float {
+        val value = memory[stackPointerOffset + stackPointer]
+
+        stackPointer = max(stackPointer - 1, 0)
+
+        return value
+    }
 
     private fun peek() = memory[stackPointer]
 
@@ -129,8 +137,10 @@ object CPU {
                 Instruction.JMP   -> instructionPointer = fetch().toInt()
 
                 Instruction.JIF   -> {
+                    val address = fetch().toInt()
+
                     if (pop().toBool()) {
-                        instructionPointer = fetch().toInt()
+                        instructionPointer = address
                     }
                 }
 

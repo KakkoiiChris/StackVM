@@ -113,9 +113,10 @@ class ASMConverter(private val parser: Parser) : Node.Visitor<List<IASMToken>> {
         val iTokens = mutableListOf<IASMToken>()
 
         iTokens += POP.iasm
-        iTokens += visit(node.node)
 
-        pos += 2
+        pos++
+
+        iTokens += visit(node.node)
 
         return iTokens
     }
@@ -189,15 +190,17 @@ class ASMConverter(private val parser: Parser) : Node.Visitor<List<IASMToken>> {
             else              -> error("Not a binary operator '${node.operator}'.")
         }
 
-        iTokens += additional
-
         pos += additional.size
+
+        iTokens += additional
 
         return iTokens
     }
 
     override fun visitAssign(node: Node.Assign): List<IASMToken> {
         val iTokens = mutableListOf<IASMToken>()
+
+        iTokens += visit(node.node)
 
         val name = node.name.name.value
 
