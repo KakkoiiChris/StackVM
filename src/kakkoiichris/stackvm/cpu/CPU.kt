@@ -12,6 +12,8 @@ object CPU {
     private var stackPointer = 0
     private var variablePointer = 0
 
+    var debug = false
+
     fun load(tokenizer: Iterator<ASMToken>) {
         memory.fill(0F)
 
@@ -41,18 +43,25 @@ object CPU {
         return value
     }
 
-    private fun peek() = memory[stackPointer]
+    private fun peek() = memory[stackPointerOffset + stackPointer]
 
     private fun Float.toBool() = this != 0F
 
     private fun Boolean.toFloat() = if (this) 1F else 0F
 
     fun run(): Float {
+        var result = Float.NaN
         var running = true
 
         while (running) {
-            when (Instruction.entries[fetch().toInt()]) {
-                Instruction.HALT  -> running = false
+            val instruction = Instruction.entries[fetch().toInt()]
+
+            when (instruction) {
+                Instruction.HALT  -> {
+                    result = pop()
+
+                    running = false
+                }
 
                 Instruction.PUSH  -> push(fetch())
 
@@ -148,8 +157,18 @@ object CPU {
 
                 Instruction.STORE -> memory[fetch().toInt() + variablePointer] = pop()
             }
+
+            if (debug) {
+                print("$instruction\nSTACK: ")
+
+                for (i in stackPointerOffset..(stackPointerOffset + stackPointer)) {
+                    print("${memory[i]} ")
+                }
+
+                println()
+            }
         }
 
-        return pop()
+        return result
     }
 }

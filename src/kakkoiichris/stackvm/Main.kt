@@ -18,6 +18,8 @@ import kotlin.time.measureTimedValue
  * @author Christian Bryce Alexander
  */
 fun main() {
+//    CPU.debug = true
+
     while (true) {
         print("> ")
 
