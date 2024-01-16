@@ -246,12 +246,11 @@ class ASMConverter(private val parser: Parser, private val optimize: Boolean) : 
             .takeIf { it >= 0 }
             ?: (names.apply { add(name) }.size - 1)
 
+        iTokens += DUP.iasm
         iTokens += STORE.iasm
         iTokens += ASMToken.Value(address.toFloat()).iasm
-        iTokens += LOAD.iasm
-        iTokens += ASMToken.Value(address.toFloat()).iasm
 
-        pos += 4
+        pos += 3
 
         return iTokens
     }
