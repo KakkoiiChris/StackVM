@@ -19,7 +19,7 @@ class ASMConverter(private val parser: Parser, private val optimize: Boolean) : 
         for (statement in parser) {
             val iTokens = visit(statement)
 
-            val subTokens = iTokens.filterIsInstance(IASMToken.Ok::class.java)
+            val subTokens = iTokens.filterIsInstance<IASMToken.Ok>()
 
             if (iTokens.size > subTokens.size) error("Unresolved intermediate token.")
 

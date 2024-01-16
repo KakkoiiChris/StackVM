@@ -1,7 +1,11 @@
 package kakkoiichris.stackvm.asm
 
+import kakkoiichris.stackvm.lang.IASMToken
+
 interface ASMToken {
     val value: Float
+
+    val iasm get() = IASMToken.Ok(this)
 
     enum class Keyword : ASMToken {
         HALT,

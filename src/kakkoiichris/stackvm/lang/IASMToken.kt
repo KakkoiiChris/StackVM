@@ -21,4 +21,3 @@ interface IASMToken {
     }
 }
 
-val ASMToken.iasm get() = IASMToken.Ok(this)
