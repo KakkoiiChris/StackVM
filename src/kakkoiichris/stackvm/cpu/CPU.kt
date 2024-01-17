@@ -19,8 +19,6 @@ object CPU {
     private var callPointerOffset = 0
     private val callPointer get() = callPointerOrigin + callPointerOffset
 
-    var debug = false
-
     fun load(tokenizer: Iterator<ASMToken>) {
         memory.fill(0F)
 
@@ -88,15 +86,33 @@ object CPU {
                     running = false
                 }
 
-                Instruction.PUSH  -> pushStack(fetch())
+                Instruction.PUSH  -> {
+                    val value = fetch()
 
-                Instruction.POP   -> popStack()
+                    Debug.println("PUSH $value")
 
-                Instruction.DUP   -> pushStack(peekStack())
+                    pushStack(value)
+                }
+
+                Instruction.POP   -> {
+                    Debug.println("POP")
+
+                    popStack()
+                }
+
+                Instruction.DUP   -> {
+                    val value = peekStack()
+
+                    Debug.println("DUP $value")
+
+                    pushStack(value)
+                }
 
                 Instruction.ADD   -> {
                     val b = popStack()
                     val a = popStack()
+
+                    Debug.println("ADD $a $b")
 
                     pushStack(a + b)
                 }
@@ -105,12 +121,16 @@ object CPU {
                     val b = popStack()
                     val a = popStack()
 
+                    Debug.println("SUB $a $b")
+
                     pushStack(a - b)
                 }
 
                 Instruction.MUL   -> {
                     val b = popStack()
                     val a = popStack()
+
+                    Debug.println("MUL $a $b")
 
                     pushStack(a * b)
                 }
@@ -119,6 +139,8 @@ object CPU {
                     val b = popStack()
                     val a = popStack()
 
+                    Debug.println("DIV $a $b")
+
                     pushStack(a / b)
                 }
 
@@ -126,14 +148,24 @@ object CPU {
                     val b = popStack()
                     val a = popStack()
 
+                    Debug.println("MOD $a $b")
+
                     pushStack(a % b)
                 }
 
-                Instruction.NEG   -> pushStack(-popStack())
+                Instruction.NEG   -> {
+                    val value = popStack()
+
+                    Debug.println("NEG $value")
+
+                    pushStack(-value)
+                }
 
                 Instruction.AND   -> {
                     val b = popStack()
                     val a = popStack()
+
+                    Debug.println("AND $a $b")
 
                     pushStack((a.toBool() && b.toBool()).toFloat())
                 }
@@ -142,14 +174,24 @@ object CPU {
                     val b = popStack()
                     val a = popStack()
 
+                    Debug.println("OR $a $b")
+
                     pushStack((a.toBool() || b.toBool()).toFloat())
                 }
 
-                Instruction.NOT   -> pushStack((!popStack().toBool()).toFloat())
+                Instruction.NOT   -> {
+                    val value = popStack()
+
+                    Debug.println("NOT $value")
+
+                    pushStack((!value.toBool()).toFloat())
+                }
 
                 Instruction.EQU   -> {
                     val b = popStack()
                     val a = popStack()
+
+                    Debug.println("EQU $a $b")
 
                     pushStack((a == b).toFloat())
                 }
@@ -158,12 +200,16 @@ object CPU {
                     val b = popStack()
                     val a = popStack()
 
+                    Debug.println("GRT $a $b")
+
                     pushStack((a > b).toFloat())
                 }
 
                 Instruction.GEQ   -> {
                     val b = popStack()
                     val a = popStack()
+
+                    Debug.println("GEQ $a $b")
 
                     pushStack((a >= b).toFloat())
                 }
@@ -183,9 +229,10 @@ object CPU {
                 Instruction.STORE -> memory[fetch().toInt() + variablePointer] = popStack()
 
                 Instruction.CALL  -> {
-                    pushCall(instructionPointer.toFloat())
-
+                    val address = instructionPointer + 1
                     instructionPointer = fetch().toInt()
+
+                    pushCall(address.toFloat())
                 }
 
                 Instruction.RET   -> {
@@ -195,13 +242,15 @@ object CPU {
                 }
 
                 Instruction.SYS   -> TODO()
+
+                Instruction.PEEK -> Debug.println("[TOP_OF_STACK = ${peekStack()}]")
             }
 
-            if (debug) {
-                print("$instruction\nSTACK: ")
+            Debug {
+                print("STACK: ")
 
                 for (i in stackPointerOrigin..stackPointer) {
-                    print("${memory[i]} ")
+                    print("${memory[i].truncate()} ")
                 }
 
                 println()
@@ -210,4 +259,12 @@ object CPU {
 
         return result
     }
+}
+
+private fun Float.truncate(): String {
+    if (this - toInt() == 0F) {
+        return toInt().toString()
+    }
+
+    return toString()
 }

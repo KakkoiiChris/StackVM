@@ -30,7 +30,8 @@ interface ASMToken {
         STORE,
         CALL,
         RET,
-        SYS;
+        SYS,
+        PEEK;
 
         override val value get() = ordinal.toFloat()
     }

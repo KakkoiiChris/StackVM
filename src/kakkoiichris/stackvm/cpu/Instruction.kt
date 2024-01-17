@@ -24,4 +24,5 @@ enum class Instruction {
     CALL,  // 20
     RET,   // 21
     SYS,   // 22
+    PEEK,   // 23
 }

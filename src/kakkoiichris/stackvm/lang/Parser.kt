@@ -36,7 +36,7 @@ class Parser(private val lexer: Lexer, private val optimize: Boolean) : Iterator
 
     private fun mustSkip(type: TokenType) {
         if (!skip(type)) {
-            error("Invalid type")
+            error("Invalid type '$type'!")
         }
     }
 
@@ -339,6 +339,8 @@ class Parser(private val lexer: Lexer, private val optimize: Boolean) : Iterator
                     args += expr()
                 }
                 while (skip(TokenType.Symbol.COMMA))
+
+                mustSkip(TokenType.Symbol.RIGHT_PAREN)
             }
 
             expr = Node.Invoke(location, expr, args)

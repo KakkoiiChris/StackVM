@@ -10,14 +10,14 @@ interface IASMToken {
             this
     }
 
-    object AwaitStart : IASMToken {
+    class AwaitStart(val offset: Int = 0) : IASMToken {
         override fun resolve(start: Float, end: Float) =
-            Ok(ASMToken.Value(start))
+            Ok(ASMToken.Value(start + offset))
     }
 
-    object AwaitEnd : IASMToken {
+    class AwaitEnd(val offset: Int = 0) : IASMToken {
         override fun resolve(start: Float, end: Float) =
-            Ok(ASMToken.Value(end))
+            Ok(ASMToken.Value(end + offset))
     }
 }
 
