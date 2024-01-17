@@ -17,6 +17,10 @@ interface Node {
 
         fun visitContinue(node: Continue): X
 
+        fun visitFunction(node: Function): X
+
+        fun visitReturn(node: Return): X
+
         fun visitExpression(node: Expression): X
 
         fun visitValue(node: Value): X
@@ -50,6 +54,21 @@ interface Node {
             visitor.visitContinue(this)
     }
 
+    class Function(
+        override val location: Location,
+        val name: Name,
+        val params: List<Name>,
+        val body: List<Node>
+    ) : Node {
+        override fun <X> accept(visitor: Visitor<X>): X =
+            visitor.visitFunction(this)
+    }
+
+    class Return(override val location: Location, val node: Node?) : Node {
+        override fun <X> accept(visitor: Visitor<X>): X =
+            visitor.visitReturn(this)
+    }
+
     class Expression(override val location: Location, val node: Node) : Node {
         override fun <X> accept(visitor: Visitor<X>): X =
             visitor.visitExpression(this)
@@ -75,8 +94,7 @@ interface Node {
         val operator: TokenType.Symbol,
         val operandLeft: Node,
         val operandRight: Node
-    ) :
-        Node {
+    ) : Node {
         override fun <X> accept(visitor: Visitor<X>): X =
             visitor.visitBinary(this)
     }

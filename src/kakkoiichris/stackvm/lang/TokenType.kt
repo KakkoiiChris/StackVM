@@ -6,7 +6,9 @@ interface TokenType {
         ELSE,
         WHILE,
         BREAK,
-        CONTINUE
+        CONTINUE,
+        FUNCTION,
+        RETURN
     }
 
     enum class Symbol : TokenType {
@@ -29,7 +31,8 @@ interface TokenType {
         RIGHT_PAREN,
         LEFT_BRACE,
         RIGHT_BRACE,
-        SEMICOLON
+        SEMICOLON,
+        COMMA
     }
 
     data class Value(val value: Float) : TokenType

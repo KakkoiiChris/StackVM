@@ -27,7 +27,10 @@ interface ASMToken {
         JMP,
         JIF,
         LOAD,
-        STORE;
+        STORE,
+        CALL,
+        RET,
+        SYS;
 
         override val value get() = ordinal.toFloat()
     }

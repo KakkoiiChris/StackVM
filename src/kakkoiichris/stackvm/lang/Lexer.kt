@@ -194,6 +194,8 @@ class Lexer(private val src: String) : Iterator<Token> {
 
             skip(';') -> TokenType.Symbol.SEMICOLON
 
+            skip(',') -> TokenType.Symbol.COMMA
+
             else      -> error("Unknown symbol '${peek()}'!")
         }
 

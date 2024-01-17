@@ -1,6 +1,6 @@
 package kakkoiichris.stackvm.lang
 
-class Parser(private val lexer: Lexer, private val optimize:Boolean) : Iterator<Node> {
+class Parser(private val lexer: Lexer, private val optimize: Boolean) : Iterator<Node> {
     private var token = lexer.next()
 
     override fun hasNext() =
@@ -53,15 +53,19 @@ class Parser(private val lexer: Lexer, private val optimize:Boolean) : Iterator<
     }
 
     private fun statement() = when {
-        matchAny(TokenType.Keyword.IF)       -> `if`()
+        match(TokenType.Keyword.IF)       -> `if`()
 
-        matchAny(TokenType.Keyword.WHILE)    -> `while`()
+        match(TokenType.Keyword.WHILE)    -> `while`()
 
-        matchAny(TokenType.Keyword.BREAK)    -> `break`()
+        match(TokenType.Keyword.BREAK)    -> `break`()
 
-        matchAny(TokenType.Keyword.CONTINUE) -> `continue`()
+        match(TokenType.Keyword.CONTINUE) -> `continue`()
 
-        else                                 -> expression()
+        match(TokenType.Keyword.FUNCTION) -> function()
+
+        match(TokenType.Keyword.RETURN)   -> `return`()
+
+        else                              -> expression()
     }
 
     private fun `if`(): Node.If {
@@ -120,6 +124,53 @@ class Parser(private val lexer: Lexer, private val optimize:Boolean) : Iterator<
         mustSkip(TokenType.Symbol.SEMICOLON)
 
         return Node.Continue(location)
+    }
+
+    private fun function(): Node.Function {
+        val location = here()
+
+        mustSkip(TokenType.Keyword.FUNCTION)
+
+        val name = name()
+
+        val params = mutableListOf<Node.Name>()
+
+        if (skip(TokenType.Symbol.LEFT_PAREN) && !skip(TokenType.Symbol.RIGHT_PAREN)) {
+            do {
+                params += name()
+            }
+            while (skip(TokenType.Symbol.COMMA))
+
+            mustSkip(TokenType.Symbol.RIGHT_PAREN)
+        }
+
+        val body = mutableListOf<Node>()
+
+        mustSkip(TokenType.Symbol.LEFT_BRACE)
+
+        while (!match(TokenType.Symbol.RIGHT_BRACE)) {
+            body += statement()
+        }
+
+        mustSkip(TokenType.Symbol.RIGHT_BRACE)
+
+        return Node.Function(location, name, params, body)
+    }
+
+    private fun `return`(): Node.Return {
+        val location = here()
+
+        mustSkip(TokenType.Keyword.RETURN)
+
+        var node: Node? = null
+
+        if (!skip(TokenType.Symbol.SEMICOLON)) {
+            node = expr()
+
+            mustSkip(TokenType.Symbol.SEMICOLON)
+        }
+
+        return Node.Return(location, node)
     }
 
     private fun expression(): Node.Expression {

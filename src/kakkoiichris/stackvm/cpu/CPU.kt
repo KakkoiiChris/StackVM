@@ -8,9 +8,16 @@ object CPU {
     private val memory = FloatArray(2.0.pow(16.0).toInt())
 
     private var instructionPointer = 0
+
+    private var stackPointerOrigin = 0
     private var stackPointerOffset = 0
-    private var stackPointer = 0
+    private val stackPointer get() = stackPointerOrigin + stackPointerOffset
+
     private var variablePointer = 0
+
+    private var callPointerOrigin = 0
+    private var callPointerOffset = 0
+    private val callPointer get() = callPointerOrigin + callPointerOffset
 
     var debug = false
 
@@ -26,24 +33,42 @@ object CPU {
             memory[i++] = token.value
         }
 
-        stackPointerOffset = i
+        stackPointerOrigin = i
     }
 
     private fun fetch() = memory[instructionPointer++]
 
-    private fun push(value: Float) {
-        memory[stackPointerOffset + ++stackPointer] = value
+    private fun pushStack(value: Float) {
+        stackPointerOffset++
+
+        memory[stackPointer] = value
     }
 
-    private fun pop(): Float {
-        val value = memory[stackPointerOffset + stackPointer]
+    private fun popStack(): Float {
+        val value = memory[stackPointer]
 
-        stackPointer = max(stackPointer - 1, 0)
+        stackPointerOffset = max(stackPointerOffset - 1, 0)
 
         return value
     }
 
-    private fun peek() = memory[stackPointerOffset + stackPointer]
+    private fun peekStack() = memory[stackPointer]
+
+    private fun pushCall(value: Float) {
+        callPointerOffset++
+
+        memory[callPointer] = value
+    }
+
+    private fun popCall(): Float {
+        val value = memory[callPointer]
+
+        callPointerOffset = max(callPointerOrigin - 1, 0)
+
+        return value
+    }
+
+    private fun peekCall() = memory[callPointer]
 
     private fun Float.toBool() = this != 0F
 
@@ -58,89 +83,89 @@ object CPU {
 
             when (instruction) {
                 Instruction.HALT  -> {
-                    result = pop()
+                    result = popStack()
 
                     running = false
                 }
 
-                Instruction.PUSH  -> push(fetch())
+                Instruction.PUSH  -> pushStack(fetch())
 
-                Instruction.POP   -> pop()
+                Instruction.POP   -> popStack()
 
-                Instruction.DUP   -> push(peek())
+                Instruction.DUP   -> pushStack(peekStack())
 
                 Instruction.ADD   -> {
-                    val b = pop()
-                    val a = pop()
+                    val b = popStack()
+                    val a = popStack()
 
-                    push(a + b)
+                    pushStack(a + b)
                 }
 
                 Instruction.SUB   -> {
-                    val b = pop()
-                    val a = pop()
+                    val b = popStack()
+                    val a = popStack()
 
-                    push(a - b)
+                    pushStack(a - b)
                 }
 
                 Instruction.MUL   -> {
-                    val b = pop()
-                    val a = pop()
+                    val b = popStack()
+                    val a = popStack()
 
-                    push(a * b)
+                    pushStack(a * b)
                 }
 
                 Instruction.DIV   -> {
-                    val b = pop()
-                    val a = pop()
+                    val b = popStack()
+                    val a = popStack()
 
-                    push(a / b)
+                    pushStack(a / b)
                 }
 
                 Instruction.MOD   -> {
-                    val b = pop()
-                    val a = pop()
+                    val b = popStack()
+                    val a = popStack()
 
-                    push(a % b)
+                    pushStack(a % b)
                 }
 
-                Instruction.NEG   -> push(-pop())
+                Instruction.NEG   -> pushStack(-popStack())
 
                 Instruction.AND   -> {
-                    val b = pop()
-                    val a = pop()
+                    val b = popStack()
+                    val a = popStack()
 
-                    push((a.toBool() && b.toBool()).toFloat())
+                    pushStack((a.toBool() && b.toBool()).toFloat())
                 }
 
                 Instruction.OR    -> {
-                    val b = pop()
-                    val a = pop()
+                    val b = popStack()
+                    val a = popStack()
 
-                    push((a.toBool() || b.toBool()).toFloat())
+                    pushStack((a.toBool() || b.toBool()).toFloat())
                 }
 
-                Instruction.NOT   -> push((!pop().toBool()).toFloat())
+                Instruction.NOT   -> pushStack((!popStack().toBool()).toFloat())
 
                 Instruction.EQU   -> {
-                    val b = pop()
-                    val a = pop()
+                    val b = popStack()
+                    val a = popStack()
 
-                    push((a == b).toFloat())
+                    pushStack((a == b).toFloat())
                 }
 
                 Instruction.GRT   -> {
-                    val b = pop()
-                    val a = pop()
+                    val b = popStack()
+                    val a = popStack()
 
-                    push((a > b).toFloat())
+                    pushStack((a > b).toFloat())
                 }
 
                 Instruction.GEQ   -> {
-                    val b = pop()
-                    val a = pop()
+                    val b = popStack()
+                    val a = popStack()
 
-                    push((a >= b).toFloat())
+                    pushStack((a >= b).toFloat())
                 }
 
                 Instruction.JMP   -> instructionPointer = fetch().toInt()
@@ -148,20 +173,34 @@ object CPU {
                 Instruction.JIF   -> {
                     val address = fetch().toInt()
 
-                    if (pop().toBool()) {
+                    if (popStack().toBool()) {
                         instructionPointer = address
                     }
                 }
 
-                Instruction.LOAD  -> push(memory[fetch().toInt() + variablePointer])
+                Instruction.LOAD  -> pushStack(memory[fetch().toInt() + variablePointer])
 
-                Instruction.STORE -> memory[fetch().toInt() + variablePointer] = pop()
+                Instruction.STORE -> memory[fetch().toInt() + variablePointer] = popStack()
+
+                Instruction.CALL  -> {
+                    pushCall(instructionPointer.toFloat())
+
+                    instructionPointer = fetch().toInt()
+                }
+
+                Instruction.RET   -> {
+                    val address = popCall()
+
+                    instructionPointer = address.toInt()
+                }
+
+                Instruction.SYS   -> TODO()
             }
 
             if (debug) {
                 print("$instruction\nSTACK: ")
 
-                for (i in stackPointerOffset..(stackPointerOffset + stackPointer)) {
+                for (i in stackPointerOrigin..stackPointer) {
                     print("${memory[i]} ")
                 }
 
