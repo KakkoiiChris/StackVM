@@ -66,8 +66,6 @@ object CPU {
         return value
     }
 
-    private fun peekCall() = memory[callPointer]
-
     private fun Float.toBool() = this != 0F
 
     private fun Boolean.toFloat() = if (this) 1F else 0F

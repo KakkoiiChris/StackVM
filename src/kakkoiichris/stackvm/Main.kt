@@ -1,6 +1,7 @@
 package kakkoiichris.stackvm
 
 import kakkoiichris.stackvm.cpu.CPU
+import kakkoiichris.stackvm.cpu.Debug
 import kakkoiichris.stackvm.lang.ASMConverter
 import kakkoiichris.stackvm.lang.Lexer
 import kakkoiichris.stackvm.lang.Parser
@@ -17,8 +18,14 @@ import kotlin.time.measureTimedValue
  *
  * @author Christian Bryce Alexander
  */
-fun main() {
-//    CPU.debug = true
+fun main(args: Array<String>) {
+    var i = 0
+
+    while (i < args.size) {
+        when (args[i++].lowercase()) {
+            "-d" -> Debug.enabled = true
+        }
+    }
 
     while (true) {
         print("> ")

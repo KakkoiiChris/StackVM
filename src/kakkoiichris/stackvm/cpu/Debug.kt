@@ -1,7 +1,7 @@
 package kakkoiichris.stackvm.cpu
 
 object Debug {
-    var enabled = true
+    var enabled = false
 
     operator fun invoke(action: Debug.() -> Unit) =
         this.action()
