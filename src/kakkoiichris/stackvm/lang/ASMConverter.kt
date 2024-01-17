@@ -8,6 +8,8 @@ import java.util.*
 class ASMConverter(private val parser: Parser, private val optimize: Boolean) : Node.Visitor<List<IASMToken>> {
     private var pos = 0
 
+    private val memory = Memory()
+
     private val start = Stack<Int>()
     private val end = Stack<Int>()
 
@@ -15,93 +17,136 @@ class ASMConverter(private val parser: Parser, private val optimize: Boolean) : 
     private val functions = mutableMapOf<String, Int>()
 
     fun convert(): List<ASMToken> {
-        val tokens = mutableListOf<ASMToken>()
+        try {
+            memory.push()
 
-        for (statement in parser) {
-            val iTokens = visit(statement)
+            val tokens = mutableListOf<ASMToken>()
 
-            val subTokens = iTokens.filterIsInstance<IASMToken.Ok>()
+            for (statement in parser) {
+                val iTokens = visit(statement)
 
-            if (iTokens.size > subTokens.size) error("Unresolved intermediate token.")
+                val subTokens = iTokens.filterIsInstance<IASMToken.Ok>()
 
-            tokens.addAll(subTokens.map { it.token })
-        }
+                if (iTokens.size > subTokens.size) error("Unresolved intermediate token.")
 
-        tokens.add(HALT)
+                tokens.addAll(subTokens.map { it.token })
+            }
 
-        if (optimize) {
-            var i = 0
+            tokens.add(HALT)
 
-            while (i < tokens.lastIndex) {
-                val a = tokens[i]
-                val b = tokens[i + 1]
+            if (optimize) {
+                var i = 0
 
-                if (a === b && a in listOf(NOT, NEG)) {
-                    repeat(2) { tokens.removeAt(i) }
-                }
-                else {
-                    i++
+                while (i < tokens.lastIndex) {
+                    val a = tokens[i]
+                    val b = tokens[i + 1]
+
+                    if (a === b && a in listOf(NOT, NEG)) {
+                        repeat(2) { tokens.removeAt(i) }
+                    }
+                    else {
+                        i++
+                    }
                 }
             }
+
+            return tokens
         }
-
-        return tokens
+        finally {
+            memory.pop()
+        }
     }
 
-    private fun resolve(iTokens: List<IASMToken>): List<IASMToken> {
-        val start = start.pop()
-        val end = end.pop()
+    private fun resolve(iTokens: List<IASMToken>): MutableList<IASMToken> {
+        val start = memory.start.toFloat()
+        val end = memory.end.toFloat()
 
-        return iTokens.map { it.resolve(start.toFloat(), end.toFloat()) }
+        return iTokens
+            .map { it.resolve(start, end) }
+            .toMutableList()
     }
 
-    override fun visitIf(node: Node.If): List<IASMToken> {
+    override fun visitVar(node: Node.Var): List<IASMToken> {
         val iTokens = mutableListOf<IASMToken>()
 
-        start.push(pos)
+        iTokens += visit(node.node)
 
-        iTokens += visit(node.condition)
+        memory.addVariable(node.name)
+        val address = memory.getVariable(node.name)
 
-        iTokens += NOT.iasm
-        iTokens += JIF.iasm
-        iTokens += IASMToken.AwaitEnd
-
-        pos += 3
-
-        for (stmt in node.body) {
-            iTokens += visit(stmt)
-        }
-
-        end.push(pos)
-
-        return resolve(iTokens)
-    }
-
-    override fun visitWhile(node: Node.While): List<IASMToken> {
-        val iTokens = mutableListOf<IASMToken>()
-
-        start.push(pos)
-
-        iTokens += visit(node.condition)
-
-        iTokens += NOT.iasm
-        iTokens += JIF.iasm
-        iTokens += IASMToken.AwaitEnd
-
-        pos += 3
-
-        for (stmt in node.body) {
-            iTokens += visit(stmt)
-        }
-
-        iTokens += JMP.iasm
-        iTokens += IASMToken.AwaitStart
+        iTokens += STORE.iasm
+        iTokens += ASMToken.Value(address.toFloat()).iasm
 
         pos += 2
 
-        end.push(pos)
+        return iTokens
+    }
 
-        return resolve(iTokens)
+    override fun visitIf(node: Node.If): List<IASMToken> {
+        var iTokens = mutableListOf<IASMToken>()
+
+        try {
+            memory.push()
+
+            memory.start = pos
+
+            iTokens += visit(node.condition)
+
+            iTokens += NOT.iasm
+            iTokens += JIF.iasm
+            iTokens += IASMToken.AwaitEnd
+
+            pos += 3
+
+            for (stmt in node.body) {
+                iTokens += visit(stmt)
+            }
+
+            memory.end = pos
+
+            iTokens = resolve(iTokens)
+        }
+        finally {
+            memory.pop()
+        }
+
+        return iTokens
+    }
+
+    override fun visitWhile(node: Node.While): List<IASMToken> {
+        var iTokens = mutableListOf<IASMToken>()
+
+        try {
+            memory.push()
+
+            memory.start = pos
+
+            iTokens += visit(node.condition)
+
+            iTokens += NOT.iasm
+            iTokens += JIF.iasm
+            iTokens += IASMToken.AwaitEnd
+
+            pos += 3
+
+            for (stmt in node.body) {
+                iTokens += visit(stmt)
+            }
+
+            iTokens += JMP.iasm
+            iTokens += IASMToken.AwaitStart
+
+            pos += 2
+
+            memory.end = pos
+
+            iTokens = resolve(iTokens)
+        }
+        finally {
+            memory.pop()
+        }
+
+        return iTokens
     }
 
     override fun visitBreak(node: Node.Break): List<IASMToken> {
@@ -127,27 +172,41 @@ class ASMConverter(private val parser: Parser, private val optimize: Boolean) : 
     }
 
     override fun visitFunction(node: Node.Function): List<IASMToken> {
-        val iTokens = mutableListOf<IASMToken>()
+        var iTokens = mutableListOf<IASMToken>()
 
-        start.push(pos)
+        /*try {
+            memory.push()
 
+            iTokens += JMP.iasm
+            iTokens += IASMToken.AwaitEnd
 
+            pos += 2
 
-        iTokens += visit(node.condition)
+            memory.start = pos
 
-        iTokens += NOT.iasm
-        iTokens += JIF.iasm
-        iTokens += IASMToken.AwaitEnd
+            memory.addFunction(node.name)
 
-        pos += 3
+            iTokens += visit(node.condition)
 
-        for (stmt in node.body) {
-            iTokens += visit(stmt)
+            iTokens += NOT.iasm
+            iTokens += JIF.iasm
+            iTokens += IASMToken.AwaitEnd
+
+            pos += 3
+
+            for (stmt in node.body) {
+                iTokens += visit(stmt)
+            }
+
+            memory.end = pos
+
+            iTokens = resolve(iTokens)
         }
+        finally {
+            memory.pop()
+        }*/
 
-        end.push(pos)
-
-        return resolve(iTokens)
+        return iTokens
     }
 
     override fun visitReturn(node: Node.Return): List<IASMToken> {
@@ -180,12 +239,7 @@ class ASMConverter(private val parser: Parser, private val optimize: Boolean) : 
     override fun visitName(node: Node.Name): List<IASMToken> {
         val iTokens = mutableListOf<IASMToken>()
 
-        val name = node.name.value
-
-        val address = variables
-            .indexOf(node.name.value)
-            .takeIf { it >= 0 }
-            ?: error("Undeclared variable name '$name' @ ${node.location}.")
+        val address = memory.getVariable(node)
 
         iTokens += LOAD.iasm
         iTokens += ASMToken.Value(address.toFloat()).iasm
@@ -267,12 +321,7 @@ class ASMConverter(private val parser: Parser, private val optimize: Boolean) : 
 
         iTokens += visit(node.node)
 
-        val name = node.name.name.value
-
-        val address = variables
-            .indexOf(name)
-            .takeIf { it >= 0 }
-            ?: (variables.apply { add(name) }.size - 1)
+        val address = memory.getVariable(node.name)
 
         iTokens += DUP.iasm
         iTokens += STORE.iasm
@@ -281,5 +330,94 @@ class ASMConverter(private val parser: Parser, private val optimize: Boolean) : 
         pos += 3
 
         return iTokens
+    }
+
+    override fun visitInvoke(node: Node.Invoke): List<IASMToken> {
+        TODO("Not yet implemented invoke")
+    }
+
+    private class Memory {
+        private val scopes = Stack<Scope>()
+
+        fun push() {
+            if (scopes.isNotEmpty()) {
+                val scope = peek()
+
+                val next = Scope(scope.variableID, scope.functionID)
+
+                scopes.push(next)
+            }
+            else {
+                scopes.push(Scope(0, 0))
+            }
+        }
+
+        fun pop() {
+            if (scopes.isNotEmpty()) {
+                scopes.pop()
+            }
+        }
+
+        fun peek(): Scope {
+            return scopes.peek()
+        }
+
+        var start: Int
+            get() = peek().start
+            set(start) {
+                peek().start = start
+            }
+
+        var end: Int
+            get() = peek().end
+            set(end) {
+                peek().end = end
+            }
+
+        fun addVariable(name: Node.Name) {
+            peek().addVariable(name)
+        }
+
+        fun getVariable(name: Node.Name) =
+            peek().getVariable(name)
+
+        fun addFunction(name: Node.Name) {
+            peek().addFunction(name)
+        }
+
+        fun getFunction(name: Node.Name) =
+            peek().getFunction(name)
+
+        class Scope(var variableID: Int, var functionID: Int) {
+            var start = -1
+            var end = -1
+
+            val variables = mutableMapOf<String, Int>()
+            val functions = mutableMapOf<String, Int>()
+
+            fun addVariable(name: Node.Name) {
+                if (name.name.value in variables) error("Redeclared variable '${name.name.value}'!")
+
+                variables[name.name.value] = variableID++
+            }
+
+            fun getVariable(name: Node.Name): Int {
+                if (name.name.value !in variables) error("Undeclared variable '${name.name.value}'!")
+
+                return variables[name.name.value]!!
+            }
+
+            fun addFunction(name: Node.Name) {
+                if (name.name.value in functions) error("Redeclared function '${name.name.value}'!")
+
+                functions[name.name.value] = functionID++
+            }
+
+            fun getFunction(name: Node.Name): Int {
+                if (name.name.value !in functions) error("Undeclared function '${name.name.value}'!")
+
+                return functions[name.name.value]!!
+            }
+        }
     }
 }

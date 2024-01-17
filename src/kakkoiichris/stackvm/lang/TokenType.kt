@@ -2,6 +2,7 @@ package kakkoiichris.stackvm.lang
 
 interface TokenType {
     enum class Keyword : TokenType {
+        VAR,
         IF,
         ELSE,
         WHILE,

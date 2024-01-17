@@ -53,6 +53,8 @@ class Parser(private val lexer: Lexer, private val optimize: Boolean) : Iterator
     }
 
     private fun statement() = when {
+        match(TokenType.Keyword.VAR)      -> `var`()
+
         match(TokenType.Keyword.IF)       -> `if`()
 
         match(TokenType.Keyword.WHILE)    -> `while`()
@@ -66,6 +68,22 @@ class Parser(private val lexer: Lexer, private val optimize: Boolean) : Iterator
         match(TokenType.Keyword.RETURN)   -> `return`()
 
         else                              -> expression()
+    }
+
+    private fun `var`(): Node.Var {
+        val location = here()
+
+        mustSkip(TokenType.Keyword.VAR)
+
+        val name = name()
+
+        mustSkip(TokenType.Symbol.EQUAL)
+
+        val node = expr()
+
+        mustSkip(TokenType.Symbol.SEMICOLON)
+
+        return Node.Var(location, name, node)
     }
 
     private fun `if`(): Node.If {
@@ -301,7 +319,32 @@ class Parser(private val lexer: Lexer, private val optimize: Boolean) : Iterator
             return Node.Unary(location, operator as TokenType.Symbol, unary())
         }
 
-        return terminal()
+        return postfix()
+    }
+
+    private fun postfix(): Node {
+        var expr = terminal()
+
+        if (match(TokenType.Symbol.LEFT_PAREN)) {
+            if (expr !is Node.Name) error("Invalid invoke.")
+
+            val location = token.location
+
+            val args = mutableListOf<Node>()
+
+            mustSkip(TokenType.Symbol.LEFT_PAREN)
+
+            if (!skip(TokenType.Symbol.RIGHT_PAREN)) {
+                do {
+                    args += expr()
+                }
+                while (skip(TokenType.Symbol.COMMA))
+            }
+
+            expr = Node.Invoke(location, expr, args)
+        }
+
+        return expr
     }
 
     private fun terminal() = when {

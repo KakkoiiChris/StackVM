@@ -9,6 +9,8 @@ interface Node {
         fun visit(node: Node) =
             node.accept(this)
 
+        fun visitVar(node: Var): X
+
         fun visitIf(node: If): X
 
         fun visitWhile(node: While): X
@@ -32,6 +34,13 @@ interface Node {
         fun visitBinary(node: Binary): X
 
         fun visitAssign(node: Assign): X
+
+        fun visitInvoke(node: Invoke): X
+    }
+
+    class Var(override val location: Location, val name: Name, val node:Node) : Node {
+        override fun <X> accept(visitor: Visitor<X>): X =
+            visitor.visitVar(this)
     }
 
     class If(override val location: Location, val condition: Node, val body: List<Node>) : Node {
@@ -102,5 +111,10 @@ interface Node {
     class Assign(override val location: Location, val name: Name, val node: Node) : Node {
         override fun <X> accept(visitor: Visitor<X>): X =
             visitor.visitAssign(this)
+    }
+
+    class Invoke(override val location: Location, val name: Name, val args:List<Node>):Node{
+        override fun <X> accept(visitor: Visitor<X>):X=
+            visitor.visitInvoke(this)
     }
 }
