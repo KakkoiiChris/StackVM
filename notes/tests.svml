@@ -1,2 +1,2 @@
 function x(a, b) { return a + b; } var x = x(1, 2); x;
-function x(a, b) { return a + b; } function y(a, b, c, d) { return x(a, b) - x(c, d); } var y = y(1, 2, 3, 4); y;
+function x(a, b) { return a + b; } function y(a, b, c, d) { return x(a, b) * x(c, d); } var z = y(1, 2, 3, 4); z;

@@ -23,7 +23,9 @@ object CPU {
         memory.fill(0F)
 
         instructionPointer = 0
-        variablePointer = memory.size / 2
+        variablePointer = memory.size / 3
+
+        callPointerOrigin = 2 * memory.size / 3
 
         var i = 0
 
@@ -61,7 +63,7 @@ object CPU {
     private fun popCall(): Float {
         val value = memory[callPointer]
 
-        callPointerOffset = max(callPointerOrigin - 1, 0)
+        callPointerOffset = max(callPointerOffset - 1, 0)
 
         return value
     }
@@ -241,7 +243,7 @@ object CPU {
 
                 Instruction.SYS   -> TODO()
 
-                Instruction.PEEK -> Debug.println("[TOP_OF_STACK = ${peekStack()}]")
+                Instruction.PEEK  -> Debug.println("[TOP_OF_STACK = ${peekStack()}]")
             }
 
             Debug {

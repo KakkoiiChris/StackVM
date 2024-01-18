@@ -66,7 +66,8 @@ class ASMConverter(private val parser: Parser, private val optimize: Boolean) : 
         iTokens += visit(node.node)
 
         memory.addVariable(node.name)
-        val address = memory.getVariable(node.name)
+        val address =
+            memory.getVariable(node.name) ?: error("Undeclared var '${node.name.name.value}' @ ${node.name.location}!")
 
         iTokens += STORE.iasm
         iTokens += ASMToken.Value(address.toFloat()).iasm
@@ -183,7 +184,8 @@ class ASMConverter(private val parser: Parser, private val optimize: Boolean) : 
             for (param in node.params) {
                 memory.addVariable(param)
 
-                val address = memory.getVariable(param)
+                val address =
+                    memory.getVariable(param) ?: error("Undeclared var '${node.name.name.value}' @ ${param.location}!")
 
                 iTokens += STORE.iasm
                 iTokens += ASMToken.Value(address.toFloat()).iasm
@@ -257,7 +259,7 @@ class ASMConverter(private val parser: Parser, private val optimize: Boolean) : 
     override fun visitName(node: Node.Name): List<IASMToken> {
         val iTokens = mutableListOf<IASMToken>()
 
-        val address = memory.getVariable(node)
+        val address = memory.getVariable(node) ?: error("Undeclared var '${node.name.value}' @ ${node.location}!")
 
         iTokens += LOAD.iasm
         iTokens += ASMToken.Value(address.toFloat()).iasm
@@ -339,7 +341,8 @@ class ASMConverter(private val parser: Parser, private val optimize: Boolean) : 
 
         iTokens += visit(node.node)
 
-        val address = memory.getVariable(node.name)
+        val address =
+            memory.getVariable(node.name) ?: error("Undeclared var '${node.name.name.value}' @ ${node.name.location}!")
 
         iTokens += DUP.iasm
         iTokens += STORE.iasm
@@ -358,6 +361,7 @@ class ASMConverter(private val parser: Parser, private val optimize: Boolean) : 
         }
 
         val address = memory.getFunction(node.name)
+            ?: error("Undeclared function '${node.name.name.value}' @ ${node.name.location}!")
 
         iTokens += CALL.iasm
         iTokens += ASMToken.Value(address.toFloat()).iasm
@@ -374,7 +378,7 @@ class ASMConverter(private val parser: Parser, private val optimize: Boolean) : 
             if (scopes.isNotEmpty()) {
                 val scope = peek()
 
-                val next = Scope(scope.variableID)
+                val next = Scope(scope)
 
                 scopes.push(next)
             }
@@ -409,17 +413,41 @@ class ASMConverter(private val parser: Parser, private val optimize: Boolean) : 
             peek().addVariable(name)
         }
 
-        fun getVariable(name: Node.Name) =
-            peek().getVariable(name)
+        fun getVariable(name: Node.Name): Int? {
+            var here: Scope? = peek()
+
+            while (here != null) {
+                val variable = here.getVariable(name)
+
+                if (variable != null) return variable
+
+                here = here.parent
+            }
+
+            return null
+        }
 
         fun addFunction(name: Node.Name, pos: Int) {
             peek().addFunction(name, pos)
         }
 
-        fun getFunction(name: Node.Name) =
-            peek().getFunction(name)
+        fun getFunction(name: Node.Name): Int? {
+            var here: Scope? = peek()
 
-        class Scope(var variableID: Int = 0) {
+            while (here != null) {
+                val function = here.getFunction(name)
+
+                if (function != null) return function
+
+                here = here.parent
+            }
+
+            return null
+        }
+
+        class Scope(val parent: Scope? = null) {
+            var variableID: Int = parent?.variableID ?: 0
+
             var start = -1
             var end = -1
 
@@ -427,28 +455,22 @@ class ASMConverter(private val parser: Parser, private val optimize: Boolean) : 
             val functions = mutableMapOf<String, Int>()
 
             fun addVariable(name: Node.Name) {
-                if (name.name.value in variables) error("Redeclared variable '${name.name.value}'!")
+                if (name.name.value in variables) error("Redeclared variable '${name.name.value}' @ ${name.location}!")
 
                 variables[name.name.value] = variableID++
             }
 
-            fun getVariable(name: Node.Name): Int {
-                if (name.name.value !in variables) error("Undeclared variable '${name.name.value}'!")
-
-                return variables[name.name.value]!!
-            }
+            fun getVariable(name: Node.Name) =
+                variables[name.name.value]
 
             fun addFunction(name: Node.Name, pos: Int) {
-                if (name.name.value in functions) error("Redeclared function '${name.name.value}'!")
+                if (name.name.value in functions) error("Redeclared function '${name.name.value}' @ ${name.location}!")
 
                 functions[name.name.value] = pos
             }
 
-            fun getFunction(name: Node.Name): Int {
-                if (name.name.value !in functions) error("Undeclared function '${name.name.value}'!")
-
-                return functions[name.name.value]!!
-            }
+            fun getFunction(name: Node.Name) =
+                functions[name.name.value]
         }
     }
 }
