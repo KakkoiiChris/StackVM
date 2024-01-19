@@ -1,2 +1,3 @@
 function x(a, b) { return a + b; } var x = x(1, 2); x;
 function x(a, b) { return a + b; } function y(a, b, c, d) { return x(a, b) * x(c, d); } var z = y(1, 2, 3, 4); z;
+function fibonacci(num) { if num < 2 { return num; } return fibonacci(num - 1) + fibonacci(num - 2); } var f = fibonacci(10); f;

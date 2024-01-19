@@ -1,5 +1,6 @@
 package kakkoiichris.stackvm
 
+import kakkoiichris.stackvm.asm.ASMFormatter
 import kakkoiichris.stackvm.cpu.CPU
 import kakkoiichris.stackvm.cpu.Debug
 import kakkoiichris.stackvm.lang.ASMConverter
@@ -32,13 +33,19 @@ fun main(args: Array<String>) {
         when (args[a++].lowercase()) {
             "-d" -> Debug.enabled = true
 
-            "-f" -> {
+            "-c" -> {
+                mode = Mode.COMPILE
+                srcFile = args[a++]
+                dstFile = args[a++]
+            }
+
+            "-r" -> {
                 mode = Mode.RUN
                 srcFile = args[a++]
             }
 
-            "-c" -> {
-                mode = Mode.COMPILE
+            "-f" -> {
+                mode = Mode.FORMAT
                 srcFile = args[a++]
                 dstFile = args[a++]
             }
@@ -51,13 +58,16 @@ fun main(args: Array<String>) {
         Mode.COMPILE -> compile(srcFile, dstFile)
 
         Mode.RUN     -> run(srcFile)
+
+        Mode.FORMAT  -> format(srcFile, dstFile)
     }
 }
 
 private enum class Mode {
     REPL,
     COMPILE,
-    RUN
+    RUN,
+    FORMAT
 }
 
 private fun repl() {
@@ -139,4 +149,25 @@ private fun run(srcName: String) {
     val (result, runTime) = measureTimedValue { CPU.run() }
 
     println("\n< $result (${runTime.inWholeNanoseconds / 1E9}s)\n")
+}
+
+private fun format(srcName: String, dstName: String) {
+    val srcFile = File(srcName)
+
+    if (!srcFile.exists()) error("Cannot load source file!")
+
+    val src = srcFile.readText()
+
+    val values = Compiler.compile(src)
+
+    val dstFile = File(dstName)
+
+    dstFile.delete()
+    if (!dstFile.createNewFile()) error("Cannot create destination file!")
+
+    val out = BufferedWriter(FileWriter(dstFile))
+
+    out.write(ASMFormatter.format(values))
+
+    out.close()
 }
