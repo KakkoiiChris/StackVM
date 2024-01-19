@@ -51,14 +51,15 @@ class ASMConverter(private val parser: Parser, private val optimize: Boolean) : 
         }
     }
 
-    private fun resolve(iTokens: List<IASMToken>): MutableList<IASMToken> {
-        val start = memory.start.toFloat()
-        val end = memory.end.toFloat()
-
-        return iTokens
-            .map { it.resolve(start, end) }
+    private fun resolveStartAndEnd(iTokens: List<IASMToken>, start: Float, end: Float) =
+        iTokens
+            .map { it.resolveStartAndEnd(start, end) ?: it }
             .toMutableList()
-    }
+
+    private fun resolveLast(iTokens: List<IASMToken>, last: Float) =
+        iTokens
+            .map { it.resolveLast(last) ?: it }
+            .toMutableList()
 
     override fun visitVar(node: Node.Var): List<IASMToken> {
         val iTokens = mutableListOf<IASMToken>()
@@ -80,30 +81,48 @@ class ASMConverter(private val parser: Parser, private val optimize: Boolean) : 
     override fun visitIf(node: Node.If): List<IASMToken> {
         var iTokens = mutableListOf<IASMToken>()
 
-        try {
-            memory.push()
+        var last = -1F
 
-            memory.start = pos
+        for ((i, branch) in node.branches.withIndex()) {
+            val (_, condition, body) = branch
 
-            iTokens += visit(node.condition)
+            try {
+                memory.push()
 
-            iTokens += NOT.iasm
-            iTokens += JIF.iasm
-            iTokens += IASMToken.AwaitEnd()
+                val start = pos.toFloat()
 
-            pos += 3
+                if (condition != null) {
+                    iTokens += visit(condition)
 
-            for (stmt in node.body) {
-                iTokens += visit(stmt)
+                    iTokens += NOT.iasm
+                    iTokens += JIF.iasm
+                    iTokens += IASMToken.AwaitEnd()
+
+                    pos += 3
+                }
+
+                for (stmt in body) {
+                    iTokens += visit(stmt)
+                }
+
+                if (i != node.branches.lastIndex) {
+                    iTokens += JMP.iasm
+                    iTokens += IASMToken.AwaitLast()
+
+                    pos += 2
+                }
+
+                val end = pos.toFloat()
+                last = end
+
+                iTokens = resolveStartAndEnd(iTokens, start, end)
             }
-
-            memory.end = pos
-
-            iTokens = resolve(iTokens)
+            finally {
+                memory.pop()
+            }
         }
-        finally {
-            memory.pop()
-        }
+
+        iTokens = resolveLast(iTokens, last)
 
         return iTokens
     }
@@ -114,7 +133,7 @@ class ASMConverter(private val parser: Parser, private val optimize: Boolean) : 
         try {
             memory.push()
 
-            memory.start = pos
+            val start = pos.toFloat()
 
             iTokens += visit(node.condition)
 
@@ -133,9 +152,9 @@ class ASMConverter(private val parser: Parser, private val optimize: Boolean) : 
 
             pos += 2
 
-            memory.end = pos
+            val end = pos.toFloat()
 
-            iTokens = resolve(iTokens)
+            iTokens = resolveStartAndEnd(iTokens, start, end)
         }
         finally {
             memory.pop()
@@ -179,7 +198,7 @@ class ASMConverter(private val parser: Parser, private val optimize: Boolean) : 
 
             memory.push()
 
-            memory.start = pos
+            val start = pos.toFloat()
 
             for (param in node.params) {
                 memory.addVariable(param)
@@ -203,9 +222,9 @@ class ASMConverter(private val parser: Parser, private val optimize: Boolean) : 
                 pos++
             }
 
-            memory.end = pos
+            val end = pos.toFloat()
 
-            iTokens = resolve(iTokens)
+            iTokens = resolveStartAndEnd(iTokens, start, end)
         }
         finally {
             memory.pop()
@@ -397,18 +416,6 @@ class ASMConverter(private val parser: Parser, private val optimize: Boolean) : 
             return scopes.peek()
         }
 
-        var start: Int
-            get() = peek().start
-            set(start) {
-                peek().start = start
-            }
-
-        var end: Int
-            get() = peek().end
-            set(end) {
-                peek().end = end
-            }
-
         fun addVariable(name: Node.Name) {
             peek().addVariable(name)
         }
@@ -447,9 +454,6 @@ class ASMConverter(private val parser: Parser, private val optimize: Boolean) : 
 
         class Scope(val parent: Scope? = null) {
             var variableID: Int = parent?.variableID ?: 0
-
-            var start = -1
-            var end = -1
 
             val variables = mutableMapOf<String, Int>()
             val functions = mutableMapOf<String, Int>()

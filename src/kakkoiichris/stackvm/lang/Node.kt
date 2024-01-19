@@ -38,14 +38,16 @@ interface Node {
         fun visitInvoke(node: Invoke): X
     }
 
-    class Var(override val location: Location, val name: Name, val node:Node) : Node {
+    class Var(override val location: Location, val name: Name, val node: Node) : Node {
         override fun <X> accept(visitor: Visitor<X>): X =
             visitor.visitVar(this)
     }
 
-    class If(override val location: Location, val condition: Node, val body: List<Node>) : Node {
+    class If(override val location: Location, val branches: List<Branch>) : Node {
         override fun <X> accept(visitor: Visitor<X>): X =
             visitor.visitIf(this)
+
+        data class Branch(val location: Location, val condition: Node?, val body: List<Node>)
     }
 
     class While(override val location: Location, val condition: Node, val body: List<Node>) : Node {
@@ -113,8 +115,8 @@ interface Node {
             visitor.visitAssign(this)
     }
 
-    class Invoke(override val location: Location, val name: Name, val args:List<Node>):Node{
-        override fun <X> accept(visitor: Visitor<X>):X=
+    class Invoke(override val location: Location, val name: Name, val args: List<Node>) : Node {
+        override fun <X> accept(visitor: Visitor<X>): X =
             visitor.visitInvoke(this)
     }
 }

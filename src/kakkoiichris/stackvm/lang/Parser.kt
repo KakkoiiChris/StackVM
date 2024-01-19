@@ -89,21 +89,32 @@ class Parser(private val lexer: Lexer, private val optimize: Boolean) : Iterator
     private fun `if`(): Node.If {
         val location = here()
 
-        mustSkip(TokenType.Keyword.IF)
+        val branches = mutableListOf<Node.If.Branch>()
 
-        val condition = expr()
+        while (true) {
+            val branchLocation = here()
 
-        val body = mutableListOf<Node>()
+            val condition = if (skip(TokenType.Keyword.IF))
+                expr()
+            else
+                null
 
-        mustSkip(TokenType.Symbol.LEFT_BRACE)
+            val body = mutableListOf<Node>()
 
-        while (!match(TokenType.Symbol.RIGHT_BRACE)) {
-            body += statement()
+            mustSkip(TokenType.Symbol.LEFT_BRACE)
+
+            while (!match(TokenType.Symbol.RIGHT_BRACE)) {
+                body += statement()
+            }
+
+            mustSkip(TokenType.Symbol.RIGHT_BRACE)
+
+            branches += Node.If.Branch(branchLocation, condition, body)
+
+            if (!skip(TokenType.Keyword.ELSE)) break
         }
 
-        mustSkip(TokenType.Symbol.RIGHT_BRACE)
-
-        return Node.If(location, condition, body)
+        return Node.If(location, branches)
     }
 
     private fun `while`(): Node.While {
