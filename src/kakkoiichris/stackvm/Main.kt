@@ -3,9 +3,11 @@ package kakkoiichris.stackvm
 import kakkoiichris.stackvm.cpu.CPU
 import kakkoiichris.stackvm.cpu.Debug
 import kakkoiichris.stackvm.lang.ASMConverter
+import kakkoiichris.stackvm.lang.Compiler
 import kakkoiichris.stackvm.lang.Lexer
 import kakkoiichris.stackvm.lang.Parser
 import kakkoiichris.stackvm.util.length
+import java.io.*
 import kotlin.time.measureTimedValue
 
 /**
@@ -20,14 +22,45 @@ import kotlin.time.measureTimedValue
  * @author Christian Bryce Alexander
  */
 fun main(args: Array<String>) {
+    var mode = Mode.REPL
+    var srcFile = ""
+    var dstFile = ""
+
     var a = 0
 
     while (a < args.size) {
         when (args[a++].lowercase()) {
             "-d" -> Debug.enabled = true
+
+            "-f" -> {
+                mode = Mode.RUN
+                srcFile = args[a++]
+            }
+
+            "-c" -> {
+                mode = Mode.COMPILE
+                srcFile = args[a++]
+                dstFile = args[a++]
+            }
         }
     }
 
+    when (mode) {
+        Mode.REPL    -> repl()
+
+        Mode.COMPILE -> compile(srcFile, dstFile)
+
+        Mode.RUN     -> run(srcFile)
+    }
+}
+
+private enum class Mode {
+    REPL,
+    COMPILE,
+    RUN
+}
+
+private fun repl() {
     while (true) {
         print("> ")
 
@@ -61,4 +94,49 @@ fun main(args: Array<String>) {
 
         println("\n< $result (${runTime.inWholeNanoseconds / 1E9}s)\n")
     }
+}
+
+private fun compile(srcName: String, dstName: String) {
+    val srcFile = File(srcName)
+
+    if (!srcFile.exists()) error("Cannot load source file!")
+
+    val src = srcFile.readText()
+
+    val values = Compiler.compile(src)
+
+    val dstFile = File(dstName)
+
+    if (!dstFile.delete()) error("Cannot delete destination file!")
+    if (!dstFile.createNewFile()) error("Cannot create destination file!")
+
+    val out = DataOutputStream(BufferedOutputStream(FileOutputStream(dstFile)))
+
+    out.writeInt(values.size)
+
+    for (value in values) {
+        out.writeFloat(value)
+    }
+
+    out.close()
+}
+
+private fun run(srcName: String) {
+    val srcFile = File(srcName)
+
+    val `in` = DataInputStream(BufferedInputStream(FileInputStream(srcFile)))
+
+    val length = `in`.readInt()
+
+    val values = mutableListOf<Float>()
+
+    for (i in 0 until length) {
+        values += `in`.readFloat()
+    }
+
+    CPU.load(values)
+
+    val (result, runTime) = measureTimedValue { CPU.run() }
+
+    println("\n< $result (${runTime.inWholeNanoseconds / 1E9}s)\n")
 }

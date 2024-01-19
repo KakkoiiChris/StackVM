@@ -1,7 +1,7 @@
 package kakkoiichris.stackvm.cpu
 
 import kakkoiichris.stackvm.asm.ASMToken
-import kakkoiichris.stackvm.asm.ASMToken.*
+import kakkoiichris.stackvm.asm.ASMToken.Instruction
 import kakkoiichris.stackvm.util.truncate
 import kotlin.math.max
 import kotlin.math.pow
@@ -21,7 +21,10 @@ object CPU {
     private var callPointerOffset = 0
     private val callPointer get() = callPointerOrigin + callPointerOffset
 
-    fun load(tokenizer: Iterator<ASMToken>) {
+    fun load(tokenizer: Iterator<ASMToken>) =
+        load(tokenizer.asSequence().toList().map { it.value })
+
+    fun load(values: List<Float>) {
         memory.fill(0F)
 
         instructionPointer = 0
@@ -31,8 +34,8 @@ object CPU {
 
         var i = 0
 
-        for (token in tokenizer) {
-            memory[i++] = token.value
+        for (value in values) {
+            memory[i++] = value
         }
 
         stackPointerOrigin = i
