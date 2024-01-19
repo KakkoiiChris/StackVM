@@ -5,6 +5,7 @@ import kakkoiichris.stackvm.cpu.Debug
 import kakkoiichris.stackvm.lang.ASMConverter
 import kakkoiichris.stackvm.lang.Lexer
 import kakkoiichris.stackvm.lang.Parser
+import kakkoiichris.stackvm.util.length
 import kotlin.time.measureTimedValue
 
 /**
@@ -19,10 +20,10 @@ import kotlin.time.measureTimedValue
  * @author Christian Bryce Alexander
  */
 fun main(args: Array<String>) {
-    var i = 0
+    var a = 0
 
-    while (i < args.size) {
-        when (args[i++].lowercase()) {
+    while (a < args.size) {
+        when (args[a++].lowercase()) {
             "-d" -> Debug.enabled = true
         }
     }
@@ -42,10 +43,16 @@ fun main(args: Array<String>) {
             converter.convert()
         }
 
-        println("Compiled: ${compileTime.inWholeMilliseconds / 1E3}s")
+        Debug {
+            println("Compiled: ${compileTime.inWholeMilliseconds / 1E3}s\n")
 
-        for ((i, token) in tokens.withIndex()) {
-            System.out.printf("%02d) %s%n", i, token)
+            val max = tokens.size.length()
+
+            for ((i, token) in tokens.withIndex()) {
+                println("%0${max}d) %s".format(i, token))
+            }
+
+            println()
         }
 
         CPU.load(tokens.iterator())

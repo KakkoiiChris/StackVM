@@ -1,6 +1,8 @@
 package kakkoiichris.stackvm.cpu
 
 import kakkoiichris.stackvm.asm.ASMToken
+import kakkoiichris.stackvm.asm.ASMToken.*
+import kakkoiichris.stackvm.util.truncate
 import kotlin.math.max
 import kotlin.math.pow
 
@@ -89,7 +91,7 @@ object CPU {
                 Instruction.PUSH  -> {
                     val value = fetch()
 
-                    Debug.println("PUSH $value")
+                    Debug.println("PUSH ${value.truncate()}")
 
                     pushStack(value)
                 }
@@ -103,7 +105,7 @@ object CPU {
                 Instruction.DUP   -> {
                     val value = peekStack()
 
-                    Debug.println("DUP $value")
+                    Debug.println("DUP ${value.truncate()}")
 
                     pushStack(value)
                 }
@@ -112,7 +114,7 @@ object CPU {
                     val b = popStack()
                     val a = popStack()
 
-                    Debug.println("ADD $a $b")
+                    Debug.println("ADD ${a.truncate()} ${b.truncate()}")
 
                     pushStack(a + b)
                 }
@@ -121,7 +123,7 @@ object CPU {
                     val b = popStack()
                     val a = popStack()
 
-                    Debug.println("SUB $a $b")
+                    Debug.println("SUB ${a.truncate()} ${b.truncate()}")
 
                     pushStack(a - b)
                 }
@@ -130,7 +132,7 @@ object CPU {
                     val b = popStack()
                     val a = popStack()
 
-                    Debug.println("MUL $a $b")
+                    Debug.println("MUL ${a.truncate()} ${b.truncate()}")
 
                     pushStack(a * b)
                 }
@@ -139,7 +141,7 @@ object CPU {
                     val b = popStack()
                     val a = popStack()
 
-                    Debug.println("DIV $a $b")
+                    Debug.println("DIV ${a.truncate()} ${b.truncate()}")
 
                     pushStack(a / b)
                 }
@@ -148,7 +150,7 @@ object CPU {
                     val b = popStack()
                     val a = popStack()
 
-                    Debug.println("MOD $a $b")
+                    Debug.println("MOD ${a.truncate()} ${b.truncate()}")
 
                     pushStack(a % b)
                 }
@@ -156,7 +158,7 @@ object CPU {
                 Instruction.NEG   -> {
                     val value = popStack()
 
-                    Debug.println("NEG $value")
+                    Debug.println("NEG ${value.truncate()}")
 
                     pushStack(-value)
                 }
@@ -165,7 +167,7 @@ object CPU {
                     val b = popStack()
                     val a = popStack()
 
-                    Debug.println("AND $a $b")
+                    Debug.println("AND ${a.truncate()} ${b.truncate()}")
 
                     pushStack((a.toBool() && b.toBool()).toFloat())
                 }
@@ -174,7 +176,7 @@ object CPU {
                     val b = popStack()
                     val a = popStack()
 
-                    Debug.println("OR $a $b")
+                    Debug.println("OR ${a.truncate()} ${b.truncate()}")
 
                     pushStack((a.toBool() || b.toBool()).toFloat())
                 }
@@ -182,7 +184,7 @@ object CPU {
                 Instruction.NOT   -> {
                     val value = popStack()
 
-                    Debug.println("NOT $value")
+                    Debug.println("NOT ${value.truncate()}")
 
                     pushStack((!value.toBool()).toFloat())
                 }
@@ -191,7 +193,7 @@ object CPU {
                     val b = popStack()
                     val a = popStack()
 
-                    Debug.println("EQU $a $b")
+                    Debug.println("EQU ${a.truncate()} ${b.truncate()}")
 
                     pushStack((a == b).toFloat())
                 }
@@ -200,7 +202,7 @@ object CPU {
                     val b = popStack()
                     val a = popStack()
 
-                    Debug.println("GRT $a $b")
+                    Debug.println("GRT ${a.truncate()} ${b.truncate()}")
 
                     pushStack((a > b).toFloat())
                 }
@@ -209,7 +211,7 @@ object CPU {
                     val b = popStack()
                     val a = popStack()
 
-                    Debug.println("GEQ $a $b")
+                    Debug.println("GEQ ${a.truncate()} ${b.truncate()}")
 
                     pushStack((a >= b).toFloat())
                 }
@@ -243,7 +245,7 @@ object CPU {
 
                 Instruction.SYS   -> TODO()
 
-                Instruction.PEEK  -> Debug.println("[TOP_OF_STACK = ${peekStack()}]")
+                Instruction.PEEK  -> Debug.println("[TOP_OF_STACK = ${peekStack().truncate()}]")
             }
 
             Debug {
@@ -259,12 +261,4 @@ object CPU {
 
         return result
     }
-}
-
-private fun Float.truncate(): String {
-    if (this - toInt() == 0F) {
-        return toInt().toString()
-    }
-
-    return toString()
 }

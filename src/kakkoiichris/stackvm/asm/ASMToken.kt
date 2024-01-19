@@ -1,13 +1,14 @@
 package kakkoiichris.stackvm.asm
 
 import kakkoiichris.stackvm.lang.IASMToken
+import kakkoiichris.stackvm.util.truncate
 
 interface ASMToken {
     val value: Float
 
     val iasm get() = IASMToken.Ok(this)
 
-    enum class Keyword : ASMToken {
+    enum class Instruction : ASMToken {
         HALT,
         PUSH,
         POP,
@@ -38,7 +39,7 @@ interface ASMToken {
 
     data class Value(override val value: Float) : ASMToken {
         override fun toString() =
-            value.toString()
+            value.truncate()
     }
 
     data object End : ASMToken {

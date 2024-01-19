@@ -73,7 +73,7 @@ class ASMLexer(private val src: String) : Iterator<ASMToken> {
             while (match(Char::isLetter))
         }
 
-        return ASMToken.Keyword.entries.first { it.name.equals(result, ignoreCase = true) }
+        return ASMToken.Instruction.entries.first { it.name.equals(result, ignoreCase = true) }
     }
 
     private fun value(): ASMToken {

@@ -1,7 +1,7 @@
 package kakkoiichris.stackvm.lang
 
 import kakkoiichris.stackvm.asm.ASMToken
-import kakkoiichris.stackvm.asm.ASMToken.Keyword.*
+import kakkoiichris.stackvm.asm.ASMToken.Instruction.*
 import kakkoiichris.stackvm.lang.TokenType.Symbol.*
 import java.util.*
 
