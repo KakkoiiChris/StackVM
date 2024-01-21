@@ -77,9 +77,7 @@ object CPU0 : CPU() {
         var running = true
 
         while (running) {
-            val instruction = Instruction.entries[fetch().toInt()]
-
-            when (instruction) {
+            when (val instruction = Instruction.entries[fetch().toInt()]) {
                 Instruction.HALT  -> {
                     result = popStack()
 

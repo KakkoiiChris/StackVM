@@ -1,5 +1,7 @@
 package kakkoiichris.stackvm.lang
 
+typealias Nodes = List<Node>
+
 interface Node {
     val location: Location
 
@@ -22,6 +24,8 @@ interface Node {
         fun visitFunction(node: Function): X
 
         fun visitReturn(node: Return): X
+
+        fun visitSystemCall(node: SystemCall): X
 
         fun visitExpression(node: Expression): X
 
@@ -47,10 +51,10 @@ interface Node {
         override fun <X> accept(visitor: Visitor<X>): X =
             visitor.visitIf(this)
 
-        data class Branch(val location: Location, val condition: Node?, val body: List<Node>)
+        data class Branch(val location: Location, val condition: Node?, val body: Nodes)
     }
 
-    class While(override val location: Location, val condition: Node, val body: List<Node>) : Node {
+    class While(override val location: Location, val condition: Node, val body: Nodes) : Node {
         override fun <X> accept(visitor: Visitor<X>): X =
             visitor.visitWhile(this)
     }
@@ -69,7 +73,7 @@ interface Node {
         override val location: Location,
         val name: Name,
         val params: List<Name>,
-        val body: List<Node>
+        val body: Nodes
     ) : Node {
         override fun <X> accept(visitor: Visitor<X>): X =
             visitor.visitFunction(this)
@@ -78,6 +82,11 @@ interface Node {
     class Return(override val location: Location, val node: Node?) : Node {
         override fun <X> accept(visitor: Visitor<X>): X =
             visitor.visitReturn(this)
+    }
+
+    class SystemCall(override val location: Location, val name: Name, val args: Nodes) : Node {
+        override fun <X> accept(visitor: Visitor<X>): X =
+            visitor.visitSystemCall(this)
     }
 
     class Expression(override val location: Location, val node: Node) : Node {
@@ -115,7 +124,7 @@ interface Node {
             visitor.visitAssign(this)
     }
 
-    class Invoke(override val location: Location, val name: Name, val args: List<Node>) : Node {
+    class Invoke(override val location: Location, val name: Name, val args: Nodes) : Node {
         override fun <X> accept(visitor: Visitor<X>): X =
             visitor.visitInvoke(this)
     }

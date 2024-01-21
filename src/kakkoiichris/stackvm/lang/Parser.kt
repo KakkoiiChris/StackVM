@@ -53,21 +53,23 @@ class Parser(private val lexer: Lexer, private val optimize: Boolean) : Iterator
     }
 
     private fun statement() = when {
-        match(TokenType.Keyword.VAR)      -> `var`()
+        match(TokenType.Keyword.VAR)       -> `var`()
 
-        match(TokenType.Keyword.IF)       -> `if`()
+        match(TokenType.Keyword.IF)        -> `if`()
 
-        match(TokenType.Keyword.WHILE)    -> `while`()
+        match(TokenType.Keyword.WHILE)     -> `while`()
 
-        match(TokenType.Keyword.BREAK)    -> `break`()
+        match(TokenType.Keyword.BREAK)     -> `break`()
 
-        match(TokenType.Keyword.CONTINUE) -> `continue`()
+        match(TokenType.Keyword.CONTINUE)  -> `continue`()
 
-        match(TokenType.Keyword.FUNCTION) -> function()
+        match(TokenType.Keyword.FUNCTION)  -> function()
 
-        match(TokenType.Keyword.RETURN)   -> `return`()
+        match(TokenType.Keyword.RETURN)    -> `return`()
 
-        else                              -> expression()
+        match(TokenType.Symbol.BACK_SLASH) -> systemCall()
+
+        else                               -> expression()
     }
 
     private fun `var`(): Node.Var {
@@ -200,6 +202,31 @@ class Parser(private val lexer: Lexer, private val optimize: Boolean) : Iterator
         }
 
         return Node.Return(location, node)
+    }
+
+    private fun systemCall(): Node.SystemCall {
+        val location = here()
+
+        mustSkip(TokenType.Symbol.BACK_SLASH)
+
+        val name = name()
+
+        val args = mutableListOf<Node>()
+
+        mustSkip(TokenType.Symbol.LEFT_PAREN)
+
+        if (!skip(TokenType.Symbol.RIGHT_PAREN)) {
+            do {
+                args += expr()
+            }
+            while (skip(TokenType.Symbol.COMMA))
+
+            mustSkip(TokenType.Symbol.RIGHT_PAREN)
+        }
+
+        mustSkip(TokenType.Symbol.SEMICOLON)
+
+        return Node.SystemCall(location, name, args)
     }
 
     private fun expression(): Node.Expression {

@@ -2,6 +2,7 @@ package kakkoiichris.stackvm.compiler
 
 import kakkoiichris.stackvm.asm.ASMToken
 import kakkoiichris.stackvm.asm.ASMToken.Instruction.*
+import kakkoiichris.stackvm.cpu.SystemFunctions
 import kakkoiichris.stackvm.lang.Node
 import kakkoiichris.stackvm.lang.Parser
 import kakkoiichris.stackvm.lang.TokenType.Symbol.*
@@ -14,6 +15,8 @@ class ASMConverter(private val parser: Parser, private val optimize: Boolean) : 
 
 
     fun convert(): List<ASMToken> {
+        SystemFunctions
+
         try {
             memory.open()
 
@@ -259,6 +262,25 @@ class ASMConverter(private val parser: Parser, private val optimize: Boolean) : 
         iTokens += RET.iasm
 
         pos++
+
+        return iTokens
+    }
+
+    override fun visitSystemCall(node: Node.SystemCall): List<IASMToken> {
+        val iTokens = mutableListOf<IASMToken>()
+
+        for (arg in node.args.reversed()) {
+            iTokens += visit(arg)
+        }
+
+        val id = SystemFunctions[node.name]
+
+        if (id < 0) error("No system function '${node.name.name}' @ ${node.location}!")
+
+        iTokens += SYS.iasm
+        iTokens += ASMToken.Value(id.toFloat()).iasm
+
+        pos += 2
 
         return iTokens
     }

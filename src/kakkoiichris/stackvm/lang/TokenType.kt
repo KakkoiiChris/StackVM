@@ -33,7 +33,8 @@ interface TokenType {
         LEFT_BRACE,
         RIGHT_BRACE,
         SEMICOLON,
-        COMMA
+        COMMA,
+        BACK_SLASH
     }
 
     data class Value(val value: Float) : TokenType

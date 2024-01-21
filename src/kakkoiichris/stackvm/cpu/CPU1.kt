@@ -131,7 +131,7 @@ object CPU1 : CPU() {
         var running = true
 
         while (running) {
-            when (val instruction = ASMToken.Instruction.entries[fetchInt()]) {
+            when (ASMToken.Instruction.entries[fetchInt()]) {
                 ASMToken.Instruction.HALT  -> {
                     result = popStack()
 
@@ -345,7 +345,19 @@ object CPU1 : CPU() {
                     pushFrame(value)
                 }
 
-                else                       -> TODO("Instruction $instruction is not implemented.")
+                ASMToken.Instruction.SYS   -> {
+                    val id = fetchInt()
+
+                    val function = SystemFunctions[id]
+
+                    val args = mutableListOf<Float>()
+
+                    repeat(function.arity) {
+                        args.add(0, popStack())
+                    }
+
+                    pushStack(function(args))
+                }
             }
 
             Debug {
