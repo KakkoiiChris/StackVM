@@ -1,7 +1,7 @@
 package kakkoiichris.stackvm
 
 import kakkoiichris.stackvm.asm.ASMFormatter
-import kakkoiichris.stackvm.cpu.CPU
+import kakkoiichris.stackvm.cpu.CPU1
 import kakkoiichris.stackvm.cpu.Debug
 import kakkoiichris.stackvm.lang.ASMConverter
 import kakkoiichris.stackvm.lang.Compiler
@@ -10,6 +10,8 @@ import kakkoiichris.stackvm.lang.Parser
 import kakkoiichris.stackvm.util.length
 import java.io.*
 import kotlin.time.measureTimedValue
+
+val cpu = CPU1
 
 /**
  * Stack VM
@@ -98,9 +100,9 @@ private fun repl() {
             println()
         }
 
-        CPU.load(tokens.iterator())
+        cpu.load(tokens.iterator())
 
-        val (result, runTime) = measureTimedValue { CPU.run() }
+        val (result, runTime) = measureTimedValue { cpu.run() }
 
         println("\n< $result (${runTime.inWholeNanoseconds / 1E9}s)\n")
     }
@@ -144,9 +146,9 @@ private fun run(srcName: String) {
         values += `in`.readFloat()
     }
 
-    CPU.load(values)
+    cpu.load(values)
 
-    val (result, runTime) = measureTimedValue { CPU.run() }
+    val (result, runTime) = measureTimedValue { cpu.run() }
 
     println("\n< $result (${runTime.inWholeNanoseconds / 1E9}s)\n")
 }

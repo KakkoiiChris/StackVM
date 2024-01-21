@@ -16,3 +16,7 @@ fun Int.length() = when {
     this < 0  -> log10(abs(toFloat())).toInt() + 2
     else      -> log10(abs(toFloat())).toInt() + 1
 }
+
+fun Float.toBool() = this != 0F
+
+fun Boolean.toFloat() = if (this) 1F else 0F
