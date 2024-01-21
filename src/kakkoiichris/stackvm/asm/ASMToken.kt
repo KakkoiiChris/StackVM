@@ -1,6 +1,6 @@
 package kakkoiichris.stackvm.asm
 
-import kakkoiichris.stackvm.lang.IASMToken
+import kakkoiichris.stackvm.compiler.IASMToken
 import kakkoiichris.stackvm.util.truncate
 
 interface ASMToken {
@@ -27,6 +27,7 @@ interface ASMToken {
         GEQ,
         JMP,
         JIF,
+        LOADG,
         LOAD,
         STORE,
         CALL,

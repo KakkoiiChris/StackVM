@@ -1,10 +1,10 @@
 package kakkoiichris.stackvm
 
 import kakkoiichris.stackvm.asm.ASMFormatter
+import kakkoiichris.stackvm.compiler.ASMConverter
+import kakkoiichris.stackvm.compiler.Compiler
 import kakkoiichris.stackvm.cpu.CPU1
 import kakkoiichris.stackvm.cpu.Debug
-import kakkoiichris.stackvm.lang.ASMConverter
-import kakkoiichris.stackvm.lang.Compiler
 import kakkoiichris.stackvm.lang.Lexer
 import kakkoiichris.stackvm.lang.Parser
 import kakkoiichris.stackvm.util.length

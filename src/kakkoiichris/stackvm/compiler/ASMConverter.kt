@@ -1,7 +1,9 @@
-package kakkoiichris.stackvm.lang
+package kakkoiichris.stackvm.compiler
 
 import kakkoiichris.stackvm.asm.ASMToken
 import kakkoiichris.stackvm.asm.ASMToken.Instruction.*
+import kakkoiichris.stackvm.lang.Node
+import kakkoiichris.stackvm.lang.Parser
 import kakkoiichris.stackvm.lang.TokenType.Symbol.*
 import java.util.*
 
@@ -10,9 +12,10 @@ class ASMConverter(private val parser: Parser, private val optimize: Boolean) : 
 
     private val memory = Memory()
 
+
     fun convert(): List<ASMToken> {
         try {
-            memory.push()
+            memory.open()
 
             val tokens = mutableListOf<ASMToken>()
 
@@ -47,7 +50,7 @@ class ASMConverter(private val parser: Parser, private val optimize: Boolean) : 
             return tokens
         }
         finally {
-            memory.pop()
+            memory.close()
         }
     }
 
@@ -61,14 +64,20 @@ class ASMConverter(private val parser: Parser, private val optimize: Boolean) : 
             .map { it.resolveLast(last) ?: it }
             .toMutableList()
 
+    private fun load(mode: Memory.Lookup.Mode) = when (mode) {
+        Memory.Lookup.Mode.GLOBAL -> LOADG.iasm
+        Memory.Lookup.Mode.LOCAL  -> LOAD.iasm
+    }
+
     override fun visitVar(node: Node.Var): List<IASMToken> {
         val iTokens = mutableListOf<IASMToken>()
 
         iTokens += visit(node.node)
 
         memory.addVariable(node.name)
-        val address =
-            memory.getVariable(node.name) ?: error("Undeclared var '${node.name.name.value}' @ ${node.name.location}!")
+
+        val (_, address) = memory
+            .getVariable(node.name)
 
         iTokens += STORE.iasm
         iTokens += ASMToken.Value(address.toFloat()).iasm
@@ -203,8 +212,8 @@ class ASMConverter(private val parser: Parser, private val optimize: Boolean) : 
             for (param in node.params) {
                 memory.addVariable(param)
 
-                val address =
-                    memory.getVariable(param) ?: error("Undeclared var '${node.name.name.value}' @ ${param.location}!")
+                val (_, address) = memory
+                    .getVariable(param)
 
                 iTokens += STORE.iasm
                 iTokens += ASMToken.Value(address.toFloat()).iasm
@@ -278,9 +287,10 @@ class ASMConverter(private val parser: Parser, private val optimize: Boolean) : 
     override fun visitName(node: Node.Name): List<IASMToken> {
         val iTokens = mutableListOf<IASMToken>()
 
-        val address = memory.getVariable(node) ?: error("Undeclared var '${node.name.value}' @ ${node.location}!")
+        val (mode, address) = memory
+            .getVariable(node)
 
-        iTokens += LOAD.iasm
+        iTokens += load(mode)
         iTokens += ASMToken.Value(address.toFloat()).iasm
 
         pos += 2
@@ -295,7 +305,9 @@ class ASMConverter(private val parser: Parser, private val optimize: Boolean) : 
 
         iTokens += when (node.operator) {
             DASH        -> NEG.iasm
+
             EXCLAMATION -> NOT.iasm
+
             else        -> error("Not a binary operator '${node.operator}'.")
         }
 
@@ -360,8 +372,8 @@ class ASMConverter(private val parser: Parser, private val optimize: Boolean) : 
 
         iTokens += visit(node.node)
 
-        val address =
-            memory.getVariable(node.name) ?: error("Undeclared var '${node.name.name.value}' @ ${node.name.location}!")
+        val (_, address) = memory
+            .getVariable(node.name)
 
         iTokens += DUP.iasm
         iTokens += STORE.iasm
@@ -379,8 +391,8 @@ class ASMConverter(private val parser: Parser, private val optimize: Boolean) : 
             iTokens += visit(arg)
         }
 
-        val address = memory.getFunction(node.name)
-            ?: error("Undeclared function '${node.name.name.value}' @ ${node.name.location}!")
+        val address = memory
+            .getFunction(node.name)
 
         iTokens += CALL.iasm
         iTokens += ASMToken.Value(address.toFloat()).iasm
@@ -393,16 +405,22 @@ class ASMConverter(private val parser: Parser, private val optimize: Boolean) : 
     private class Memory {
         private val scopes = Stack<Scope>()
 
-        fun push() {
-            if (scopes.isNotEmpty()) {
-                val scope = peek()
+        private val global = Scope()
 
-                val next = Scope(scope)
+        fun open() = push(global)
+
+        fun close() = pop()
+
+        fun push(scope: Scope = Scope()) {
+            if (scopes.isNotEmpty()) {
+                val parent = peek()
+
+                val next = Scope(parent)
 
                 scopes.push(next)
             }
             else {
-                scopes.push(Scope())
+                scopes.push(scope)
             }
         }
 
@@ -417,28 +435,40 @@ class ASMConverter(private val parser: Parser, private val optimize: Boolean) : 
         }
 
         fun addVariable(name: Node.Name) {
-            peek().addVariable(name)
+            val scope = peek()
+
+            if (scope.addVariable(name)) return
+
+            error("Redeclared variable '${name.name.value}' @ ${name.location}!")
         }
 
-        fun getVariable(name: Node.Name): Int? {
+        fun getVariable(name: Node.Name): Lookup {
             var here: Scope? = peek()
 
-            while (here != null) {
+            while (here != null && here != global) {
                 val variable = here.getVariable(name)
 
-                if (variable != null) return variable
+                if (variable != null) return Lookup(Lookup.Mode.LOCAL, variable)
 
                 here = here.parent
             }
 
-            return null
+            val variable = global.getVariable(name)
+
+            if (variable != null) return Lookup(Lookup.Mode.GLOBAL, variable)
+
+            error("Undeclared variable '${name.name.value}' @ ${name.location}!")
         }
 
-        fun addFunction(name: Node.Name, pos: Int) {
-            peek().addFunction(name, pos)
+        fun addFunction(name: Node.Name, pos: Int): Lookup.Mode {
+            if (peek().addFunction(name, pos)) return Lookup.Mode.LOCAL
+
+            if (global.addFunction(name, pos)) return Lookup.Mode.GLOBAL
+
+            error("Redeclared function '${name.name.value}' @ ${name.location}!")
         }
 
-        fun getFunction(name: Node.Name): Int? {
+        fun getFunction(name: Node.Name): Int {
             var here: Scope? = peek()
 
             while (here != null) {
@@ -449,7 +479,7 @@ class ASMConverter(private val parser: Parser, private val optimize: Boolean) : 
                 here = here.parent
             }
 
-            return null
+            error("Undeclared function '${name.name.value}' @ ${name.location}!")
         }
 
         class Scope(val parent: Scope? = null) {
@@ -458,23 +488,34 @@ class ASMConverter(private val parser: Parser, private val optimize: Boolean) : 
             val variables = mutableMapOf<String, Int>()
             val functions = mutableMapOf<String, Int>()
 
-            fun addVariable(name: Node.Name) {
-                if (name.name.value in variables) error("Redeclared variable '${name.name.value}' @ ${name.location}!")
+            fun addVariable(name: Node.Name): Boolean {
+                if (name.name.value in variables) return false
 
                 variables[name.name.value] = variableID++
+
+                return true
             }
 
             fun getVariable(name: Node.Name) =
                 variables[name.name.value]
 
-            fun addFunction(name: Node.Name, pos: Int) {
-                if (name.name.value in functions) error("Redeclared function '${name.name.value}' @ ${name.location}!")
+            fun addFunction(name: Node.Name, pos: Int): Boolean {
+                if (name.name.value in functions) return false
 
                 functions[name.name.value] = pos
+
+                return true
             }
 
             fun getFunction(name: Node.Name) =
                 functions[name.name.value]
+        }
+
+        data class Lookup(val mode: Mode, val address: Int) {
+            enum class Mode {
+                GLOBAL,
+                LOCAL
+            }
         }
     }
 }
