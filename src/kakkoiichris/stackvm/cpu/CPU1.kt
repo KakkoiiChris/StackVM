@@ -1,6 +1,7 @@
 package kakkoiichris.stackvm.cpu
 
 import kakkoiichris.stackvm.asm.ASMToken
+import kakkoiichris.stackvm.util.toAddress
 import kakkoiichris.stackvm.util.toBool
 import kakkoiichris.stackvm.util.toFloat
 import kakkoiichris.stackvm.util.truncate
@@ -10,8 +11,8 @@ object CPU1 : CPU() {
     private const val IPA_ADR = 1
     private const val SPO_ADR = 2
     private const val SPA_ADR = 3
-    private const val VPO_ADR = 4
-    private const val VPA_ADR = 5
+    private const val FPO_ADR = 4
+    private const val FPA_ADR = 5
     private const val CPO_ADR = 6
     private const val CPA_ADR = 7
 
@@ -39,16 +40,16 @@ object CPU1 : CPU() {
             memory[SPA_ADR] = value.toFloat()
         }
 
-    private var variablePointerOrigin: Int
-        get() = memory[VPO_ADR].toInt()
+    private var framePointerOrigin: Int
+        get() = memory[FPO_ADR].toInt()
         set(value) {
-            memory[VPO_ADR] = value.toFloat()
+            memory[FPO_ADR] = value.toFloat()
         }
 
-    private var variablePointer: Int
-        get() = memory[VPA_ADR].toInt()
+    private var framePointer: Int
+        get() = memory[FPA_ADR].toInt()
         set(value) {
-            memory[VPA_ADR] = value.toFloat()
+            memory[FPA_ADR] = value.toFloat()
         }
 
     private var callPointerOrigin: Int
@@ -72,8 +73,8 @@ object CPU1 : CPU() {
         instructionPointer = 8
         instructionPointerOrigin = instructionPointer
 
-        variablePointer = memory.size / 3
-        variablePointerOrigin = variablePointer
+        framePointer = memory.size / 3
+        framePointerOrigin = framePointer
 
         callPointer = 2 * memory.size / 3
         callPointerOrigin = callPointer
@@ -101,18 +102,29 @@ object CPU1 : CPU() {
 
     private fun peekStack() = memory[stackPointer - 1]
 
+    private fun pushFrame(value: Float) {
+        memory[++framePointer] = value
+    }
+
+    private fun popFrame(): Int {
+        if (framePointer > framePointerOrigin) {
+            return memory[framePointer--].toInt()
+        }
+
+        return -1
+    }
+
     private fun pushCall(value: Float) {
         memory[++callPointer] = value
     }
 
-    private fun popCall(): Float {
+    private fun popCall(): Int {
         if (callPointer > callPointerOrigin) {
-            return memory[callPointer--]
+            return memory[callPointer--].toInt()
         }
 
-        return -1F
+        return -1
     }
-
 
     override fun run(): Float {
         var result = Float.NaN
@@ -259,7 +271,7 @@ object CPU1 : CPU() {
                 ASMToken.Instruction.JMP   -> {
                     val address = instructionPointerOrigin + fetchInt()
 
-                    Debug.println("JMP @$address")
+                    Debug.println("JMP @${address.toAddress()}")
 
                     instructionPointer = address
                 }
@@ -268,35 +280,35 @@ object CPU1 : CPU() {
                     val address = instructionPointerOrigin + fetchInt()
 
                     if (popStack().toBool()) {
-                        Debug.println("JIF @$address")
+                        Debug.println("JIF @${address.toAddress()}")
 
                         instructionPointer = address
                     }
                 }
 
                 ASMToken.Instruction.LOAD  -> {
-                    val address = fetchInt() + variablePointer
+                    val address = fetchInt() + framePointer
                     val value = memory[address]
 
-                    Debug.println("STORE @$address #${value.truncate()}")
+                    Debug.println("LOAD @${address.toAddress()} #${value.truncate()}")
 
                     pushStack(value)
                 }
 
                 ASMToken.Instruction.LOADG -> {
-                    val address = fetchInt() + variablePointerOrigin
+                    val address = fetchInt() + framePointerOrigin
                     val value = memory[address]
 
-                    Debug.println("LOADG @$address #${value.truncate()}")
+                    Debug.println("LOADG @${address.toAddress()} #${value.truncate()}")
 
                     pushStack(value)
                 }
 
                 ASMToken.Instruction.STORE -> {
-                    val address = fetchInt() + variablePointer
+                    val address = fetchInt() + framePointer
                     val value = popStack()
 
-                    Debug.println("STORE @$address #${value.truncate()}")
+                    Debug.println("STORE @${address.toAddress()} #${value.truncate()}")
 
                     memory[address] = value
                 }
@@ -305,7 +317,7 @@ object CPU1 : CPU() {
                     val address = instructionPointer + 1
                     instructionPointer = instructionPointerOrigin + fetchInt()
 
-                    Debug.println("CALL @$instructionPointer")
+                    Debug.println("CALL @${instructionPointer.toAddress()}")
 
                     pushCall(address.toFloat())
                 }
@@ -313,20 +325,24 @@ object CPU1 : CPU() {
                 ASMToken.Instruction.RET   -> {
                     val address = popCall()
 
-                    Debug.println("RET @$address")
+                    Debug.println("RET @${address.toAddress()}")
 
                     instructionPointer = if (address < 0) {
                         stackPointerOrigin - 1
                     }
                     else {
-                        address.toInt()
+                        address
                     }
+
+                    popFrame()
                 }
 
-                ASMToken.Instruction.PEEK  -> {
-                    val value = peekStack()
+                ASMToken.Instruction.FRAME -> {
+                    val value = fetch()
 
-                    Debug.println("[TOP_OF_STACK = ${value.truncate()}]")
+                    Debug.println("FRAME $$value")
+
+                    pushFrame(value)
                 }
 
                 else                       -> TODO("Instruction $instruction is not implemented.")

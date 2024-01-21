@@ -7,5 +7,7 @@ abstract class CPU(config: Config = Config()) {
 
     abstract fun run(): Float
 
-    data class Config(val memorySize: Int = 0x10000)
+    data class Config(
+        val memorySize: Int = 0x10000
+    )
 }

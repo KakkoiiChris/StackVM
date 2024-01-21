@@ -207,6 +207,11 @@ class ASMConverter(private val parser: Parser, private val optimize: Boolean) : 
 
             memory.push()
 
+            iTokens += FRAME.iasm
+            iTokens += ASMToken.Value(memory.peek().variableID.toFloat()).iasm
+
+            pos += 2
+
             val start = pos.toFloat()
 
             for (param in node.params) {
@@ -263,12 +268,9 @@ class ASMConverter(private val parser: Parser, private val optimize: Boolean) : 
 
         iTokens += visit(node.node)
 
-        // TODO: Temporary Debug Code
-        iTokens += PEEK.iasm
-
         iTokens += POP.iasm
 
-        pos += 2 // TODO: pos++
+        pos++
 
         return iTokens
     }

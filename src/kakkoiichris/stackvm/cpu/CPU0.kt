@@ -241,9 +241,7 @@ object CPU0 : CPU() {
                     instructionPointer = address.toInt()
                 }
 
-                Instruction.PEEK  -> Debug.println("[TOP_OF_STACK = ${peekStack().truncate()}]")
-
-                else->TODO("Instruction $instruction is not implemented.")
+                else              -> TODO("Instruction $instruction is not implemented.")
             }
 
             Debug {

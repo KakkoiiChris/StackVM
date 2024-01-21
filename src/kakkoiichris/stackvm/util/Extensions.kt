@@ -11,6 +11,9 @@ fun Float.truncate(): String {
     return toString()
 }
 
+fun Int.toAddress() =
+    "0x${toString(16)}"
+
 fun Int.length() = when {
     this == 0 -> 1
     this < 0  -> log10(abs(toFloat())).toInt() + 2

@@ -8,6 +8,7 @@ import kakkoiichris.stackvm.cpu.Debug
 import kakkoiichris.stackvm.lang.Lexer
 import kakkoiichris.stackvm.lang.Parser
 import kakkoiichris.stackvm.util.length
+import kakkoiichris.stackvm.util.truncate
 import java.io.*
 import kotlin.time.measureTimedValue
 
@@ -104,7 +105,7 @@ private fun repl() {
 
         val (result, runTime) = measureTimedValue { cpu.run() }
 
-        println("\n< $result (${runTime.inWholeNanoseconds / 1E9}s)\n")
+        println("\n< ${result.truncate()} (${runTime.inWholeNanoseconds / 1E9}s)\n")
     }
 }
 
