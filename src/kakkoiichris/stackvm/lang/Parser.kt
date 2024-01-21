@@ -67,8 +67,6 @@ class Parser(private val lexer: Lexer, private val optimize: Boolean) : Iterator
 
         match(TokenType.Keyword.RETURN)    -> `return`()
 
-        match(TokenType.Symbol.BACK_SLASH) -> systemCall()
-
         else                               -> expression()
     }
 
@@ -204,31 +202,6 @@ class Parser(private val lexer: Lexer, private val optimize: Boolean) : Iterator
         return Node.Return(location, node)
     }
 
-    private fun systemCall(): Node.SystemCall {
-        val location = here()
-
-        mustSkip(TokenType.Symbol.BACK_SLASH)
-
-        val name = name()
-
-        val args = mutableListOf<Node>()
-
-        mustSkip(TokenType.Symbol.LEFT_PAREN)
-
-        if (!skip(TokenType.Symbol.RIGHT_PAREN)) {
-            do {
-                args += expr()
-            }
-            while (skip(TokenType.Symbol.COMMA))
-
-            mustSkip(TokenType.Symbol.RIGHT_PAREN)
-        }
-
-        mustSkip(TokenType.Symbol.SEMICOLON)
-
-        return Node.SystemCall(location, name, args)
-    }
-
     private fun expression(): Node.Expression {
         val location = here()
 
@@ -349,8 +322,12 @@ class Parser(private val lexer: Lexer, private val optimize: Boolean) : Iterator
     }
 
     private fun unary(): Node {
-        if (matchAny(TokenType.Symbol.DASH, TokenType.Symbol.EXCLAMATION)) {
+        if (matchAny(TokenType.Symbol.DASH, TokenType.Symbol.EXCLAMATION, TokenType.Symbol.BACK_SLASH)) {
             val (location, operator) = token
+
+            if (operator == TokenType.Symbol.BACK_SLASH) {
+                return systemCall()
+            }
 
             mustSkip(operator)
 
@@ -358,6 +335,29 @@ class Parser(private val lexer: Lexer, private val optimize: Boolean) : Iterator
         }
 
         return postfix()
+    }
+
+    private fun systemCall(): Node.SystemCall {
+        val location = here()
+
+        mustSkip(TokenType.Symbol.BACK_SLASH)
+
+        val name = name()
+
+        val args = mutableListOf<Node>()
+
+        mustSkip(TokenType.Symbol.LEFT_PAREN)
+
+        if (!skip(TokenType.Symbol.RIGHT_PAREN)) {
+            do {
+                args += expr()
+            }
+            while (skip(TokenType.Symbol.COMMA))
+
+            mustSkip(TokenType.Symbol.RIGHT_PAREN)
+        }
+
+        return Node.SystemCall(location, name, args)
     }
 
     private fun postfix(): Node {

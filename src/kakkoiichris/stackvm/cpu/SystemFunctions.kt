@@ -1,6 +1,7 @@
 package kakkoiichris.stackvm.cpu
 
 import kakkoiichris.stackvm.lang.Node
+import kakkoiichris.stackvm.util.truncate
 import kotlin.math.abs
 
 typealias Method = (values: List<Float>) -> Float
@@ -17,10 +18,14 @@ object SystemFunctions {
             abs(n)
         })
 
-        addFunction("print", Function(1) { values ->
+        addFunction("read", Function {
+            readln().toFloatOrNull() ?: error("Number format error!")
+        })
+
+        addFunction("write", Function(1) { values ->
             val (n) = values
 
-            println(n)
+            println(n.truncate())
 
             0F
         })

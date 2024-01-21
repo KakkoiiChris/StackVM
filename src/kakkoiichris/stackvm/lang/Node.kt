@@ -25,8 +25,6 @@ interface Node {
 
         fun visitReturn(node: Return): X
 
-        fun visitSystemCall(node: SystemCall): X
-
         fun visitExpression(node: Expression): X
 
         fun visitValue(node: Value): X
@@ -40,6 +38,8 @@ interface Node {
         fun visitAssign(node: Assign): X
 
         fun visitInvoke(node: Invoke): X
+
+        fun visitSystemCall(node: SystemCall): X
     }
 
     class Var(override val location: Location, val name: Name, val node: Node) : Node {
@@ -84,11 +84,6 @@ interface Node {
             visitor.visitReturn(this)
     }
 
-    class SystemCall(override val location: Location, val name: Name, val args: Nodes) : Node {
-        override fun <X> accept(visitor: Visitor<X>): X =
-            visitor.visitSystemCall(this)
-    }
-
     class Expression(override val location: Location, val node: Node) : Node {
         override fun <X> accept(visitor: Visitor<X>): X =
             visitor.visitExpression(this)
@@ -127,5 +122,10 @@ interface Node {
     class Invoke(override val location: Location, val name: Name, val args: Nodes) : Node {
         override fun <X> accept(visitor: Visitor<X>): X =
             visitor.visitInvoke(this)
+    }
+
+    class SystemCall(override val location: Location, val name: Name, val args: Nodes) : Node {
+        override fun <X> accept(visitor: Visitor<X>): X =
+            visitor.visitSystemCall(this)
     }
 }
