@@ -401,6 +401,8 @@ class Parser(private val lexer: Lexer, private val optimize: Boolean) : Iterator
 
         match(TokenType.Symbol.LEFT_PAREN) -> nested()
 
+        match(TokenType.Keyword.IF)->conditional()
+
         else                               -> error("Not a terminal.")
     }
 
@@ -429,4 +431,7 @@ class Parser(private val lexer: Lexer, private val optimize: Boolean) : Iterator
 
         return node
     }
+
+    private fun conditional()=
+        `if`().toExpr()
 }

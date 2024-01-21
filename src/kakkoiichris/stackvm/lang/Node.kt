@@ -51,6 +51,24 @@ interface Node {
         override fun <X> accept(visitor: Visitor<X>): X =
             visitor.visitIf(this)
 
+        fun toExpr(): If {
+            val newBranches = mutableListOf<Branch>()
+
+            for ((location, condition, body) in branches) {
+                val newBody = body.toMutableList()
+
+                val last = newBody.removeLast()
+
+                if (last !is Expression) error("Last statement of if expression must be an expression!")
+
+                newBody += last.node
+
+                newBranches += Branch(location, condition, newBody)
+            }
+
+            return If(location, newBranches)
+        }
+
         data class Branch(val location: Location, val condition: Node?, val body: Nodes)
     }
 
