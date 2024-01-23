@@ -62,6 +62,11 @@ class ASMConverter(private val parser: Parser, private val optimize: Boolean) : 
             .map { it.resolveStartAndEnd(start, end) ?: it }
             .toMutableList()
 
+    private fun resolveLabelStartAndEnd(iTokens: List<IASMToken>, label: Node.Name, start: Float, end: Float) =
+        iTokens
+            .map { it.resolveLabelStartAndEnd(label, start, end) ?: it }
+            .toMutableList()
+
     private fun resolveLast(iTokens: List<IASMToken>, last: Float) =
         iTokens
             .map { it.resolveLast(last) ?: it }
@@ -167,6 +172,12 @@ class ASMConverter(private val parser: Parser, private val optimize: Boolean) : 
             val end = pos.toFloat()
 
             iTokens = resolveStartAndEnd(iTokens, start, end)
+
+            val label = node.label
+
+            if (label != null) {
+                iTokens = resolveLabelStartAndEnd(iTokens, label, start, end)
+            }
         }
         finally {
             memory.pop()
@@ -176,10 +187,12 @@ class ASMConverter(private val parser: Parser, private val optimize: Boolean) : 
     }
 
     override fun visitBreak(node: Node.Break): List<IASMToken> {
+        val label = node.label
+
         val iTokens = mutableListOf<IASMToken>()
 
         iTokens += JMP.iasm
-        iTokens += IASMToken.AwaitEnd()
+        iTokens += if (label != null) IASMToken.AwaitLabelEnd(label) else IASMToken.AwaitEnd()
 
         pos += 2
 
@@ -187,10 +200,12 @@ class ASMConverter(private val parser: Parser, private val optimize: Boolean) : 
     }
 
     override fun visitContinue(node: Node.Continue): List<IASMToken> {
+        val label = node.label
+
         val iTokens = mutableListOf<IASMToken>()
 
         iTokens += JMP.iasm
-        iTokens += IASMToken.AwaitStart()
+        iTokens += if (label != null) IASMToken.AwaitLabelStart(label) else IASMToken.AwaitStart()
 
         pos += 2
 

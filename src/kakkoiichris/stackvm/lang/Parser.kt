@@ -124,6 +124,8 @@ class Parser(private val lexer: Lexer, private val optimize: Boolean) : Iterator
 
         val condition = expr()
 
+        val label = if (skip(TokenType.Symbol.AT)) name() else null
+
         val body = mutableListOf<Node>()
 
         mustSkip(TokenType.Symbol.LEFT_BRACE)
@@ -134,25 +136,31 @@ class Parser(private val lexer: Lexer, private val optimize: Boolean) : Iterator
 
         mustSkip(TokenType.Symbol.RIGHT_BRACE)
 
-        return Node.While(location, condition, body)
+        return Node.While(location, condition, label, body)
     }
 
     private fun `break`(): Node.Break {
         val location = here()
 
         mustSkip(TokenType.Keyword.BREAK)
+
+        val label = if(skip(TokenType.Symbol.AT)) name() else null
+
         mustSkip(TokenType.Symbol.SEMICOLON)
 
-        return Node.Break(location)
+        return Node.Break(location, label)
     }
 
     private fun `continue`(): Node.Continue {
         val location = here()
 
         mustSkip(TokenType.Keyword.CONTINUE)
+
+        val label = if(skip(TokenType.Symbol.AT)) name() else null
+
         mustSkip(TokenType.Symbol.SEMICOLON)
 
-        return Node.Continue(location)
+        return Node.Continue(location, label)
     }
 
     private fun function(): Node.Function {

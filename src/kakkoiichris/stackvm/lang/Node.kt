@@ -72,17 +72,17 @@ interface Node {
         data class Branch(val location: Location, val condition: Node?, val body: Nodes)
     }
 
-    class While(override val location: Location, val condition: Node, val body: Nodes) : Node {
+    class While(override val location: Location, val condition: Node, val label:Name?, val body: Nodes) : Node {
         override fun <X> accept(visitor: Visitor<X>): X =
             visitor.visitWhile(this)
     }
 
-    class Break(override val location: Location) : Node {
+    class Break(override val location: Location, val label: Name?) : Node {
         override fun <X> accept(visitor: Visitor<X>): X =
             visitor.visitBreak(this)
     }
 
-    class Continue(override val location: Location) : Node {
+    class Continue(override val location: Location, val label: Name?) : Node {
         override fun <X> accept(visitor: Visitor<X>): X =
             visitor.visitContinue(this)
     }

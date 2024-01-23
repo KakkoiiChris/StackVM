@@ -198,6 +198,8 @@ class Lexer(private val src: String) : Iterator<Token> {
 
             skip('\\') -> TokenType.Symbol.BACK_SLASH
 
+            skip('@')  -> TokenType.Symbol.AT
+
             else       -> error("Unknown symbol '${peek()}'!")
         }
 
