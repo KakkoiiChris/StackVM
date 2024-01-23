@@ -13,7 +13,6 @@ class ASMConverter(private val parser: Parser, private val optimize: Boolean) : 
 
     private val memory = Memory()
 
-
     fun convert(): List<ASMToken> {
         SystemFunctions
 
@@ -72,20 +71,17 @@ class ASMConverter(private val parser: Parser, private val optimize: Boolean) : 
             .map { it.resolveLast(last) ?: it }
             .toMutableList()
 
-    private fun load(mode: Memory.Lookup.Mode) = when (mode) {
-        Memory.Lookup.Mode.GLOBAL -> LOADG.iasm
-        Memory.Lookup.Mode.LOCAL  -> LOAD.iasm
-    }
-
-    override fun visitVar(node: Node.Var): List<IASMToken> {
+    override fun visitDeclare(node: Node.Declare): List<IASMToken> {
         val iTokens = mutableListOf<IASMToken>()
 
         iTokens += visit(node.node)
 
-        memory.addVariable(node.name)
+        memory.addVariable(node.constant, node.name)
 
-        val (_, address) = memory
+        val (_, variable) = memory
             .getVariable(node.name)
+
+        val (_, address) = variable
 
         iTokens += STORE.iasm
         iTokens += ASMToken.Value(address.toFloat()).iasm
@@ -233,10 +229,12 @@ class ASMConverter(private val parser: Parser, private val optimize: Boolean) : 
             val start = pos.toFloat()
 
             for (param in node.params) {
-                memory.addVariable(param)
+                memory.addVariable(true, param)
 
-                val (_, address) = memory
+                val (_, variable) = memory
                     .getVariable(param)
+
+                val (_, address) = variable
 
                 iTokens += STORE.iasm
                 iTokens += ASMToken.Value(address.toFloat()).iasm
@@ -326,10 +324,15 @@ class ASMConverter(private val parser: Parser, private val optimize: Boolean) : 
     override fun visitName(node: Node.Name): List<IASMToken> {
         val iTokens = mutableListOf<IASMToken>()
 
-        val (mode, address) = memory
+        val (mode, variable) = memory
             .getVariable(node)
 
-        iTokens += load(mode)
+        val (_, address) = variable
+
+        iTokens += when (mode) {
+            Memory.Lookup.Mode.GLOBAL -> LOADG.iasm
+            Memory.Lookup.Mode.LOCAL  -> LOAD.iasm
+        }
         iTokens += ASMToken.Value(address.toFloat()).iasm
 
         pos += 2
@@ -411,8 +414,12 @@ class ASMConverter(private val parser: Parser, private val optimize: Boolean) : 
 
         iTokens += visit(node.node)
 
-        val (_, address) = memory
+        val (_, variable) = memory
             .getVariable(node.name)
+
+        val (constant, address) = variable
+
+        if (constant) error("Variable '${node.name.name.value}' cannot be reassigned @ ${node.name.location}!")
 
         iTokens += DUP.iasm
         iTokens += STORE.iasm
@@ -473,10 +480,10 @@ class ASMConverter(private val parser: Parser, private val optimize: Boolean) : 
             return scopes.peek()
         }
 
-        fun addVariable(name: Node.Name) {
+        fun addVariable(constant: Boolean, name: Node.Name) {
             val scope = peek()
 
-            if (scope.addVariable(name)) return
+            if (scope.addVariable(constant, name)) return
 
             error("Redeclared variable '${name.name.value}' @ ${name.location}!")
         }
@@ -524,13 +531,13 @@ class ASMConverter(private val parser: Parser, private val optimize: Boolean) : 
         class Scope(val parent: Scope? = null) {
             var variableID: Int = parent?.variableID ?: 0
 
-            val variables = mutableMapOf<String, Int>()
+            val variables = mutableMapOf<String, Variable>()
             val functions = mutableMapOf<String, Int>()
 
-            fun addVariable(name: Node.Name): Boolean {
+            fun addVariable(constant: Boolean, name: Node.Name): Boolean {
                 if (name.name.value in variables) return false
 
-                variables[name.name.value] = variableID++
+                variables[name.name.value] = Variable(constant, variableID++)
 
                 return true
             }
@@ -550,11 +557,13 @@ class ASMConverter(private val parser: Parser, private val optimize: Boolean) : 
                 functions[name.name.value]
         }
 
-        data class Lookup(val mode: Mode, val address: Int) {
+        data class Lookup(val mode: Mode, val variable: Variable) {
             enum class Mode {
                 GLOBAL,
                 LOCAL
             }
         }
+
+        data class Variable(val constant: Boolean, val address: Int)
     }
 }

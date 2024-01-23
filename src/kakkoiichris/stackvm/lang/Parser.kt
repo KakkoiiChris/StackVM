@@ -53,27 +53,31 @@ class Parser(private val lexer: Lexer, private val optimize: Boolean) : Iterator
     }
 
     private fun statement() = when {
-        match(TokenType.Keyword.VAR)      -> `var`()
+        matchAny(TokenType.Keyword.LET, TokenType.Keyword.VAR) -> declare()
 
-        match(TokenType.Keyword.IF)       -> `if`()
+        match(TokenType.Keyword.IF)                            -> `if`()
 
-        match(TokenType.Keyword.WHILE)    -> `while`()
+        match(TokenType.Keyword.WHILE)                         -> `while`()
 
-        match(TokenType.Keyword.BREAK)    -> `break`()
+        match(TokenType.Keyword.BREAK)                         -> `break`()
 
-        match(TokenType.Keyword.CONTINUE) -> `continue`()
+        match(TokenType.Keyword.CONTINUE)                      -> `continue`()
 
-        match(TokenType.Keyword.FUNCTION) -> function()
+        match(TokenType.Keyword.FUNCTION)                      -> function()
 
-        match(TokenType.Keyword.RETURN)   -> `return`()
+        match(TokenType.Keyword.RETURN)                        -> `return`()
 
-        else                              -> expression()
+        else                                                   -> expression()
     }
 
-    private fun `var`(): Node.Var {
+    private fun declare(): Node.Declare {
         val location = here()
 
-        mustSkip(TokenType.Keyword.VAR)
+        val constant = skip(TokenType.Keyword.LET)
+
+        if (!constant) {
+            mustSkip(TokenType.Keyword.VAR)
+        }
 
         val name = name()
 
@@ -83,7 +87,7 @@ class Parser(private val lexer: Lexer, private val optimize: Boolean) : Iterator
 
         mustSkip(TokenType.Symbol.SEMICOLON)
 
-        return Node.Var(location, name, node)
+        return Node.Declare(location, constant, name, node)
     }
 
     private fun `if`(): Node.If {
@@ -144,7 +148,7 @@ class Parser(private val lexer: Lexer, private val optimize: Boolean) : Iterator
 
         mustSkip(TokenType.Keyword.BREAK)
 
-        val label = if(skip(TokenType.Symbol.AT)) name() else null
+        val label = if (skip(TokenType.Symbol.AT)) name() else null
 
         mustSkip(TokenType.Symbol.SEMICOLON)
 
@@ -156,7 +160,7 @@ class Parser(private val lexer: Lexer, private val optimize: Boolean) : Iterator
 
         mustSkip(TokenType.Keyword.CONTINUE)
 
-        val label = if(skip(TokenType.Symbol.AT)) name() else null
+        val label = if (skip(TokenType.Symbol.AT)) name() else null
 
         mustSkip(TokenType.Symbol.SEMICOLON)
 
@@ -409,7 +413,7 @@ class Parser(private val lexer: Lexer, private val optimize: Boolean) : Iterator
 
         match(TokenType.Symbol.LEFT_PAREN) -> nested()
 
-        match(TokenType.Keyword.IF)->conditional()
+        match(TokenType.Keyword.IF)        -> conditional()
 
         else                               -> error("Not a terminal.")
     }
@@ -440,6 +444,6 @@ class Parser(private val lexer: Lexer, private val optimize: Boolean) : Iterator
         return node
     }
 
-    private fun conditional()=
+    private fun conditional() =
         `if`().toExpr()
 }

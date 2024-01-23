@@ -2,6 +2,7 @@ package kakkoiichris.stackvm.lang
 
 interface TokenType {
     enum class Keyword : TokenType {
+        LET,
         VAR,
         IF,
         ELSE,
@@ -9,7 +10,12 @@ interface TokenType {
         BREAK,
         CONTINUE,
         FUNCTION,
-        RETURN
+        RETURN,
+        VOID,
+        BOOL,
+        INT,
+        FLOAT,
+        CHAR
     }
 
     enum class Symbol : TokenType {

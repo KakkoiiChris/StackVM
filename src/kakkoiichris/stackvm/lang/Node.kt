@@ -11,7 +11,7 @@ interface Node {
         fun visit(node: Node) =
             node.accept(this)
 
-        fun visitVar(node: Var): X
+        fun visitDeclare(node: Declare): X
 
         fun visitIf(node: If): X
 
@@ -42,9 +42,9 @@ interface Node {
         fun visitSystemCall(node: SystemCall): X
     }
 
-    class Var(override val location: Location, val name: Name, val node: Node) : Node {
+    class Declare(override val location: Location, val constant: Boolean, val name: Name, val node: Node) : Node {
         override fun <X> accept(visitor: Visitor<X>): X =
-            visitor.visitVar(this)
+            visitor.visitDeclare(this)
     }
 
     class If(override val location: Location, val branches: List<Branch>) : Node {
@@ -72,7 +72,7 @@ interface Node {
         data class Branch(val location: Location, val condition: Node?, val body: Nodes)
     }
 
-    class While(override val location: Location, val condition: Node, val label:Name?, val body: Nodes) : Node {
+    class While(override val location: Location, val condition: Node, val label: Name?, val body: Nodes) : Node {
         override fun <X> accept(visitor: Visitor<X>): X =
             visitor.visitWhile(this)
     }
