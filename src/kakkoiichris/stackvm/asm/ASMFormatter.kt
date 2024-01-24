@@ -4,7 +4,7 @@ import kakkoiichris.stackvm.asm.ASMToken.Instruction.*
 import kakkoiichris.stackvm.util.truncate
 
 object ASMFormatter {
-    fun format(values: List<Float>) = buildString {
+    fun format(values: FloatArray) = buildString {
         var i = 0
 
         fun fetch() =
@@ -20,6 +20,7 @@ object ASMFormatter {
             appendLine(
                 when (instruction) {
                     PUSH, JMP, JIF, LOAD, STORE, CALL, SYS -> " ${fetch().truncate()}"
+
                     else                                   -> ""
                 }
             )

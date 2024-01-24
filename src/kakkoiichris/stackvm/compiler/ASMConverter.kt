@@ -182,6 +182,42 @@ class ASMConverter(private val parser: Parser, private val optimize: Boolean) : 
         return iTokens
     }
 
+    override fun visitDo(node: Node.Do): List<IASMToken> {
+        var iTokens = mutableListOf<IASMToken>()
+
+        try {
+            memory.push()
+
+            val start = pos.toFloat()
+
+            for (stmt in node.body) {
+                iTokens += visit(stmt)
+            }
+
+            iTokens += visit(node.condition)
+
+            iTokens += JIF.iasm
+            iTokens += IASMToken.AwaitStart()
+
+            pos += 2
+
+            val end = pos.toFloat()
+
+            iTokens = resolveStartAndEnd(iTokens, start, end)
+
+            val label = node.label
+
+            if (label != null) {
+                iTokens = resolveLabelStartAndEnd(iTokens, label, start, end)
+            }
+        }
+        finally {
+            memory.pop()
+        }
+
+        return iTokens
+    }
+
     override fun visitBreak(node: Node.Break): List<IASMToken> {
         val label = node.label
 

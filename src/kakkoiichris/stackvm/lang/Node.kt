@@ -17,6 +17,8 @@ interface Node {
 
         fun visitWhile(node: While): X
 
+        fun visitDo(node: Do): X
+
         fun visitBreak(node: Break): X
 
         fun visitContinue(node: Continue): X
@@ -75,6 +77,11 @@ interface Node {
     class While(override val location: Location, val condition: Node, val label: Name?, val body: Nodes) : Node {
         override fun <X> accept(visitor: Visitor<X>): X =
             visitor.visitWhile(this)
+    }
+
+    class Do(override val location: Location, val label: Name?, val body: Nodes, val condition: Node) : Node {
+        override fun <X> accept(visitor: Visitor<X>): X =
+            visitor.visitDo(this)
     }
 
     class Break(override val location: Location, val label: Name?) : Node {

@@ -64,10 +64,15 @@ object CPU1 : CPU() {
             memory[CPA_ADR] = value.toFloat()
         }
 
-    fun load(tokenizer: Iterator<ASMToken>) =
-        load(tokenizer.asSequence().toList().map { it.value })
+    fun load(tokenizer: Iterator<ASMToken>): Unit = load(
+        tokenizer
+            .asSequence()
+            .toList()
+            .map { it.value }
+            .toFloatArray()
+    )
 
-    override fun load(values: List<Float>) {
+    override fun load(values: FloatArray) {
         memory.fill(0F)
 
         instructionPointer = 8
@@ -132,7 +137,7 @@ object CPU1 : CPU() {
 
         while (running) {
             when (ASMToken.Instruction.entries[fetchInt()]) {
-                ASMToken.Instruction.HALT  -> {
+                ASMToken.Instruction.HALT -> {
                     result = popStack()
 
                     Debug.println("HALT #${result.truncate()}")
@@ -140,7 +145,7 @@ object CPU1 : CPU() {
                     running = false
                 }
 
-                ASMToken.Instruction.PUSH  -> {
+                ASMToken.Instruction.PUSH -> {
                     val value = fetch()
 
                     Debug.println("PUSH #${value.truncate()}")
@@ -148,13 +153,13 @@ object CPU1 : CPU() {
                     pushStack(value)
                 }
 
-                ASMToken.Instruction.POP   -> {
+                ASMToken.Instruction.POP -> {
                     val value = popStack()
 
                     Debug.println("POP #${value.truncate()}")
                 }
 
-                ASMToken.Instruction.DUP   -> {
+                ASMToken.Instruction.DUP -> {
                     val value = peekStack()
 
                     Debug.println("DUP #${value.truncate()}")
@@ -162,7 +167,7 @@ object CPU1 : CPU() {
                     pushStack(value)
                 }
 
-                ASMToken.Instruction.ADD   -> {
+                ASMToken.Instruction.ADD -> {
                     val b = popStack()
                     val a = popStack()
 
@@ -171,7 +176,7 @@ object CPU1 : CPU() {
                     pushStack(a + b)
                 }
 
-                ASMToken.Instruction.SUB   -> {
+                ASMToken.Instruction.SUB -> {
                     val b = popStack()
                     val a = popStack()
 
@@ -180,7 +185,7 @@ object CPU1 : CPU() {
                     pushStack(a - b)
                 }
 
-                ASMToken.Instruction.MUL   -> {
+                ASMToken.Instruction.MUL -> {
                     val b = popStack()
                     val a = popStack()
 
@@ -189,7 +194,7 @@ object CPU1 : CPU() {
                     pushStack(a * b)
                 }
 
-                ASMToken.Instruction.DIV   -> {
+                ASMToken.Instruction.DIV -> {
                     val b = popStack()
                     val a = popStack()
 
@@ -198,7 +203,7 @@ object CPU1 : CPU() {
                     pushStack(a / b)
                 }
 
-                ASMToken.Instruction.MOD   -> {
+                ASMToken.Instruction.MOD -> {
                     val b = popStack()
                     val a = popStack()
 
@@ -207,7 +212,7 @@ object CPU1 : CPU() {
                     pushStack(a % b)
                 }
 
-                ASMToken.Instruction.NEG   -> {
+                ASMToken.Instruction.NEG -> {
                     val value = popStack()
 
                     Debug.println("NEG #${value.truncate()}")
@@ -215,7 +220,7 @@ object CPU1 : CPU() {
                     pushStack(-value)
                 }
 
-                ASMToken.Instruction.AND   -> {
+                ASMToken.Instruction.AND -> {
                     val b = popStack()
                     val a = popStack()
 
@@ -224,7 +229,7 @@ object CPU1 : CPU() {
                     pushStack((a.toBool() && b.toBool()).toFloat())
                 }
 
-                ASMToken.Instruction.OR    -> {
+                ASMToken.Instruction.OR -> {
                     val b = popStack()
                     val a = popStack()
 
@@ -233,7 +238,7 @@ object CPU1 : CPU() {
                     pushStack((a.toBool() || b.toBool()).toFloat())
                 }
 
-                ASMToken.Instruction.NOT   -> {
+                ASMToken.Instruction.NOT -> {
                     val value = popStack()
 
                     Debug.println("NOT #${value.truncate()}")
@@ -241,7 +246,7 @@ object CPU1 : CPU() {
                     pushStack((!value.toBool()).toFloat())
                 }
 
-                ASMToken.Instruction.EQU   -> {
+                ASMToken.Instruction.EQU -> {
                     val b = popStack()
                     val a = popStack()
 
@@ -250,7 +255,7 @@ object CPU1 : CPU() {
                     pushStack((a == b).toFloat())
                 }
 
-                ASMToken.Instruction.GRT   -> {
+                ASMToken.Instruction.GRT -> {
                     val b = popStack()
                     val a = popStack()
 
@@ -259,7 +264,7 @@ object CPU1 : CPU() {
                     pushStack((a > b).toFloat())
                 }
 
-                ASMToken.Instruction.GEQ   -> {
+                ASMToken.Instruction.GEQ -> {
                     val b = popStack()
                     val a = popStack()
 
@@ -268,7 +273,7 @@ object CPU1 : CPU() {
                     pushStack((a >= b).toFloat())
                 }
 
-                ASMToken.Instruction.JMP   -> {
+                ASMToken.Instruction.JMP -> {
                     val address = instructionPointerOrigin + fetchInt()
 
                     Debug.println("JMP @${address.toAddress()}")
@@ -276,7 +281,7 @@ object CPU1 : CPU() {
                     instructionPointer = address
                 }
 
-                ASMToken.Instruction.JIF   -> {
+                ASMToken.Instruction.JIF -> {
                     val address = instructionPointerOrigin + fetchInt()
 
                     if (popStack().toBool()) {
@@ -286,7 +291,7 @@ object CPU1 : CPU() {
                     }
                 }
 
-                ASMToken.Instruction.LOAD  -> {
+                ASMToken.Instruction.LOAD -> {
                     val address = fetchInt() + framePointer
                     val value = memory[address]
 
@@ -313,7 +318,7 @@ object CPU1 : CPU() {
                     memory[address] = value
                 }
 
-                ASMToken.Instruction.CALL  -> {
+                ASMToken.Instruction.CALL -> {
                     val address = instructionPointer + 1
                     instructionPointer = instructionPointerOrigin + fetchInt()
 
@@ -322,7 +327,7 @@ object CPU1 : CPU() {
                     pushCall(address.toFloat())
                 }
 
-                ASMToken.Instruction.RET   -> {
+                ASMToken.Instruction.RET -> {
                     val address = popCall()
 
                     Debug.println("RET @${address.toAddress()}")
@@ -345,7 +350,7 @@ object CPU1 : CPU() {
                     pushFrame(value)
                 }
 
-                ASMToken.Instruction.SYS   -> {
+                ASMToken.Instruction.SYS -> {
                     val id = fetchInt()
 
                     val function = SystemFunctions[id]

@@ -20,10 +20,15 @@ object CPU0 : CPU() {
     private var callPointerOffset = 0
     private val callPointer get() = callPointerOrigin + callPointerOffset
 
-    fun load(tokenizer: Iterator<ASMToken>) =
-        load(tokenizer.asSequence().toList().map { it.value })
+    fun load(tokenizer: Iterator<ASMToken>): Unit = load(
+        tokenizer
+            .asSequence()
+            .toList()
+            .map { it.value }
+            .toFloatArray()
+    )
 
-    override fun load(values: List<Float>) {
+    override fun load(values: FloatArray) {
         memory.fill(0F)
 
         instructionPointer = 0
@@ -78,13 +83,13 @@ object CPU0 : CPU() {
 
         while (running) {
             when (val instruction = Instruction.entries[fetch().toInt()]) {
-                Instruction.HALT  -> {
+                Instruction.HALT -> {
                     result = popStack()
 
                     running = false
                 }
 
-                Instruction.PUSH  -> {
+                Instruction.PUSH -> {
                     val value = fetch()
 
                     Debug.println("PUSH ${value.truncate()}")
@@ -92,13 +97,13 @@ object CPU0 : CPU() {
                     pushStack(value)
                 }
 
-                Instruction.POP   -> {
+                Instruction.POP -> {
                     Debug.println("POP")
 
                     popStack()
                 }
 
-                Instruction.DUP   -> {
+                Instruction.DUP -> {
                     val value = peekStack()
 
                     Debug.println("DUP ${value.truncate()}")
@@ -106,7 +111,7 @@ object CPU0 : CPU() {
                     pushStack(value)
                 }
 
-                Instruction.ADD   -> {
+                Instruction.ADD -> {
                     val b = popStack()
                     val a = popStack()
 
@@ -115,7 +120,7 @@ object CPU0 : CPU() {
                     pushStack(a + b)
                 }
 
-                Instruction.SUB   -> {
+                Instruction.SUB -> {
                     val b = popStack()
                     val a = popStack()
 
@@ -124,7 +129,7 @@ object CPU0 : CPU() {
                     pushStack(a - b)
                 }
 
-                Instruction.MUL   -> {
+                Instruction.MUL -> {
                     val b = popStack()
                     val a = popStack()
 
@@ -133,7 +138,7 @@ object CPU0 : CPU() {
                     pushStack(a * b)
                 }
 
-                Instruction.DIV   -> {
+                Instruction.DIV -> {
                     val b = popStack()
                     val a = popStack()
 
@@ -142,7 +147,7 @@ object CPU0 : CPU() {
                     pushStack(a / b)
                 }
 
-                Instruction.MOD   -> {
+                Instruction.MOD -> {
                     val b = popStack()
                     val a = popStack()
 
@@ -151,7 +156,7 @@ object CPU0 : CPU() {
                     pushStack(a % b)
                 }
 
-                Instruction.NEG   -> {
+                Instruction.NEG -> {
                     val value = popStack()
 
                     Debug.println("NEG ${value.truncate()}")
@@ -159,7 +164,7 @@ object CPU0 : CPU() {
                     pushStack(-value)
                 }
 
-                Instruction.AND   -> {
+                Instruction.AND -> {
                     val b = popStack()
                     val a = popStack()
 
@@ -168,7 +173,7 @@ object CPU0 : CPU() {
                     pushStack((a.toBool() && b.toBool()).toFloat())
                 }
 
-                Instruction.OR    -> {
+                Instruction.OR -> {
                     val b = popStack()
                     val a = popStack()
 
@@ -177,7 +182,7 @@ object CPU0 : CPU() {
                     pushStack((a.toBool() || b.toBool()).toFloat())
                 }
 
-                Instruction.NOT   -> {
+                Instruction.NOT -> {
                     val value = popStack()
 
                     Debug.println("NOT ${value.truncate()}")
@@ -185,7 +190,7 @@ object CPU0 : CPU() {
                     pushStack((!value.toBool()).toFloat())
                 }
 
-                Instruction.EQU   -> {
+                Instruction.EQU -> {
                     val b = popStack()
                     val a = popStack()
 
@@ -194,7 +199,7 @@ object CPU0 : CPU() {
                     pushStack((a == b).toFloat())
                 }
 
-                Instruction.GRT   -> {
+                Instruction.GRT -> {
                     val b = popStack()
                     val a = popStack()
 
@@ -203,7 +208,7 @@ object CPU0 : CPU() {
                     pushStack((a > b).toFloat())
                 }
 
-                Instruction.GEQ   -> {
+                Instruction.GEQ -> {
                     val b = popStack()
                     val a = popStack()
 
@@ -212,9 +217,9 @@ object CPU0 : CPU() {
                     pushStack((a >= b).toFloat())
                 }
 
-                Instruction.JMP   -> instructionPointer = fetch().toInt()
+                Instruction.JMP -> instructionPointer = fetch().toInt()
 
-                Instruction.JIF   -> {
+                Instruction.JIF -> {
                     val address = fetch().toInt()
 
                     if (popStack().toBool()) {
@@ -222,24 +227,24 @@ object CPU0 : CPU() {
                     }
                 }
 
-                Instruction.LOAD  -> pushStack(memory[fetch().toInt() + variablePointer])
+                Instruction.LOAD -> pushStack(memory[fetch().toInt() + variablePointer])
 
                 Instruction.STORE -> memory[fetch().toInt() + variablePointer] = popStack()
 
-                Instruction.CALL  -> {
+                Instruction.CALL -> {
                     val address = instructionPointer + 1
                     instructionPointer = fetch().toInt()
 
                     pushCall(address.toFloat())
                 }
 
-                Instruction.RET   -> {
+                Instruction.RET -> {
                     val address = popCall()
 
                     instructionPointer = address.toInt()
                 }
 
-                else              -> TODO("Instruction $instruction is not implemented.")
+                else -> TODO("Instruction $instruction is not implemented.")
             }
 
             Debug {

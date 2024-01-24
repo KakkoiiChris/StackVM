@@ -7,6 +7,7 @@ interface TokenType {
         IF,
         ELSE,
         WHILE,
+        DO,
         BREAK,
         CONTINUE,
         FUNCTION,

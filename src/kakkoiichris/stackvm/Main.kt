@@ -141,10 +141,10 @@ private fun run(srcName: String) {
 
     val length = `in`.readInt()
 
-    val values = mutableListOf<Float>()
+    val values = FloatArray(length)
 
     for (i in 0 until length) {
-        values += `in`.readFloat()
+        values[i] = `in`.readFloat()
     }
 
     cpu.load(values)

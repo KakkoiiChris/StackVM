@@ -4,7 +4,7 @@ import kakkoiichris.stackvm.lang.Lexer
 import kakkoiichris.stackvm.lang.Parser
 
 object Compiler {
-    fun compile(src: String): List<Float> {
+    fun compile(src: String): FloatArray {
         val lexer = Lexer(src)
 
         val parser = Parser(lexer, false)
@@ -13,6 +13,6 @@ object Compiler {
 
         val tokens = converter.convert()
 
-        return tokens.map { it.value }
+        return FloatArray(tokens.size) { i -> tokens[i].value }
     }
 }
