@@ -61,6 +61,8 @@ class Parser(private val lexer: Lexer, private val optimize: Boolean) : Iterator
 
         match(TokenType.Keyword.DO)                            -> `do`()
 
+        match(TokenType.Keyword.FOR)                           -> `for`()
+
         match(TokenType.Keyword.BREAK)                         -> `break`()
 
         match(TokenType.Keyword.CONTINUE)                      -> `continue`()
@@ -168,6 +170,54 @@ class Parser(private val lexer: Lexer, private val optimize: Boolean) : Iterator
         mustSkip(TokenType.Symbol.SEMICOLON)
 
         return Node.Do(location, label, body, condition)
+    }
+
+    private fun `for`(): Node.For {
+        val location = here()
+
+        mustSkip(TokenType.Keyword.FOR)
+
+        var init: Node.Declare? = null
+
+        if (!skip(TokenType.Symbol.SEMICOLON)) {
+            val name = name()
+
+            mustSkip(TokenType.Symbol.EQUAL)
+
+            val node = expr()
+
+            init = Node.Declare(name.location, false, name, node)
+
+            mustSkip(TokenType.Symbol.SEMICOLON)
+        }
+
+        var condition: Node? = null
+
+        if (!skip(TokenType.Symbol.SEMICOLON)) {
+            condition = expr()
+
+            mustSkip(TokenType.Symbol.SEMICOLON)
+        }
+
+        var increment: Node? = null
+
+        if (!matchAny(TokenType.Symbol.AT, TokenType.Symbol.LEFT_BRACE)) {
+            increment = expr()
+        }
+
+        val label = if (skip(TokenType.Symbol.AT)) name() else null
+
+        val body = mutableListOf<Node>()
+
+        mustSkip(TokenType.Symbol.LEFT_BRACE)
+
+        while (!match(TokenType.Symbol.RIGHT_BRACE)) {
+            body += statement()
+        }
+
+        mustSkip(TokenType.Symbol.RIGHT_BRACE)
+
+        return Node.For(location, init, condition, increment, label, body)
     }
 
     private fun `break`(): Node.Break {

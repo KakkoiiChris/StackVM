@@ -19,6 +19,8 @@ interface Node {
 
         fun visitDo(node: Do): X
 
+        fun visitFor(node: For): X
+
         fun visitBreak(node: Break): X
 
         fun visitContinue(node: Continue): X
@@ -82,6 +84,11 @@ interface Node {
     class Do(override val location: Location, val label: Name?, val body: Nodes, val condition: Node) : Node {
         override fun <X> accept(visitor: Visitor<X>): X =
             visitor.visitDo(this)
+    }
+
+    class For(override val location: Location, val init: Declare?, val condition: Node?, val increment: Node?, val label: Name?, val body: Nodes) : Node {
+        override fun <X> accept(visitor: Visitor<X>): X =
+            visitor.visitFor(this)
     }
 
     class Break(override val location: Location, val label: Name?) : Node {

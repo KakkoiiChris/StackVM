@@ -358,8 +358,10 @@ object CPU1 : CPU() {
                     val args = mutableListOf<Float>()
 
                     repeat(function.arity) {
-                        args.add(0, popStack())
+                        args.add(popStack())
                     }
+
+                    Debug.println("SYS #$id (${args.joinToString()})")
 
                     pushStack(function(args))
                 }
