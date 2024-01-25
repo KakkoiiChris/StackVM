@@ -246,6 +246,10 @@ class ASMConverter(private val parser: Parser, private val optimize: Boolean) : 
 
             if (node.increment != null) {
                 iTokens += visit(node.increment)
+
+                iTokens += POP.iasm
+
+                pos++
             }
 
             iTokens += JMP.iasm
