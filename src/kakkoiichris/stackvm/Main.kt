@@ -79,33 +79,38 @@ private fun repl() {
 
         val src = readln().takeIf { it.isNotEmpty() } ?: break
 
-        val (tokens, compileTime) = measureTimedValue {
-            val lexer = Lexer(src)
+        try {
+            val (tokens, compileTime) = measureTimedValue {
+                val lexer = Lexer(src)
 
-            val parser = Parser(lexer, false)
+                val parser = Parser(lexer, false)
 
-            val converter = ASMConverter(parser, false)
+                val converter = ASMConverter(parser, false)
 
-            converter.convert()
-        }
-
-        Debug {
-            println("Compiled: ${compileTime.inWholeMilliseconds / 1E3}s\n")
-
-            val max = tokens.size.length()
-
-            for ((i, token) in tokens.withIndex()) {
-                println("%0${max}d) %s".format(i, token))
+                converter.convert()
             }
 
-            println()
+            Debug {
+                println("Compiled: ${compileTime.inWholeMilliseconds / 1E3}s\n")
+
+                val max = tokens.size.length()
+
+                for ((i, token) in tokens.withIndex()) {
+                    println("%0${max}d) %s".format(i, token))
+                }
+
+                println()
+            }
+
+            cpu.load(tokens.iterator())
+
+            val (result, runTime) = measureTimedValue { cpu.run() }
+
+            println("\n< ${result.truncate()} (${runTime.inWholeNanoseconds / 1E9}s)\n")
         }
-
-        cpu.load(tokens.iterator())
-
-        val (result, runTime) = measureTimedValue { cpu.run() }
-
-        println("\n< ${result.truncate()} (${runTime.inWholeNanoseconds / 1E9}s)\n")
+        catch (e: IllegalStateException) {
+            e.printStackTrace()
+        }
     }
 }
 

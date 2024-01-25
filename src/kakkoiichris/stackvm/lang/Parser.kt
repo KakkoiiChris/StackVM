@@ -1,6 +1,10 @@
 package kakkoiichris.stackvm.lang
 
+import kakkoiichris.stackvm.cpu.SystemFunctions
+
 class Parser(private val lexer: Lexer, private val optimize: Boolean) : Iterator<Node> {
+    private val memory = Memory()
+
     private var token = lexer.next()
 
     override fun hasNext() =
@@ -8,6 +12,14 @@ class Parser(private val lexer: Lexer, private val optimize: Boolean) : Iterator
 
     override fun next() =
         statement()
+
+    fun open() {
+        SystemFunctions
+
+        memory.open()
+    }
+
+    fun close() = memory.close()
 
     private fun here() = token.location
 
@@ -52,6 +64,8 @@ class Parser(private val lexer: Lexer, private val optimize: Boolean) : Iterator
         return null
     }
 
+
+
     private fun statement() = when {
         matchAny(TokenType.Keyword.LET, TokenType.Keyword.VAR) -> declare()
 
@@ -83,7 +97,12 @@ class Parser(private val lexer: Lexer, private val optimize: Boolean) : Iterator
             mustSkip(TokenType.Keyword.VAR)
         }
 
-        val name = name()
+        val name = createVariable(constant)
+
+        val (_, variable) = memory
+            .getVariable(name)
+
+        val (_, address) = variable
 
         mustSkip(TokenType.Symbol.EQUAL)
 
@@ -91,7 +110,7 @@ class Parser(private val lexer: Lexer, private val optimize: Boolean) : Iterator
 
         mustSkip(TokenType.Symbol.SEMICOLON)
 
-        return Node.Declare(location, constant, name, node)
+        return Node.Declare(location, constant, name, address, node)
     }
 
     private fun `if`(): Node.If {
@@ -111,8 +130,15 @@ class Parser(private val lexer: Lexer, private val optimize: Boolean) : Iterator
 
             mustSkip(TokenType.Symbol.LEFT_BRACE)
 
-            while (!match(TokenType.Symbol.RIGHT_BRACE)) {
-                body += statement()
+            try {
+                memory.push()
+
+                while (!match(TokenType.Symbol.RIGHT_BRACE)) {
+                    body += statement()
+                }
+            }
+            finally {
+                memory.pop()
             }
 
             mustSkip(TokenType.Symbol.RIGHT_BRACE)
@@ -132,14 +158,21 @@ class Parser(private val lexer: Lexer, private val optimize: Boolean) : Iterator
 
         val condition = expr()
 
-        val label = if (skip(TokenType.Symbol.AT)) name() else null
+        val label = label()
 
         val body = mutableListOf<Node>()
 
         mustSkip(TokenType.Symbol.LEFT_BRACE)
 
-        while (!match(TokenType.Symbol.RIGHT_BRACE)) {
-            body += statement()
+        try {
+            memory.push()
+
+            while (!match(TokenType.Symbol.RIGHT_BRACE)) {
+                body += statement()
+            }
+        }
+        finally {
+            memory.pop()
         }
 
         mustSkip(TokenType.Symbol.RIGHT_BRACE)
@@ -152,14 +185,21 @@ class Parser(private val lexer: Lexer, private val optimize: Boolean) : Iterator
 
         mustSkip(TokenType.Keyword.DO)
 
-        val label = if (skip(TokenType.Symbol.AT)) name() else null
+        val label = label()
 
         val body = mutableListOf<Node>()
 
         mustSkip(TokenType.Symbol.LEFT_BRACE)
 
-        while (!match(TokenType.Symbol.RIGHT_BRACE)) {
-            body += statement()
+        try {
+            memory.push()
+
+            while (!match(TokenType.Symbol.RIGHT_BRACE)) {
+                body += statement()
+            }
+        }
+        finally {
+            memory.pop()
         }
 
         mustSkip(TokenType.Symbol.RIGHT_BRACE)
@@ -177,47 +217,59 @@ class Parser(private val lexer: Lexer, private val optimize: Boolean) : Iterator
 
         mustSkip(TokenType.Keyword.FOR)
 
-        var init: Node.Declare? = null
+        try {
+            memory.push()
 
-        if (!skip(TokenType.Symbol.SEMICOLON)) {
-            val name = name()
+            var init: Node.Declare? = null
 
-            mustSkip(TokenType.Symbol.EQUAL)
+            if (!skip(TokenType.Symbol.SEMICOLON)) {
+                val name = createVariable(false)
 
-            val node = expr()
+                val (_, variable) = memory
+                    .getVariable(name)
 
-            init = Node.Declare(name.location, false, name, node)
+                val (_, address) = variable
 
-            mustSkip(TokenType.Symbol.SEMICOLON)
+                mustSkip(TokenType.Symbol.EQUAL)
+
+                val node = expr()
+
+                init = Node.Declare(name.location, false, name, address, node)
+
+                mustSkip(TokenType.Symbol.SEMICOLON)
+            }
+
+            var condition: Node? = null
+
+            if (!skip(TokenType.Symbol.SEMICOLON)) {
+                condition = expr()
+
+                mustSkip(TokenType.Symbol.SEMICOLON)
+            }
+
+            var increment: Node? = null
+
+            if (!matchAny(TokenType.Symbol.AT, TokenType.Symbol.LEFT_BRACE)) {
+                increment = expr()
+            }
+
+            val label = label()
+
+            val body = mutableListOf<Node>()
+
+            mustSkip(TokenType.Symbol.LEFT_BRACE)
+
+            while (!match(TokenType.Symbol.RIGHT_BRACE)) {
+                body += statement()
+            }
+
+            mustSkip(TokenType.Symbol.RIGHT_BRACE)
+
+            return Node.For(location, init, condition, increment, label, body)
         }
-
-        var condition: Node? = null
-
-        if (!skip(TokenType.Symbol.SEMICOLON)) {
-            condition = expr()
-
-            mustSkip(TokenType.Symbol.SEMICOLON)
+        finally {
+            memory.pop()
         }
-
-        var increment: Node? = null
-
-        if (!matchAny(TokenType.Symbol.AT, TokenType.Symbol.LEFT_BRACE)) {
-            increment = expr()
-        }
-
-        val label = if (skip(TokenType.Symbol.AT)) name() else null
-
-        val body = mutableListOf<Node>()
-
-        mustSkip(TokenType.Symbol.LEFT_BRACE)
-
-        while (!match(TokenType.Symbol.RIGHT_BRACE)) {
-            body += statement()
-        }
-
-        mustSkip(TokenType.Symbol.RIGHT_BRACE)
-
-        return Node.For(location, init, condition, increment, label, body)
     }
 
     private fun `break`(): Node.Break {
@@ -225,7 +277,7 @@ class Parser(private val lexer: Lexer, private val optimize: Boolean) : Iterator
 
         mustSkip(TokenType.Keyword.BREAK)
 
-        val label = if (skip(TokenType.Symbol.AT)) name() else null
+        val label = label()
 
         mustSkip(TokenType.Symbol.SEMICOLON)
 
@@ -237,7 +289,7 @@ class Parser(private val lexer: Lexer, private val optimize: Boolean) : Iterator
 
         mustSkip(TokenType.Keyword.CONTINUE)
 
-        val label = if (skip(TokenType.Symbol.AT)) name() else null
+        val label = label()
 
         mustSkip(TokenType.Symbol.SEMICOLON)
 
@@ -251,35 +303,49 @@ class Parser(private val lexer: Lexer, private val optimize: Boolean) : Iterator
 
         val name = name()
 
-        val params = mutableListOf<Node.Name>()
-
-        if (skip(TokenType.Symbol.LEFT_PAREN) && !skip(TokenType.Symbol.RIGHT_PAREN)) {
-            do {
-                params += name()
-            }
-            while (skip(TokenType.Symbol.COMMA))
-
-            mustSkip(TokenType.Symbol.RIGHT_PAREN)
-        }
+        val params = mutableListOf<Node.Variable>()
 
         val body = mutableListOf<Node>()
 
-        if (skip(TokenType.Symbol.EQUAL)) {
-            body += expr()
+        val id:Int
+        val offset: Int
 
-            mustSkip(TokenType.Symbol.SEMICOLON)
-        }
-        else {
-            mustSkip(TokenType.Symbol.LEFT_BRACE)
+        try {
+            id = memory.addFunction(name)
 
-            while (!match(TokenType.Symbol.RIGHT_BRACE)) {
-                body += statement()
+            memory.push()
+
+            offset = memory.peek().variableID
+
+            if (skip(TokenType.Symbol.LEFT_PAREN) && !skip(TokenType.Symbol.RIGHT_PAREN)) {
+                do {
+                    params += createVariable(true)
+                }
+                while (skip(TokenType.Symbol.COMMA))
+
+                mustSkip(TokenType.Symbol.RIGHT_PAREN)
             }
 
-            mustSkip(TokenType.Symbol.RIGHT_BRACE)
+            if (skip(TokenType.Symbol.EQUAL)) {
+                body += expr()
+
+                mustSkip(TokenType.Symbol.SEMICOLON)
+            }
+            else {
+                mustSkip(TokenType.Symbol.LEFT_BRACE)
+
+                while (!match(TokenType.Symbol.RIGHT_BRACE)) {
+                    body += statement()
+                }
+
+                mustSkip(TokenType.Symbol.RIGHT_BRACE)
+            }
+        }
+        finally {
+            memory.pop()
         }
 
-        return Node.Function(location, name, params, body)
+        return Node.Function(location, name, id, offset, params, body)
     }
 
     private fun `return`(): Node.Return {
@@ -315,13 +381,20 @@ class Parser(private val lexer: Lexer, private val optimize: Boolean) : Iterator
         var expr = or()
 
         if (match(TokenType.Symbol.EQUAL)) {
-            if (expr !is Node.Name) error("Invalid assign.")
+            if (expr !is Node.Variable) error("Invalid assign.")
+
+            val (_, variable) = memory
+                .getVariable(expr)
+
+            val (constant, address) = variable
+
+            if (constant) error("Variable '${expr.name.value}' cannot be reassigned @ ${expr.location}!")
 
             val (location, operator) = token
 
             mustSkip(operator)
 
-            expr = Node.Assign(location, expr, or())
+            expr = Node.Assign(location, expr, address, or())
         }
 
         return expr
@@ -462,6 +535,9 @@ class Parser(private val lexer: Lexer, private val optimize: Boolean) : Iterator
         if (match(TokenType.Symbol.LEFT_PAREN)) {
             if (expr !is Node.Name) error("Invalid invoke.")
 
+            val address = memory
+                .getFunction(expr)
+
             val location = token.location
 
             val args = mutableListOf<Node>()
@@ -477,7 +553,11 @@ class Parser(private val lexer: Lexer, private val optimize: Boolean) : Iterator
                 mustSkip(TokenType.Symbol.RIGHT_PAREN)
             }
 
-            expr = Node.Invoke(location, expr, args)
+            expr = Node.Invoke(location, expr, address, args)
+        }
+
+        if (expr is Node.Name) {
+            return expr.toVariable()
         }
 
         return expr
@@ -506,9 +586,36 @@ class Parser(private val lexer: Lexer, private val optimize: Boolean) : Iterator
     private fun name(): Node.Name {
         val location = here()
 
-        val name = get<TokenType.Name>() ?: error("Not a name.")
+        val name = get<TokenType.Name>() ?: error("Not a name!")
 
         return Node.Name(location, name)
+    }
+
+    private fun label() =
+        if (skip(TokenType.Symbol.AT)) name() else null
+
+    private fun createVariable(constant: Boolean): Node.Variable {
+        val location = here()
+
+        val name = get<TokenType.Name>() ?: error("Not a name.")
+
+        memory.addVariable(constant, name, location)
+
+        val (mode, variable) = memory
+            .getVariable(name, location)
+
+        val (_, address) = variable
+
+        return Node.Variable(location, name, address, mode)
+    }
+
+    private fun Node.Name.toVariable(): Node.Variable {
+        val (mode, variable) = memory
+            .getVariable(name, location)
+
+        val (_, address) = variable
+
+        return Node.Variable(location, name, address, mode)
     }
 
     private fun nested(): Node {

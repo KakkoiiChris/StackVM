@@ -3,20 +3,18 @@ package kakkoiichris.stackvm.compiler
 import kakkoiichris.stackvm.asm.ASMToken
 import kakkoiichris.stackvm.asm.ASMToken.Instruction.*
 import kakkoiichris.stackvm.cpu.SystemFunctions
+import kakkoiichris.stackvm.lang.Memory
 import kakkoiichris.stackvm.lang.Node
 import kakkoiichris.stackvm.lang.Parser
-import java.util.*
 
 class ASMConverter(private val parser: Parser, private val optimize: Boolean) : Node.Visitor<List<IASMToken>> {
     private var pos = 0
 
-    private val memory = Memory()
+    private val functions = mutableMapOf<Int, Int>()
 
     fun convert(): List<ASMToken> {
-        SystemFunctions
-
         try {
-            memory.open()
+            parser.open()
 
             val tokens = mutableListOf<ASMToken>()
 
@@ -51,7 +49,7 @@ class ASMConverter(private val parser: Parser, private val optimize: Boolean) : 
             return tokens
         }
         finally {
-            memory.close()
+            parser.close()
         }
     }
 
@@ -75,15 +73,8 @@ class ASMConverter(private val parser: Parser, private val optimize: Boolean) : 
 
         iTokens += visit(node.node)
 
-        memory.addVariable(node.constant, node.name)
-
-        val (_, variable) = memory
-            .getVariable(node.name)
-
-        val (_, address) = variable
-
         iTokens += STORE.iasm
-        iTokens += ASMToken.Value(address.toFloat()).iasm
+        iTokens += ASMToken.Value(node.address.toFloat()).iasm
 
         pos += 2
 
@@ -98,40 +89,33 @@ class ASMConverter(private val parser: Parser, private val optimize: Boolean) : 
         for ((i, branch) in node.branches.withIndex()) {
             val (_, condition, body) = branch
 
-            try {
-                memory.push()
+            val start = pos.toFloat()
 
-                val start = pos.toFloat()
+            if (condition != null) {
+                iTokens += visit(condition)
 
-                if (condition != null) {
-                    iTokens += visit(condition)
+                iTokens += NOT.iasm
+                iTokens += JIF.iasm
+                iTokens += IASMToken.AwaitEnd()
 
-                    iTokens += NOT.iasm
-                    iTokens += JIF.iasm
-                    iTokens += IASMToken.AwaitEnd()
-
-                    pos += 3
-                }
-
-                for (stmt in body) {
-                    iTokens += visit(stmt)
-                }
-
-                if (i != node.branches.lastIndex) {
-                    iTokens += JMP.iasm
-                    iTokens += IASMToken.AwaitLast()
-
-                    pos += 2
-                }
-
-                val end = pos.toFloat()
-                last = end
-
-                iTokens = resolveStartAndEnd(iTokens, start, end)
+                pos += 3
             }
-            finally {
-                memory.pop()
+
+            for (stmt in body) {
+                iTokens += visit(stmt)
             }
+
+            if (i != node.branches.lastIndex) {
+                iTokens += JMP.iasm
+                iTokens += IASMToken.AwaitLast()
+
+                pos += 2
+            }
+
+            val end = pos.toFloat()
+            last = end
+
+            iTokens = resolveStartAndEnd(iTokens, start, end)
         }
 
         iTokens = resolveLast(iTokens, last)
@@ -142,40 +126,34 @@ class ASMConverter(private val parser: Parser, private val optimize: Boolean) : 
     override fun visitWhile(node: Node.While): List<IASMToken> {
         var iTokens = mutableListOf<IASMToken>()
 
-        try {
-            memory.push()
 
-            val start = pos.toFloat()
+        val start = pos.toFloat()
 
-            iTokens += visit(node.condition)
+        iTokens += visit(node.condition)
 
-            iTokens += NOT.iasm
-            iTokens += JIF.iasm
-            iTokens += IASMToken.AwaitEnd()
+        iTokens += NOT.iasm
+        iTokens += JIF.iasm
+        iTokens += IASMToken.AwaitEnd()
 
-            pos += 3
+        pos += 3
 
-            for (stmt in node.body) {
-                iTokens += visit(stmt)
-            }
-
-            iTokens += JMP.iasm
-            iTokens += IASMToken.AwaitStart()
-
-            pos += 2
-
-            val end = pos.toFloat()
-
-            iTokens = resolveStartAndEnd(iTokens, start, end)
-
-            val label = node.label
-
-            if (label != null) {
-                iTokens = resolveLabelStartAndEnd(iTokens, label, start, end)
-            }
+        for (stmt in node.body) {
+            iTokens += visit(stmt)
         }
-        finally {
-            memory.pop()
+
+        iTokens += JMP.iasm
+        iTokens += IASMToken.AwaitStart()
+
+        pos += 2
+
+        val end = pos.toFloat()
+
+        iTokens = resolveStartAndEnd(iTokens, start, end)
+
+        val label = node.label
+
+        if (label != null) {
+            iTokens = resolveLabelStartAndEnd(iTokens, label, start, end)
         }
 
         return iTokens
@@ -184,34 +162,27 @@ class ASMConverter(private val parser: Parser, private val optimize: Boolean) : 
     override fun visitDo(node: Node.Do): List<IASMToken> {
         var iTokens = mutableListOf<IASMToken>()
 
-        try {
-            memory.push()
+        val start = pos.toFloat()
 
-            val start = pos.toFloat()
-
-            for (stmt in node.body) {
-                iTokens += visit(stmt)
-            }
-
-            iTokens += visit(node.condition)
-
-            iTokens += JIF.iasm
-            iTokens += IASMToken.AwaitStart()
-
-            pos += 2
-
-            val end = pos.toFloat()
-
-            iTokens = resolveStartAndEnd(iTokens, start, end)
-
-            val label = node.label
-
-            if (label != null) {
-                iTokens = resolveLabelStartAndEnd(iTokens, label, start, end)
-            }
+        for (stmt in node.body) {
+            iTokens += visit(stmt)
         }
-        finally {
-            memory.pop()
+
+        iTokens += visit(node.condition)
+
+        iTokens += JIF.iasm
+        iTokens += IASMToken.AwaitStart()
+
+        pos += 2
+
+        val end = pos.toFloat()
+
+        iTokens = resolveStartAndEnd(iTokens, start, end)
+
+        val label = node.label
+
+        if (label != null) {
+            iTokens = resolveLabelStartAndEnd(iTokens, label, start, end)
         }
 
         return iTokens
@@ -220,52 +191,45 @@ class ASMConverter(private val parser: Parser, private val optimize: Boolean) : 
     override fun visitFor(node: Node.For): List<IASMToken> {
         var iTokens = mutableListOf<IASMToken>()
 
-        try {
-            memory.push()
-
-            if (node.init != null) {
-                iTokens += visit(node.init)
-            }
-
-            val start = pos.toFloat()
-
-            if (node.condition != null) {
-                iTokens += visit(node.condition)
-
-                iTokens += NOT.iasm
-                iTokens += JIF.iasm
-                iTokens += IASMToken.AwaitEnd()
-
-                pos += 3
-            }
-
-            for (stmt in node.body) {
-                iTokens += visit(stmt)
-            }
-
-            if (node.increment != null) {
-                iTokens += visit(node.increment)
-
-                iTokens += POP.iasm
-
-                pos++
-            }
-
-            iTokens += JMP.iasm
-            iTokens += IASMToken.AwaitStart()
-
-            pos += 2
-
-            val end = pos.toFloat()
-
-            iTokens = resolveStartAndEnd(iTokens, start, end)
-
-            if (node.label != null) {
-                iTokens = resolveLabelStartAndEnd(iTokens, node.label, start, end)
-            }
+        if (node.init != null) {
+            iTokens += visit(node.init)
         }
-        finally {
-            memory.pop()
+
+        val start = pos.toFloat()
+
+        if (node.condition != null) {
+            iTokens += visit(node.condition)
+
+            iTokens += NOT.iasm
+            iTokens += JIF.iasm
+            iTokens += IASMToken.AwaitEnd()
+
+            pos += 3
+        }
+
+        for (stmt in node.body) {
+            iTokens += visit(stmt)
+        }
+
+        if (node.increment != null) {
+            iTokens += visit(node.increment)
+
+            iTokens += POP.iasm
+
+            pos++
+        }
+
+        iTokens += JMP.iasm
+        iTokens += IASMToken.AwaitStart()
+
+        pos += 2
+
+        val end = pos.toFloat()
+
+        iTokens = resolveStartAndEnd(iTokens, start, end)
+
+        if (node.label != null) {
+            iTokens = resolveLabelStartAndEnd(iTokens, node.label, start, end)
         }
 
         return iTokens
@@ -300,54 +264,40 @@ class ASMConverter(private val parser: Parser, private val optimize: Boolean) : 
     override fun visitFunction(node: Node.Function): List<IASMToken> {
         var iTokens = mutableListOf<IASMToken>()
 
-        try {
-            iTokens += JMP.iasm
-            iTokens += IASMToken.AwaitEnd()
+        iTokens += JMP.iasm
+        iTokens += IASMToken.AwaitEnd()
+
+        pos += 2
+
+        val start = pos.toFloat()
+
+        functions[node.id] = pos
+
+        iTokens += FRAME.iasm
+        iTokens += ASMToken.Value(node.offset.toFloat()).iasm
+
+        pos += 2
+
+        for (param in node.params) {
+            iTokens += STORE.iasm
+            iTokens += ASMToken.Value(param.address.toFloat()).iasm
 
             pos += 2
-
-            memory.addFunction(node.name, pos)
-
-            memory.push()
-
-            iTokens += FRAME.iasm
-            iTokens += ASMToken.Value(memory.peek().variableID.toFloat()).iasm
-
-            pos += 2
-
-            val start = pos.toFloat()
-
-            for (param in node.params) {
-                memory.addVariable(true, param)
-
-                val (_, variable) = memory
-                    .getVariable(param)
-
-                val (_, address) = variable
-
-                iTokens += STORE.iasm
-                iTokens += ASMToken.Value(address.toFloat()).iasm
-
-                pos += 2
-            }
-
-            for (stmt in node.body) {
-                iTokens += visit(stmt)
-            }
-
-            if (iTokens.none { it is IASMToken.Ok && it.token == RET }) {
-                iTokens += RET.iasm
-
-                pos++
-            }
-
-            val end = pos.toFloat()
-
-            iTokens = resolveStartAndEnd(iTokens, start, end)
         }
-        finally {
-            memory.pop()
+
+        for (stmt in node.body) {
+            iTokens += visit(stmt)
         }
+
+        if (iTokens.none { it is IASMToken.Ok && it.token == RET }) {
+            iTokens += RET.iasm
+
+            pos++
+        }
+
+        val end = pos.toFloat()
+
+        iTokens = resolveStartAndEnd(iTokens, start, end)
 
         return iTokens
     }
@@ -364,25 +314,6 @@ class ASMConverter(private val parser: Parser, private val optimize: Boolean) : 
         iTokens += RET.iasm
 
         pos++
-
-        return iTokens
-    }
-
-    override fun visitSystemCall(node: Node.SystemCall): List<IASMToken> {
-        val iTokens = mutableListOf<IASMToken>()
-
-        for (arg in node.args.reversed()) {
-            iTokens += visit(arg)
-        }
-
-        val id = SystemFunctions[node.name]
-
-        if (id < 0) error("No system function '${node.name.name}' @ ${node.location}!")
-
-        iTokens += SYS.iasm
-        iTokens += ASMToken.Value(id.toFloat()).iasm
-
-        pos += 2
 
         return iTokens
     }
@@ -411,18 +342,17 @@ class ASMConverter(private val parser: Parser, private val optimize: Boolean) : 
     }
 
     override fun visitName(node: Node.Name): List<IASMToken> {
+        error("Should be no Names visited!")
+    }
+
+    override fun visitVariable(node: Node.Variable): List<IASMToken> {
         val iTokens = mutableListOf<IASMToken>()
 
-        val (mode, variable) = memory
-            .getVariable(node)
-
-        val (_, address) = variable
-
-        iTokens += when (mode) {
+        iTokens += when (node.mode) {
             Memory.Lookup.Mode.GLOBAL -> LOADG.iasm
             Memory.Lookup.Mode.LOCAL  -> LOAD.iasm
         }
-        iTokens += ASMToken.Value(address.toFloat()).iasm
+        iTokens += ASMToken.Value(node.address.toFloat()).iasm
 
         pos += 2
 
@@ -464,16 +394,9 @@ class ASMConverter(private val parser: Parser, private val optimize: Boolean) : 
 
         iTokens += visit(node.node)
 
-        val (_, variable) = memory
-            .getVariable(node.name)
-
-        val (constant, address) = variable
-
-        if (constant) error("Variable '${node.name.name.value}' cannot be reassigned @ ${node.name.location}!")
-
         iTokens += DUP.iasm
         iTokens += STORE.iasm
-        iTokens += ASMToken.Value(address.toFloat()).iasm
+        iTokens += ASMToken.Value(node.address.toFloat()).iasm
 
         pos += 3
 
@@ -487,8 +410,7 @@ class ASMConverter(private val parser: Parser, private val optimize: Boolean) : 
             iTokens += visit(arg)
         }
 
-        val address = memory
-            .getFunction(node.name)
+        val address = functions[node.id] ?: error("Function does not exist!")
 
         iTokens += CALL.iasm
         iTokens += ASMToken.Value(address.toFloat()).iasm
@@ -498,122 +420,22 @@ class ASMConverter(private val parser: Parser, private val optimize: Boolean) : 
         return iTokens
     }
 
-    class Memory {
-        private val scopes = Stack<Scope>()
+    override fun visitSystemCall(node: Node.SystemCall): List<IASMToken> {
+        val iTokens = mutableListOf<IASMToken>()
 
-        private val global = Scope()
-
-        fun open() = push(global)
-
-        fun close() = pop()
-
-        fun push(scope: Scope = Scope()) {
-            if (scopes.isNotEmpty()) {
-                val parent = peek()
-
-                val next = Scope(parent)
-
-                scopes.push(next)
-            }
-            else {
-                scopes.push(scope)
-            }
+        for (arg in node.args.reversed()) {
+            iTokens += visit(arg)
         }
 
-        fun pop() {
-            if (scopes.isNotEmpty()) {
-                scopes.pop()
-            }
-        }
+        val id = SystemFunctions[node.name]
 
-        fun peek(): Scope {
-            return scopes.peek()
-        }
+        if (id < 0) error("No system function '${node.name.name}' @ ${node.location}!")
 
-        fun addVariable(constant: Boolean, name: Node.Name) {
-            val scope = peek()
+        iTokens += SYS.iasm
+        iTokens += ASMToken.Value(id.toFloat()).iasm
 
-            if (scope.addVariable(constant, name)) return
+        pos += 2
 
-            error("Redeclared variable '${name.name.value}' @ ${name.location}!")
-        }
-
-        fun getVariable(name: Node.Name): Lookup {
-            var here: Scope? = peek()
-
-            while (here != null && here != global) {
-                val variable = here.getVariable(name)
-
-                if (variable != null) return Lookup(Lookup.Mode.LOCAL, variable)
-
-                here = here.parent
-            }
-
-            val variable = global.getVariable(name)
-
-            if (variable != null) return Lookup(Lookup.Mode.GLOBAL, variable)
-
-            error("Undeclared variable '${name.name.value}' @ ${name.location}!")
-        }
-
-        fun addFunction(name: Node.Name, pos: Int): Lookup.Mode {
-            if (peek().addFunction(name, pos)) return Lookup.Mode.LOCAL
-
-            if (global.addFunction(name, pos)) return Lookup.Mode.GLOBAL
-
-            error("Redeclared function '${name.name.value}' @ ${name.location}!")
-        }
-
-        fun getFunction(name: Node.Name): Int {
-            var here: Scope? = peek()
-
-            while (here != null) {
-                val function = here.getFunction(name)
-
-                if (function != null) return function
-
-                here = here.parent
-            }
-
-            error("Undeclared function '${name.name.value}' @ ${name.location}!")
-        }
-
-        class Scope(val parent: Scope? = null) {
-            var variableID: Int = parent?.variableID ?: 0
-
-            val variables = mutableMapOf<String, Variable>()
-            val functions = mutableMapOf<String, Int>()
-
-            fun addVariable(constant: Boolean, name: Node.Name): Boolean {
-                if (name.name.value in variables) return false
-
-                variables[name.name.value] = Variable(constant, variableID++)
-
-                return true
-            }
-
-            fun getVariable(name: Node.Name) =
-                variables[name.name.value]
-
-            fun addFunction(name: Node.Name, pos: Int): Boolean {
-                if (name.name.value in functions) return false
-
-                functions[name.name.value] = pos
-
-                return true
-            }
-
-            fun getFunction(name: Node.Name) =
-                functions[name.name.value]
-        }
-
-        data class Lookup(val mode: Mode, val variable: Variable) {
-            enum class Mode {
-                GLOBAL,
-                LOCAL
-            }
-        }
-
-        data class Variable(val constant: Boolean, val address: Int)
+        return iTokens
     }
 }

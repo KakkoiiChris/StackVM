@@ -26,7 +26,11 @@ class Lexer(private val src: String) : Iterator<Token> {
             }
 
             if (match(Char::isDigit)) {
-                return value()
+                return number()
+            }
+
+            if (match('\'')) {
+                return char()
             }
 
             return symbol()
@@ -65,6 +69,12 @@ class Lexer(private val src: String) : Iterator<Token> {
         }
         else false
 
+    private fun mustSkip(char: Char) {
+        if (!skip(char)) {
+            error("Illegal char '${peek()}'!")
+        }
+    }
+
     private fun StringBuilder.take() {
         append(peek())
 
@@ -96,11 +106,11 @@ class Lexer(private val src: String) : Iterator<Token> {
         }
 
         if (result.equals("true", ignoreCase = true)) {
-            return Token(location, TokenType.Value(1F))
+            return Token(location, TokenType.Value(1F, DataType.Primitive.BOOL))
         }
 
         if (result.equals("false", ignoreCase = true)) {
-            return Token(location, TokenType.Value(0F))
+            return Token(location, TokenType.Value(0F, DataType.Primitive.BOOL))
         }
 
         val keyword = TokenType.Keyword.entries.firstOrNull { it.name.equals(result, ignoreCase = true) }
@@ -112,7 +122,7 @@ class Lexer(private val src: String) : Iterator<Token> {
         return Token(location, TokenType.Name(result))
     }
 
-    private fun value(): Token {
+    private fun number(): Token {
         val location = here()
 
         val result = buildString {
@@ -131,7 +141,53 @@ class Lexer(private val src: String) : Iterator<Token> {
 
         val value = result.toFloatOrNull() ?: error("Number too big!")
 
-        return Token(location, TokenType.Value(value))
+        return Token(location, TokenType.Value(value, DataType.Primitive.FLOAT))
+    }
+
+    private fun hex(length: Int) =
+        buildString { repeat(length) { take() } }
+            .toInt(16)
+            .toChar()
+
+    private fun char(): Token {
+        val location = here()
+
+        mustSkip('\'')
+
+        val result = if (skip('\\')) when {
+            skip('0')  -> '\u0000'
+
+            skip('a')  -> '\u0007'
+
+            skip('b')  -> '\b'
+
+            skip('f')  -> '\u000C'
+
+            skip('n')  -> '\n'
+
+            skip('r')  -> '\r'
+
+            skip('t')  -> '\t'
+
+            skip('v')  -> '\u000B'
+
+            skip('\\') -> '\\'
+
+            skip('\'') -> '\''
+
+            skip('x')  -> hex(2)
+
+            skip('u')  -> hex(4)
+
+            else       -> error("Illegal character escape sequence '\\${peek()}'!")
+        }
+        else {
+            peek()
+        }
+
+        val value = result.code.toFloat()
+
+        return Token(location, TokenType.Value(value, DataType.Primitive.CHAR))
     }
 
     private fun symbol(): Token {

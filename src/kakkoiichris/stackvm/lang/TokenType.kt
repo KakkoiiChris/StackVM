@@ -46,7 +46,7 @@ interface TokenType {
         AT
     }
 
-    data class Value(val value: Float) : TokenType
+    data class Value(val value: Float, val type: DataType) : TokenType
 
     data class Name(val value: String) : TokenType
 

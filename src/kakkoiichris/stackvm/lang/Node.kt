@@ -7,6 +7,8 @@ typealias Nodes = List<Node>
 interface Node {
     val location: Location
 
+    val dataType: DataType get() = DataType.Primitive.VOID
+
     fun <X> accept(visitor: Visitor<X>): X
 
     interface Visitor<X> {
@@ -35,7 +37,7 @@ interface Node {
 
         fun visitValue(node: Value): X
 
-        fun visitName(node: Name): X
+        fun visitVariable(node: Variable): X
 
         fun visitType(node: Type): X
 
@@ -48,9 +50,17 @@ interface Node {
         fun visitInvoke(node: Invoke): X
 
         fun visitSystemCall(node: SystemCall): X
+
+        fun visitName(node: Name): X
     }
 
-    class Declare(override val location: Location, val constant: Boolean, val name: Name, val node: Node) : Node {
+    class Declare(
+        override val location: Location,
+        val constant: Boolean,
+        val name: Variable,
+        val address: Int,
+        val node: Node
+    ) : Node {
         override fun <X> accept(visitor: Visitor<X>): X =
             visitor.visitDeclare(this)
     }
@@ -115,7 +125,9 @@ interface Node {
     class Function(
         override val location: Location,
         val name: Name,
-        val params: List<Name>,
+        val id: Int,
+        val offset: Int,
+        val params: List<Variable>,
         val body: Nodes
     ) : Node {
         override fun <X> accept(visitor: Visitor<X>): X =
@@ -137,9 +149,14 @@ interface Node {
             visitor.visitValue(this)
     }
 
-    class Name(override val location: Location, val name: TokenType.Name) : Node {
+    class Variable(
+        override val location: Location,
+        val name: TokenType.Name,
+        val address: Int,
+        val mode: Memory.Lookup.Mode
+    ) : Node {
         override fun <X> accept(visitor: Visitor<X>): X =
-            visitor.visitName(this)
+            visitor.visitVariable(this)
     }
 
     class Type(override val location: Location, val type: TokenType.Type) : Node {
@@ -251,12 +268,12 @@ interface Node {
         }
     }
 
-    class Assign(override val location: Location, val name: Name, val node: Node) : Node {
+    class Assign(override val location: Location, val name: Variable, val address: Int, val node: Node) : Node {
         override fun <X> accept(visitor: Visitor<X>): X =
             visitor.visitAssign(this)
     }
 
-    class Invoke(override val location: Location, val name: Name, val args: Nodes) : Node {
+    class Invoke(override val location: Location, val name: Name, val id: Int, val args: Nodes) : Node {
         override fun <X> accept(visitor: Visitor<X>): X =
             visitor.visitInvoke(this)
     }
@@ -264,5 +281,10 @@ interface Node {
     class SystemCall(override val location: Location, val name: Name, val args: Nodes) : Node {
         override fun <X> accept(visitor: Visitor<X>): X =
             visitor.visitSystemCall(this)
+    }
+
+    class Name(override val location: Location, val name: TokenType.Name) : Node {
+        override fun <X> accept(visitor: Visitor<X>): X =
+            visitor.visitName(this)
     }
 }
