@@ -132,6 +132,8 @@ interface Node {
         val params: List<Variable>,
         val body: Nodes
     ) : Node {
+        val signature get() = Signature(name, params.map { it.dataType })
+
         override fun <X> accept(visitor: Visitor<X>): X =
             visitor.visitFunction(this)
     }
@@ -454,6 +456,8 @@ interface Node {
     }
 
     class Invoke(override val location: Location, val name: Name, val id: Int, val args: Nodes) : Node {
+        val signature get() = Signature(name, args.map { it.dataType })
+
         override fun <X> accept(visitor: Visitor<X>): X =
             visitor.visitInvoke(this)
     }
@@ -466,5 +470,17 @@ interface Node {
     class Name(override val location: Location, val name: TokenType.Name) : Node {
         override fun <X> accept(visitor: Visitor<X>): X =
             visitor.visitName(this)
+
+        override fun equals(other: Any?): Boolean {
+            if (other !is Name) return false
+
+            return name.value == other.name.value
+        }
+
+        override fun hashCode(): Int {
+            var result = location.hashCode()
+            result = 31 * result + name.value.hashCode()
+            return result
+        }
     }
 }

@@ -65,35 +65,35 @@ class Memory {
         error("Undeclared variable '${name.value}' @ ${location}!")
     }
 
-    fun addFunction(name: Node.Name): Int {
-        val id = functionID++
+    fun getFunctionID() = functionID++
 
-        if (peek().addFunction(name, id)) return id
+    fun addFunction(id: Int, signature: Signature) {
+        if (peek().addFunction(id, signature)) return
 
-        if (global.addFunction(name, id)) return id
+        if (global.addFunction(id, signature)) return
 
-        error("Redeclared function '${name.name.value}' @ ${name.location}!")
+        error("Redeclared function '$signature' @ ${signature.name.location}!")
     }
 
-    fun getFunction(name: Node.Name): Int {
+    fun getFunction(signature: Signature): Int {
         var here: Scope? = peek()
 
         while (here != null) {
-            val function = here.getFunction(name)
+            val function = here.getFunction(signature)
 
             if (function != null) return function
 
             here = here.parent
         }
 
-        error("Undeclared function '${name.name.value}' @ ${name.location}!")
+        error("Undeclared function '$signature' @ ${signature.name.location}!")
     }
 
     class Scope(val parent: Scope? = null) {
         var variableID: Int = parent?.variableID ?: 0
 
         private val variables = mutableMapOf<String, Activation>()
-        private val functions = mutableMapOf<String, Int>()
+        private val functions = mutableMapOf<Signature, Int>()
 
         fun addVariable(constant: Boolean, name: TokenType.Name, dataType: DataType): Boolean {
             if (name.value in variables) return false
@@ -106,16 +106,16 @@ class Memory {
         fun getVariable(name: TokenType.Name) =
             variables[name.value]
 
-        fun addFunction(name: Node.Name, id: Int): Boolean {
-            if (name.name.value in functions) return false
+        fun addFunction(id: Int, signature: Signature): Boolean {
+            if (signature in functions) return false
 
-            functions[name.name.value] = id
+            functions[signature] = id
 
             return true
         }
 
-        fun getFunction(name: Node.Name) =
-            functions[name.name.value]
+        fun getFunction(signature: Signature) =
+            functions[signature]
     }
 
     data class Lookup(val mode: Mode, val activation: Activation) {

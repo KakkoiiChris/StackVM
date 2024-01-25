@@ -347,7 +347,7 @@ class Parser(private val lexer: Lexer, private val optimize: Boolean) : Iterator
         val offset: Int
 
         try {
-            id = memory.addFunction(name)
+            id = memory.getFunctionID()
 
             memory.push()
 
@@ -355,7 +355,13 @@ class Parser(private val lexer: Lexer, private val optimize: Boolean) : Iterator
 
             if (skip(TokenType.Symbol.LEFT_PAREN) && !skip(TokenType.Symbol.RIGHT_PAREN)) {
                 do {
-                    params += createVariable(true, name(), DataType.Primitive.FLOAT)//TODO PARAM TYPES
+                    val paramName = name()
+
+                    mustSkip(TokenType.Symbol.COLON)
+
+                    val paramType = type()
+
+                    params += createVariable(true, paramName, paramType.dataType)//TODO PARAM TYPES
                 }
                 while (skip(TokenType.Symbol.COMMA))
 
@@ -381,7 +387,11 @@ class Parser(private val lexer: Lexer, private val optimize: Boolean) : Iterator
             memory.pop()
         }
 
-        return Node.Function(location, name, id, offset, params, body)
+        val function = Node.Function(location, name, id, offset, params, body)
+
+        memory.addFunction(id, function.signature)
+
+        return function
     }
 
     private fun `return`(): Node.Return {
@@ -575,9 +585,6 @@ class Parser(private val lexer: Lexer, private val optimize: Boolean) : Iterator
         if (match(TokenType.Symbol.LEFT_PAREN)) {
             if (expr !is Node.Name) error("Invalid invoke.")
 
-            val address = memory
-                .getFunction(expr)
-
             val location = token.location
 
             val args = mutableListOf<Node>()
@@ -592,6 +599,9 @@ class Parser(private val lexer: Lexer, private val optimize: Boolean) : Iterator
 
                 mustSkip(TokenType.Symbol.RIGHT_PAREN)
             }
+
+            val address = memory
+                .getFunction(Signature(expr, args.map { it.dataType }))
 
             expr = Node.Invoke(location, expr, address, args)
         }
