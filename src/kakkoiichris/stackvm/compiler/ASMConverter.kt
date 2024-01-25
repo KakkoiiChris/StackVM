@@ -5,7 +5,6 @@ import kakkoiichris.stackvm.asm.ASMToken.Instruction.*
 import kakkoiichris.stackvm.cpu.SystemFunctions
 import kakkoiichris.stackvm.lang.Node
 import kakkoiichris.stackvm.lang.Parser
-import kakkoiichris.stackvm.lang.TokenType.Symbol.*
 import java.util.*
 
 class ASMConverter(private val parser: Parser, private val optimize: Boolean) : Node.Visitor<List<IASMToken>> {
@@ -430,18 +429,16 @@ class ASMConverter(private val parser: Parser, private val optimize: Boolean) : 
         return iTokens
     }
 
+    override fun visitType(node: Node.Type): List<IASMToken> {
+        TODO("Not yet implemented")
+    }
+
     override fun visitUnary(node: Node.Unary): List<IASMToken> {
         val iTokens = mutableListOf<IASMToken>()
 
         iTokens += visit(node.operand)
 
-        iTokens += when (node.operator) {
-            DASH        -> NEG.iasm
-
-            EXCLAMATION -> NOT.iasm
-
-            else        -> error("Not a binary operator '${node.operator}'.")
-        }
+        iTokens += node.operator.instruction.iasm
 
         pos++
 
@@ -451,47 +448,10 @@ class ASMConverter(private val parser: Parser, private val optimize: Boolean) : 
     override fun visitBinary(node: Node.Binary): List<IASMToken> {
         val iTokens = mutableListOf<IASMToken>()
 
-        val left = node.operandLeft
-        val right = node.operandRight
-
-        val additional = when (node.operator) {
-            PLUS              -> {
-                if ((left is Node.Value && left.value.value == 0F) || (right is Node.Value && right.value.value == 0F)) {
-                    return iTokens
-                }
-
-                listOf(ADD.iasm)
-            }
-
-            DASH              -> listOf(SUB.iasm)
-
-            STAR              -> listOf(MUL.iasm)
-
-            SLASH             -> listOf(DIV.iasm)
-
-            PERCENT           -> listOf(MOD.iasm)
-
-            LESS              -> listOf(GEQ.iasm, NOT.iasm)
-
-            LESS_EQUAL        -> listOf(GRT.iasm, NOT.iasm)
-
-            GREATER           -> listOf(GRT.iasm)
-
-            GREATER_EQUAL     -> listOf(GEQ.iasm)
-
-            DOUBLE_AMPERSAND  -> listOf(AND.iasm)
-
-            DOUBLE_PIPE       -> listOf(OR.iasm)
-
-            DOUBLE_EQUAL      -> listOf(EQU.iasm)
-
-            EXCLAMATION_EQUAL -> listOf(EQU.iasm, NOT.iasm)
-
-            else              -> error("Not a binary operator '${node.operator}'.")
-        }
-
         iTokens += visit(node.operandLeft)
         iTokens += visit(node.operandRight)
+
+        val additional = node.operator.instructions.map { it.iasm }
         iTokens += additional
 
         pos += additional.size
@@ -538,7 +498,7 @@ class ASMConverter(private val parser: Parser, private val optimize: Boolean) : 
         return iTokens
     }
 
-    private class Memory {
+    class Memory {
         private val scopes = Stack<Scope>()
 
         private val global = Scope()

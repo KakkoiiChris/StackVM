@@ -50,5 +50,7 @@ interface TokenType {
 
     data class Name(val value: String) : TokenType
 
+    data class Type(val value: DataType) : TokenType
+
     data object End : TokenType
 }

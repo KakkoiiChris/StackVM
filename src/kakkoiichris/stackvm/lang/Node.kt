@@ -1,5 +1,7 @@
 package kakkoiichris.stackvm.lang
 
+import kakkoiichris.stackvm.asm.ASMToken
+
 typealias Nodes = List<Node>
 
 interface Node {
@@ -34,6 +36,8 @@ interface Node {
         fun visitValue(node: Value): X
 
         fun visitName(node: Name): X
+
+        fun visitType(node: Type): X
 
         fun visitUnary(node: Unary): X
 
@@ -86,7 +90,14 @@ interface Node {
             visitor.visitDo(this)
     }
 
-    class For(override val location: Location, val init: Declare?, val condition: Node?, val increment: Node?, val label: Name?, val body: Nodes) : Node {
+    class For(
+        override val location: Location,
+        val init: Declare?,
+        val condition: Node?,
+        val increment: Node?,
+        val label: Name?,
+        val body: Nodes
+    ) : Node {
         override fun <X> accept(visitor: Visitor<X>): X =
             visitor.visitFor(this)
     }
@@ -131,19 +142,113 @@ interface Node {
             visitor.visitName(this)
     }
 
-    class Unary(override val location: Location, val operator: TokenType.Symbol, val operand: Node) : Node {
+    class Type(override val location: Location, val type: TokenType.Type) : Node {
+        override fun <X> accept(visitor: Visitor<X>): X =
+            visitor.visitType(this)
+    }
+
+    class Unary(override val location: Location, val operator: Operator, val operand: Node) : Node {
         override fun <X> accept(visitor: Visitor<X>): X =
             visitor.visitUnary(this)
+
+        enum class Operator(val symbol: TokenType.Symbol, val instruction: ASMToken.Instruction) {
+            NEGATE(
+                TokenType.Symbol.DASH,
+                ASMToken.Instruction.NEG
+            ),
+
+            INVERT(
+                TokenType.Symbol.EXCLAMATION,
+                ASMToken.Instruction.NOT
+            );
+
+            companion object {
+                operator fun get(symbol: TokenType) =
+                    entries.first { it.symbol == symbol }
+            }
+        }
     }
 
     class Binary(
         override val location: Location,
-        val operator: TokenType.Symbol,
+        val operator: Operator,
         val operandLeft: Node,
         val operandRight: Node
     ) : Node {
         override fun <X> accept(visitor: Visitor<X>): X =
             visitor.visitBinary(this)
+
+        enum class Operator(val symbol: TokenType.Symbol, vararg val instructions: ASMToken.Instruction) {
+            OR(
+                TokenType.Symbol.DOUBLE_PIPE,
+                ASMToken.Instruction.OR
+            ),
+
+            AND(
+                TokenType.Symbol.DOUBLE_AMPERSAND,
+                ASMToken.Instruction.AND
+            ),
+
+            EQUAL(
+                TokenType.Symbol.DOUBLE_EQUAL,
+                ASMToken.Instruction.EQU
+            ),
+
+            NOT_EQUAL(
+                TokenType.Symbol.EXCLAMATION_EQUAL,
+                ASMToken.Instruction.EQU, ASMToken.Instruction.NOT
+            ),
+
+            LESS(
+                TokenType.Symbol.LESS,
+                ASMToken.Instruction.GEQ, ASMToken.Instruction.NOT
+            ),
+
+            LESS_EQUAL(
+                TokenType.Symbol.LESS_EQUAL,
+                ASMToken.Instruction.GRT, ASMToken.Instruction.NOT
+            ),
+
+            GREATER(
+                TokenType.Symbol.GREATER,
+                ASMToken.Instruction.GRT
+            ),
+
+            GREATER_EQUAL(
+                TokenType.Symbol.GREATER_EQUAL,
+                ASMToken.Instruction.GEQ
+            ),
+
+            ADD(
+                TokenType.Symbol.PLUS,
+                ASMToken.Instruction.ADD
+            ),
+
+            SUBTRACT(
+                TokenType.Symbol.DASH,
+                ASMToken.Instruction.SUB
+            ),
+
+            MULTIPLY(
+                TokenType.Symbol.STAR,
+                ASMToken.Instruction.MUL
+            ),
+
+            DIVIDE(
+                TokenType.Symbol.SLASH,
+                ASMToken.Instruction.DIV
+            ),
+
+            MODULUS(
+                TokenType.Symbol.PERCENT,
+                ASMToken.Instruction.MOD
+            );
+
+            companion object {
+                operator fun get(symbol: TokenType) =
+                    entries.first { it.symbol == symbol }
+            }
+        }
     }
 
     class Assign(override val location: Location, val name: Name, val node: Node) : Node {

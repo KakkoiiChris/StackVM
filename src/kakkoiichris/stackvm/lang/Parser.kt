@@ -335,7 +335,7 @@ class Parser(private val lexer: Lexer, private val optimize: Boolean) : Iterator
 
             mustSkip(operator)
 
-            expr = Node.Binary(location, operator as TokenType.Symbol, expr, and())
+            expr = Node.Binary(location, Node.Binary.Operator[operator], expr, and())
         }
 
         return expr
@@ -349,7 +349,7 @@ class Parser(private val lexer: Lexer, private val optimize: Boolean) : Iterator
 
             mustSkip(operator)
 
-            expr = Node.Binary(location, operator as TokenType.Symbol, expr, equality())
+            expr = Node.Binary(location, Node.Binary.Operator[operator], expr, equality())
         }
 
         return expr
@@ -363,7 +363,7 @@ class Parser(private val lexer: Lexer, private val optimize: Boolean) : Iterator
 
             mustSkip(operator)
 
-            expr = Node.Binary(location, operator as TokenType.Symbol, expr, relation())
+            expr = Node.Binary(location, Node.Binary.Operator[operator], expr, relation())
         }
 
         return expr
@@ -383,7 +383,7 @@ class Parser(private val lexer: Lexer, private val optimize: Boolean) : Iterator
 
             mustSkip(operator)
 
-            expr = Node.Binary(location, operator as TokenType.Symbol, expr, additive())
+            expr = Node.Binary(location, Node.Binary.Operator[operator], expr, additive())
         }
 
         return expr
@@ -397,7 +397,7 @@ class Parser(private val lexer: Lexer, private val optimize: Boolean) : Iterator
 
             mustSkip(operator)
 
-            expr = Node.Binary(location, operator as TokenType.Symbol, expr, multiplicative())
+            expr = Node.Binary(location, Node.Binary.Operator[operator], expr, multiplicative())
         }
 
         return expr
@@ -411,7 +411,7 @@ class Parser(private val lexer: Lexer, private val optimize: Boolean) : Iterator
 
             mustSkip(operator)
 
-            expr = Node.Binary(location, operator as TokenType.Symbol, expr, unary())
+            expr = Node.Binary(location, Node.Binary.Operator[operator], expr, unary())
         }
 
         return expr
@@ -427,7 +427,7 @@ class Parser(private val lexer: Lexer, private val optimize: Boolean) : Iterator
 
             mustSkip(operator)
 
-            return Node.Unary(location, operator as TokenType.Symbol, unary())
+            return Node.Unary(location, Node.Unary.Operator[operator], unary())
         }
 
         return postfix()
