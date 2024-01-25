@@ -81,6 +81,14 @@ class Lexer(private val src: String) : Iterator<Token> {
         step()
     }
 
+    fun get(): Char {
+        val char = peek()
+
+        step()
+
+        return char
+    }
+
     private fun skipWhitespace() {
         do {
             step()
@@ -182,8 +190,10 @@ class Lexer(private val src: String) : Iterator<Token> {
             else       -> error("Illegal character escape sequence '\\${peek()}'!")
         }
         else {
-            peek()
+            get()
         }
+
+        mustSkip('\'')
 
         val value = result.code.toFloat()
 
