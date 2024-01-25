@@ -43,10 +43,11 @@ interface TokenType {
         SEMICOLON,
         COMMA,
         BACK_SLASH,
-        AT
+        AT,
+        COLON
     }
 
-    data class Value(val value: Float, val type: DataType) : TokenType
+    data class Value(val value: Float, val dataType: DataType) : TokenType
 
     data class Name(val value: String) : TokenType
 

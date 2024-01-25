@@ -1,13 +1,14 @@
 package kakkoiichris.stackvm.lang
 
 import kakkoiichris.stackvm.asm.ASMToken
+import kakkoiichris.stackvm.lang.DataType.Primitive
 
 typealias Nodes = List<Node>
 
 interface Node {
     val location: Location
 
-    val dataType: DataType get() = DataType.Primitive.VOID
+    val dataType: DataType get() = Primitive.VOID
 
     fun <X> accept(visitor: Visitor<X>): X
 
@@ -59,6 +60,7 @@ interface Node {
         val constant: Boolean,
         val name: Variable,
         val address: Int,
+        val type: Type,
         val node: Node
     ) : Node {
         override fun <X> accept(visitor: Visitor<X>): X =
@@ -145,6 +147,8 @@ interface Node {
     }
 
     class Value(override val location: Location, val value: TokenType.Value) : Node {
+        override val dataType get() = value.dataType
+
         override fun <X> accept(visitor: Visitor<X>): X =
             visitor.visitValue(this)
     }
@@ -153,18 +157,42 @@ interface Node {
         override val location: Location,
         val name: TokenType.Name,
         val address: Int,
-        val mode: Memory.Lookup.Mode
+        val mode: Memory.Lookup.Mode,
+        override val dataType: DataType
     ) : Node {
         override fun <X> accept(visitor: Visitor<X>): X =
             visitor.visitVariable(this)
     }
 
     class Type(override val location: Location, val type: TokenType.Type) : Node {
+        override val dataType get() = type.value
+
         override fun <X> accept(visitor: Visitor<X>): X =
             visitor.visitType(this)
     }
 
     class Unary(override val location: Location, val operator: Operator, val operand: Node) : Node {
+        override val dataType: DataType
+            get() {
+                val type = operand.dataType
+
+                return when (operator) {
+                    Operator.NEGATE -> when (type) {
+                        Primitive.FLOAT -> Primitive.FLOAT
+
+                        Primitive.INT   -> Primitive.INT
+
+                        else            -> error("Operand of type '$type' invalid for '$operator' operator @ ${operand.location}!")
+                    }
+
+                    Operator.INVERT -> when (type) {
+                        Primitive.BOOL -> Primitive.BOOL
+
+                        else           -> error("Operand of type '$type' invalid for '$operator' operator @ ${operand.location}!")
+                    }
+                }
+            }
+
         override fun <X> accept(visitor: Visitor<X>): X =
             visitor.visitUnary(this)
 
@@ -192,6 +220,158 @@ interface Node {
         val operandLeft: Node,
         val operandRight: Node
     ) : Node {
+        override val dataType: DataType
+            get() {
+                val typeLeft = operandLeft.dataType
+                val typeRight = operandRight.dataType
+
+                return when (operator) {
+                    Operator.OR            -> when (typeLeft) {
+                        Primitive.BOOL -> when (typeRight) {
+                            Primitive.BOOL -> Primitive.BOOL
+
+                            else           -> error("Right operand of type '$typeRight' invalid for '$operator' operator @ ${operandRight.location}!")
+                        }
+
+                        else           -> error("Left operand of type '$typeLeft' invalid for '$operator' operator @ ${operandLeft.location}!")
+                    }
+
+                    Operator.AND           -> when (typeLeft) {
+                        Primitive.BOOL -> when (typeRight) {
+                            Primitive.BOOL -> Primitive.BOOL
+
+                            else           -> error("Right operand of type '$typeRight' invalid for '$operator' operator @ ${operandRight.location}!")
+                        }
+
+                        else           -> error("Left operand of type '$typeLeft' invalid for '$operator' operator @ ${operandLeft.location}!")
+                    }
+
+                    Operator.EQUAL         -> Primitive.BOOL
+
+                    Operator.NOT_EQUAL     -> Primitive.BOOL
+
+                    Operator.LESS          -> Primitive.BOOL
+
+                    Operator.LESS_EQUAL    -> Primitive.BOOL
+
+                    Operator.GREATER       -> Primitive.BOOL
+
+                    Operator.GREATER_EQUAL -> Primitive.BOOL
+
+                    Operator.ADD           -> when (typeLeft) {
+                        Primitive.INT   -> when (typeRight) {
+                            Primitive.INT   -> Primitive.INT
+
+                            Primitive.FLOAT -> Primitive.FLOAT
+
+                            else            -> error("Right operand of type '$typeRight' invalid for '$operator' operator @ ${operandRight.location}!")
+                        }
+
+                        Primitive.FLOAT -> when (typeRight) {
+                            Primitive.INT   -> Primitive.FLOAT
+
+                            Primitive.FLOAT -> Primitive.FLOAT
+
+                            else            -> error("Right operand of type '$typeRight' invalid for '$operator' operator @ ${operandRight.location}!")
+                        }
+
+                        Primitive.CHAR  -> when (typeRight) {
+                            Primitive.INT -> Primitive.CHAR
+
+                            else          -> error("Right operand of type '$typeRight' invalid for '$operator' operator @ ${operandRight.location}!")
+                        }
+
+                        else            -> error("Left operand of type '$typeLeft' invalid for '$operator' operator @ ${operandLeft.location}!")
+                    }
+
+                    Operator.SUBTRACT      -> when (typeLeft) {
+                        Primitive.INT   -> when (typeRight) {
+                            Primitive.INT   -> Primitive.INT
+
+                            Primitive.FLOAT -> Primitive.FLOAT
+
+                            else            -> error("Right operand of type '$typeRight' invalid for '$operator' operator @ ${operandRight.location}!")
+                        }
+
+                        Primitive.FLOAT -> when (typeRight) {
+                            Primitive.INT   -> Primitive.FLOAT
+
+                            Primitive.FLOAT -> Primitive.FLOAT
+
+                            else            -> error("Right operand of type '$typeRight' invalid for '$operator' operator @ ${operandRight.location}!")
+                        }
+
+                        Primitive.CHAR  -> when (typeRight) {
+                            Primitive.INT -> Primitive.CHAR
+
+                            else          -> error("Right operand of type '$typeRight' invalid for '$operator' operator @ ${operandRight.location}!")
+                        }
+
+                        else            -> error("Left operand of type '$typeLeft' invalid for '$operator' operator @ ${operandLeft.location}!")
+                    }
+
+                    Operator.MULTIPLY      -> when (typeLeft) {
+                        Primitive.INT   -> when (typeRight) {
+                            Primitive.INT   -> Primitive.INT
+
+                            Primitive.FLOAT -> Primitive.FLOAT
+
+                            else            -> error("Right operand of type '$typeRight' invalid for '$operator' operator @ ${operandRight.location}!")
+                        }
+
+                        Primitive.FLOAT -> when (typeRight) {
+                            Primitive.INT   -> Primitive.FLOAT
+
+                            Primitive.FLOAT -> Primitive.FLOAT
+
+                            else            -> error("Right operand of type '$typeRight' invalid for '$operator' operator @ ${operandRight.location}!")
+                        }
+
+                        else            -> error("Left operand of type '$typeLeft' invalid for '$operator' operator @ ${operandLeft.location}!")
+                    }
+
+                    Operator.DIVIDE        -> when (typeLeft) {
+                        Primitive.INT   -> when (typeRight) {
+                            Primitive.INT   -> Primitive.INT
+
+                            Primitive.FLOAT -> Primitive.FLOAT
+
+                            else            -> error("Right operand of type '$typeRight' invalid for '$operator' operator @ ${operandRight.location}!")
+                        }
+
+                        Primitive.FLOAT -> when (typeRight) {
+                            Primitive.INT   -> Primitive.FLOAT
+
+                            Primitive.FLOAT -> Primitive.FLOAT
+
+                            else            -> error("Right operand of type '$typeRight' invalid for '$operator' operator @ ${operandRight.location}!")
+                        }
+
+                        else            -> error("Left operand of type '$typeLeft' invalid for '$operator' operator @ ${operandLeft.location}!")
+                    }
+
+                    Operator.MODULUS       -> when (typeLeft) {
+                        Primitive.INT   -> when (typeRight) {
+                            Primitive.INT   -> Primitive.INT
+
+                            Primitive.FLOAT -> Primitive.FLOAT
+
+                            else            -> error("Right operand of type '$typeRight' invalid for '$operator' operator @ ${operandRight.location}!")
+                        }
+
+                        Primitive.FLOAT -> when (typeRight) {
+                            Primitive.INT   -> Primitive.FLOAT
+
+                            Primitive.FLOAT -> Primitive.FLOAT
+
+                            else            -> error("Right operand of type '$typeRight' invalid for '$operator' operator @ ${operandRight.location}!")
+                        }
+
+                        else            -> error("Left operand of type '$typeLeft' invalid for '$operator' operator @ ${operandLeft.location}!")
+                    }
+                }
+            }
+
         override fun <X> accept(visitor: Visitor<X>): X =
             visitor.visitBinary(this)
 

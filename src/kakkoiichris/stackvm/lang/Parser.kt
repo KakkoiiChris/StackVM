@@ -64,8 +64,6 @@ class Parser(private val lexer: Lexer, private val optimize: Boolean) : Iterator
         return null
     }
 
-
-
     private fun statement() = when {
         matchAny(TokenType.Keyword.LET, TokenType.Keyword.VAR) -> declare()
 
@@ -88,6 +86,26 @@ class Parser(private val lexer: Lexer, private val optimize: Boolean) : Iterator
         else                                                   -> expression()
     }
 
+    private fun type(): Node.Type {
+        val location = here()
+
+        val baseType = when {
+            skip(TokenType.Keyword.VOID)  -> DataType.Primitive.VOID
+
+            skip(TokenType.Keyword.BOOL)  -> DataType.Primitive.BOOL
+
+            skip(TokenType.Keyword.INT)   -> DataType.Primitive.INT
+
+            skip(TokenType.Keyword.FLOAT) -> DataType.Primitive.FLOAT
+
+            skip(TokenType.Keyword.CHAR)  -> DataType.Primitive.CHAR
+
+            else                          -> error("Invalid type!")
+        }
+
+        return Node.Type(location, TokenType.Type(baseType))
+    }
+
     private fun declare(): Node.Declare {
         val location = here()
 
@@ -97,20 +115,30 @@ class Parser(private val lexer: Lexer, private val optimize: Boolean) : Iterator
             mustSkip(TokenType.Keyword.VAR)
         }
 
-        val name = createVariable(constant)
+        val name = name()
 
-        val (_, variable) = memory
-            .getVariable(name)
-
-        val (_, address) = variable
+        var type = if (skip(TokenType.Symbol.COLON)) type() else null
 
         mustSkip(TokenType.Symbol.EQUAL)
 
         val node = expr()
 
+        if (type == null) {
+            type = Node.Type(Location.none, TokenType.Type(node.dataType))
+        }
+
+        if (type.dataType != node.dataType) error("Cannot declare a variable of type '${type.dataType}' with value of type '${node.dataType}' @ ${node.location}!")
+
+        val variable = createVariable(constant, name, type.dataType)
+
+        val (_, activation) = memory
+            .getVariable(variable)
+
+        val (_, _, address) = activation
+
         mustSkip(TokenType.Symbol.SEMICOLON)
 
-        return Node.Declare(location, constant, name, address, node)
+        return Node.Declare(location, constant, variable, address, type, node)
     }
 
     private fun `if`(): Node.If {
@@ -223,18 +251,26 @@ class Parser(private val lexer: Lexer, private val optimize: Boolean) : Iterator
             var init: Node.Declare? = null
 
             if (!skip(TokenType.Symbol.SEMICOLON)) {
-                val name = createVariable(false)
+                val name = name()
 
-                val (_, variable) = memory
-                    .getVariable(name)
-
-                val (_, address) = variable
+                var type = if (skip(TokenType.Symbol.COLON)) type() else null
 
                 mustSkip(TokenType.Symbol.EQUAL)
 
                 val node = expr()
 
-                init = Node.Declare(name.location, false, name, address, node)
+                if (type == null) {
+                    type = Node.Type(Location.none, TokenType.Type(node.dataType))
+                }
+
+                val variable = createVariable(false, name, type.dataType)
+
+                val (_, activation) = memory
+                    .getVariable(variable)
+
+                val (_, _, address) = activation
+
+                init = Node.Declare(name.location, false, variable, address, type, node)
 
                 mustSkip(TokenType.Symbol.SEMICOLON)
             }
@@ -307,7 +343,7 @@ class Parser(private val lexer: Lexer, private val optimize: Boolean) : Iterator
 
         val body = mutableListOf<Node>()
 
-        val id:Int
+        val id: Int
         val offset: Int
 
         try {
@@ -319,7 +355,7 @@ class Parser(private val lexer: Lexer, private val optimize: Boolean) : Iterator
 
             if (skip(TokenType.Symbol.LEFT_PAREN) && !skip(TokenType.Symbol.RIGHT_PAREN)) {
                 do {
-                    params += createVariable(true)
+                    params += createVariable(true, name(), DataType.Primitive.FLOAT)//TODO PARAM TYPES
                 }
                 while (skip(TokenType.Symbol.COMMA))
 
@@ -383,18 +419,22 @@ class Parser(private val lexer: Lexer, private val optimize: Boolean) : Iterator
         if (match(TokenType.Symbol.EQUAL)) {
             if (expr !is Node.Variable) error("Invalid assign.")
 
-            val (_, variable) = memory
-                .getVariable(expr)
-
-            val (constant, address) = variable
-
-            if (constant) error("Variable '${expr.name.value}' cannot be reassigned @ ${expr.location}!")
-
             val (location, operator) = token
 
             mustSkip(operator)
 
-            expr = Node.Assign(location, expr, address, or())
+            val (_, variable) = memory
+                .getVariable(expr)
+
+            val (constant, dataType, address) = variable
+
+            if (constant) error("Variable '${expr.name.value}' cannot be reassigned @ ${expr.location}!")
+
+            val node = or()
+
+            if (dataType != node.dataType) error("Cannot assign a value of type '${node.dataType}' to a variable of type '$dataType' @ $location!")
+
+            expr = Node.Assign(location, expr, address, node)
         }
 
         return expr
@@ -572,7 +612,7 @@ class Parser(private val lexer: Lexer, private val optimize: Boolean) : Iterator
 
         match(TokenType.Keyword.IF)        -> conditional()
 
-        else                               -> error("Not a terminal.")
+        else                               -> error("Not a terminal (${token.type}).")
     }
 
     private fun value(): Node.Value {
@@ -594,28 +634,30 @@ class Parser(private val lexer: Lexer, private val optimize: Boolean) : Iterator
     private fun label() =
         if (skip(TokenType.Symbol.AT)) name() else null
 
-    private fun createVariable(constant: Boolean): Node.Variable {
+    private fun createVariable(
+        constant: Boolean,
+        name: Node.Name,
+        dataType: DataType = DataType.Inferred
+    ): Node.Variable {
         val location = here()
 
-        val name = get<TokenType.Name>() ?: error("Not a name.")
-
-        memory.addVariable(constant, name, location)
+        memory.addVariable(constant, name.name, dataType, location)
 
         val (mode, variable) = memory
-            .getVariable(name, location)
+            .getVariable(name.name, location)
 
-        val (_, address) = variable
+        val (_, type, address) = variable
 
-        return Node.Variable(location, name, address, mode)
+        return Node.Variable(location, name.name, address, mode, type)
     }
 
     private fun Node.Name.toVariable(): Node.Variable {
         val (mode, variable) = memory
             .getVariable(name, location)
 
-        val (_, address) = variable
+        val (_, type, address) = variable
 
-        return Node.Variable(location, name, address, mode)
+        return Node.Variable(location, name, address, mode, type)
     }
 
     private fun nested(): Node {

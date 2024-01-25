@@ -36,16 +36,16 @@ class Memory {
         return scopes.peek()
     }
 
-    fun addVariable(constant: Boolean, name: TokenType.Name, location: Location) {
+    fun addVariable(constant: Boolean, name: TokenType.Name, dataType: DataType, location: Location) {
         val scope = peek()
 
-        if (scope.addVariable(constant, name)) return
+        if (scope.addVariable(constant, name, dataType)) return
 
         error("Redeclared variable '${name.value}' @ ${location}!")
     }
 
-    fun getVariable(name: Node.Variable): Lookup =
-        getVariable(name.name, name.location)
+    fun getVariable(variable: Node.Variable): Lookup =
+        getVariable(variable.name, variable.location)
 
     fun getVariable(name: TokenType.Name, location: Location): Lookup {
         var here: Scope? = peek()
@@ -92,13 +92,13 @@ class Memory {
     class Scope(val parent: Scope? = null) {
         var variableID: Int = parent?.variableID ?: 0
 
-        val variables = mutableMapOf<String, Variable>()
-        val functions = mutableMapOf<String, Int>()
+        private val variables = mutableMapOf<String, Activation>()
+        private val functions = mutableMapOf<String, Int>()
 
-        fun addVariable(constant: Boolean, name: TokenType.Name): Boolean {
+        fun addVariable(constant: Boolean, name: TokenType.Name, dataType: DataType): Boolean {
             if (name.value in variables) return false
 
-            variables[name.value] = Variable(constant, variableID++)
+            variables[name.value] = Activation(constant, dataType, variableID++)
 
             return true
         }
@@ -118,12 +118,12 @@ class Memory {
             functions[name.name.value]
     }
 
-    data class Lookup(val mode: Mode, val variable: Variable) {
+    data class Lookup(val mode: Mode, val activation: Activation) {
         enum class Mode {
             GLOBAL,
             LOCAL
         }
     }
 
-    data class Variable(val constant: Boolean, val address: Int)
+    data class Activation(val constant: Boolean, val dataType: DataType, val address: Int)
 }

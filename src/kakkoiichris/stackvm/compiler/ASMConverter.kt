@@ -126,7 +126,6 @@ class ASMConverter(private val parser: Parser, private val optimize: Boolean) : 
     override fun visitWhile(node: Node.While): List<IASMToken> {
         var iTokens = mutableListOf<IASMToken>()
 
-
         val start = pos.toFloat()
 
         iTokens += visit(node.condition)
@@ -342,7 +341,7 @@ class ASMConverter(private val parser: Parser, private val optimize: Boolean) : 
     }
 
     override fun visitName(node: Node.Name): List<IASMToken> {
-        error("Should be no Names visited!")
+        error("Should not visit Name!")
     }
 
     override fun visitVariable(node: Node.Variable): List<IASMToken> {
@@ -360,7 +359,7 @@ class ASMConverter(private val parser: Parser, private val optimize: Boolean) : 
     }
 
     override fun visitType(node: Node.Type): List<IASMToken> {
-        TODO("Not yet implemented")
+        error("Should not visit Type!")
     }
 
     override fun visitUnary(node: Node.Unary): List<IASMToken> {

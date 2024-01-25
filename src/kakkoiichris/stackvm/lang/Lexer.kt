@@ -266,6 +266,8 @@ class Lexer(private val src: String) : Iterator<Token> {
 
             skip('@')  -> TokenType.Symbol.AT
 
+            skip(':')  -> TokenType.Symbol.COLON
+
             else       -> error("Unknown symbol '${peek()}'!")
         }
 
