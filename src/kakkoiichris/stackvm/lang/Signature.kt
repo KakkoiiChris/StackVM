@@ -18,4 +18,10 @@ data class Signature(val name: Node.Name, val params: List<DataType>) {
         result = 31 * result + params.hashCode()
         return result
     }
+
+    override fun toString() = buildString {
+        append(name.name.value)
+
+        append(params.joinToString(prefix = "(", separator = ",", postfix = ")"))
+    }
 }

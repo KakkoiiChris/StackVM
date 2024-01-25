@@ -93,7 +93,7 @@ class Memory {
         var variableID: Int = parent?.variableID ?: 0
 
         private val variables = mutableMapOf<String, Activation>()
-        private val functions = mutableMapOf<Signature, Int>()
+        private val functions = mutableMapOf<String, Int>()
 
         fun addVariable(constant: Boolean, name: TokenType.Name, dataType: DataType): Boolean {
             if (name.value in variables) return false
@@ -107,15 +107,17 @@ class Memory {
             variables[name.value]
 
         fun addFunction(id: Int, signature: Signature): Boolean {
-            if (signature in functions) return false
+            val rep = signature.toString()
 
-            functions[signature] = id
+            if (rep in functions) return false
+
+            functions[rep] = id
 
             return true
         }
 
         fun getFunction(signature: Signature) =
-            functions[signature]
+            functions[signature.toString()]
     }
 
     data class Lookup(val mode: Mode, val activation: Activation) {
