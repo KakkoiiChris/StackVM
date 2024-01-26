@@ -13,8 +13,11 @@ class Memory {
 
     fun close() = pop()
 
-    fun push(scope: Scope = Scope()) {
-        if (scopes.isNotEmpty()) {
+    fun push(scope: Scope? = null) {
+        if (scope != null) {
+            scopes.push(scope)
+        }
+        else if (scopes.isNotEmpty()) {
             val parent = peek()
 
             val next = Scope(parent)
@@ -22,14 +25,16 @@ class Memory {
             scopes.push(next)
         }
         else {
-            scopes.push(scope)
+            scopes.push(Scope())
         }
     }
 
-    fun pop() {
+    fun pop(): Scope? {
         if (scopes.isNotEmpty()) {
-            scopes.pop()
+            return scopes.pop()
         }
+
+        return null
     }
 
     fun peek(): Scope {
@@ -67,21 +72,21 @@ class Memory {
 
     fun getFunctionID() = functionID++
 
-    fun addFunction(id: Int, signature: Signature) {
-        if (peek().addFunction(id, signature)) return
+    fun addFunction(dataType: DataType, id: Int, signature: Signature) {
+        if (peek().addFunction(dataType, id, signature)) return
 
-        if (global.addFunction(id, signature)) return
+        if (global.addFunction(dataType, id, signature)) return
 
         error("Redeclared function '$signature' @ ${signature.name.location}!")
     }
 
-    fun getFunction(signature: Signature): Int {
+    fun getFunction(signature: Signature): FunctionActivation {
         var here: Scope? = peek()
 
         while (here != null) {
-            val function = here.getFunction(signature)
+            val activation = here.getFunction(signature)
 
-            if (function != null) return function
+            if (activation != null) return activation
 
             here = here.parent
         }
@@ -92,13 +97,13 @@ class Memory {
     class Scope(val parent: Scope? = null) {
         var variableID: Int = parent?.variableID ?: 0
 
-        private val variables = mutableMapOf<String, Activation>()
-        private val functions = mutableMapOf<String, Int>()
+        private val variables = mutableMapOf<String, VariableActivation>()
+        private val functions = mutableMapOf<String, FunctionActivation>()
 
         fun addVariable(constant: Boolean, name: TokenType.Name, dataType: DataType): Boolean {
             if (name.value in variables) return false
 
-            variables[name.value] = Activation(constant, dataType, variableID++)
+            variables[name.value] = VariableActivation(constant, dataType, variableID++)
 
             return true
         }
@@ -106,12 +111,12 @@ class Memory {
         fun getVariable(name: TokenType.Name) =
             variables[name.value]
 
-        fun addFunction(id: Int, signature: Signature): Boolean {
+        fun addFunction(dataType: DataType, id: Int, signature: Signature): Boolean {
             val rep = signature.toString()
 
             if (rep in functions) return false
 
-            functions[rep] = id
+            functions[rep] = FunctionActivation(dataType, id)
 
             return true
         }
@@ -120,12 +125,14 @@ class Memory {
             functions[signature.toString()]
     }
 
-    data class Lookup(val mode: Mode, val activation: Activation) {
+    data class Lookup(val mode: Mode, val activation: VariableActivation) {
         enum class Mode {
             GLOBAL,
             LOCAL
         }
     }
 
-    data class Activation(val constant: Boolean, val dataType: DataType, val address: Int)
+    data class VariableActivation(val constant: Boolean, val dataType: DataType, val address: Int)
+
+    data class FunctionActivation(val dataType: DataType, val address: Int)
 }

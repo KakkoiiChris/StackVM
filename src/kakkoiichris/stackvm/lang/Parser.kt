@@ -341,6 +341,8 @@ class Parser(private val lexer: Lexer, private val optimize: Boolean) : Iterator
 
         val params = mutableListOf<Node.Variable>()
 
+        var type = Node.Type(Location.none, TokenType.Type(DataType.Primitive.VOID))
+
         val body = mutableListOf<Node>()
 
         val id: Int
@@ -361,12 +363,18 @@ class Parser(private val lexer: Lexer, private val optimize: Boolean) : Iterator
 
                     val paramType = type()
 
-                    params += createVariable(true, paramName, paramType.dataType)//TODO PARAM TYPES
+                    params += createVariable(true, paramName, paramType.dataType)
                 }
                 while (skip(TokenType.Symbol.COMMA))
 
                 mustSkip(TokenType.Symbol.RIGHT_PAREN)
             }
+
+            if (skip(TokenType.Symbol.COLON)) type = type()
+
+            val here = memory.pop()!!
+            memory.addFunction(type.dataType, id, Signature(name, params.map { it.dataType }))
+            memory.push(here)
 
             if (skip(TokenType.Symbol.EQUAL)) {
                 body += expr()
@@ -387,11 +395,85 @@ class Parser(private val lexer: Lexer, private val optimize: Boolean) : Iterator
             memory.pop()
         }
 
-        val function = Node.Function(location, name, id, offset, params, body)
+        resolveBranches(body)
 
-        memory.addFunction(id, function.signature)
+        checkUnreachable(body)
+
+        val primaryReturn = getPrimaryReturn(body)
+
+        val returnType = primaryReturn.dataType
+
+        if (returnType != type.type.value) error("Function must return value of type '${type.type.value}' @ ${primaryReturn.location}!")
+
+        resolveReturnType(returnType, body)
+
+        val function = Node.Function(location, name, id, offset, params, type, body)
 
         return function
+    }
+
+    private fun resolveBranches(nodes: Nodes) {
+        val last = nodes.lastOrNull() ?: error("No returns!")
+
+        when (last) {
+            is Node.Return -> return
+
+            is Node.If     -> {
+                for (branch in last.branches) {
+                    resolveBranches(branch.body)
+                }
+            }
+
+            is Node.While  -> resolveBranches(last.body)
+
+            is Node.Do     -> resolveBranches(last.body)
+
+            is Node.For    -> resolveBranches(last.body)
+
+            else           -> error("Not all branches!")
+        }
+    }
+
+    private fun checkUnreachable(nodes: Nodes) {
+        for ((i, node) in nodes.withIndex()) {
+            if (!node.isOrHasReturns) continue
+
+            if (i == nodes.lastIndex) continue
+
+            if (node !is Node.If) continue
+
+            if (!node.branches.all { it.body.lastOrNull()?.isOrHasReturns == true }) continue
+
+            if (node.branches.last().condition != null) continue
+
+            error("Unreachable code @ ${nodes[i + 1].location}!")
+        }
+    }
+
+    private fun getPrimaryReturn(nodes: Nodes): Node.Return {
+        val last = nodes.lastOrNull() ?: error("No last return!")
+
+        return when (last) {
+            is Node.Return -> last
+
+            is Node.If     -> getPrimaryReturn(last.branches.first().body)
+
+            is Node.While  -> getPrimaryReturn(last.body)
+
+            is Node.Do     -> getPrimaryReturn(last.body)
+
+            is Node.For    -> getPrimaryReturn(last.body)
+
+            else           -> error("No primary return!")
+        }
+    }
+
+    private fun resolveReturnType(dataType: DataType, nodes: Nodes) {
+        for (node in nodes) {
+            if (node is Node.Return && node.dataType != dataType) error("All paths must return the same type @ ${node.location}!")
+
+            return resolveReturnType(dataType, node.subNodes)
+        }
     }
 
     private fun `return`(): Node.Return {
@@ -600,10 +682,10 @@ class Parser(private val lexer: Lexer, private val optimize: Boolean) : Iterator
                 mustSkip(TokenType.Symbol.RIGHT_PAREN)
             }
 
-            val address = memory
+            val (dataType, address) = memory
                 .getFunction(Signature(expr, args.map { it.dataType }))
 
-            expr = Node.Invoke(location, expr, address, args)
+            expr = Node.Invoke(location, expr, dataType, address, args)
         }
 
         if (expr is Node.Name) {

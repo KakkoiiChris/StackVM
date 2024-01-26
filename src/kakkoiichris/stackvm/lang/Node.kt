@@ -10,6 +10,10 @@ interface Node {
 
     val dataType: DataType get() = Primitive.VOID
 
+    val subNodes: List<Node> get() = emptyList()
+
+    val isOrHasReturns get() = false
+
     fun <X> accept(visitor: Visitor<X>): X
 
     interface Visitor<X> {
@@ -68,6 +72,10 @@ interface Node {
     }
 
     class If(override val location: Location, val branches: List<Branch>) : Node {
+        override val subNodes get() = branches.flatMap { it.body }
+
+        override val isOrHasReturns get() = branches.any { branch -> branch.body.any { it.isOrHasReturns } }
+
         override fun <X> accept(visitor: Visitor<X>): X =
             visitor.visitIf(this)
 
@@ -93,11 +101,19 @@ interface Node {
     }
 
     class While(override val location: Location, val condition: Node, val label: Name?, val body: Nodes) : Node {
+        override val subNodes get() = body
+
+        override val isOrHasReturns get() = body.any { it.isOrHasReturns }
+
         override fun <X> accept(visitor: Visitor<X>): X =
             visitor.visitWhile(this)
     }
 
     class Do(override val location: Location, val label: Name?, val body: Nodes, val condition: Node) : Node {
+        override val subNodes get() = body
+
+        override val isOrHasReturns get() = body.any { it.isOrHasReturns }
+
         override fun <X> accept(visitor: Visitor<X>): X =
             visitor.visitDo(this)
     }
@@ -110,6 +126,10 @@ interface Node {
         val label: Name?,
         val body: Nodes
     ) : Node {
+        override val subNodes get() = body
+
+        override val isOrHasReturns get() = body.any { it.isOrHasReturns }
+
         override fun <X> accept(visitor: Visitor<X>): X =
             visitor.visitFor(this)
     }
@@ -130,8 +150,11 @@ interface Node {
         val id: Int,
         val offset: Int,
         val params: List<Variable>,
+        val type: Type,
         val body: Nodes
     ) : Node {
+        override val dataType get() = type.dataType
+
         val signature get() = Signature(name, params.map { it.dataType })
 
         override fun <X> accept(visitor: Visitor<X>): X =
@@ -139,6 +162,10 @@ interface Node {
     }
 
     class Return(override val location: Location, val node: Node?) : Node {
+        override val dataType get() = node?.dataType ?: Primitive.VOID
+
+        override val isOrHasReturns get() = true
+
         override fun <X> accept(visitor: Visitor<X>): X =
             visitor.visitReturn(this)
     }
@@ -455,7 +482,13 @@ interface Node {
             visitor.visitAssign(this)
     }
 
-    class Invoke(override val location: Location, val name: Name, val id: Int, val args: Nodes) : Node {
+    class Invoke(
+        override val location: Location,
+        val name: Name,
+        override val dataType: DataType,
+        val id: Int,
+        val args: Nodes
+    ) : Node {
         val signature get() = Signature(name, args.map { it.dataType })
 
         override fun <X> accept(visitor: Visitor<X>): X =

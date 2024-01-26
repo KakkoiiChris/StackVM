@@ -1,0 +1,12 @@
+# Recursive Fibonacci
+# 1/26/2024
+
+function fibonacci(num: float): float {
+	if num < 2 {
+		return num;
+	}
+
+	return fibonacci(num - 1) + fibonacci(num - 2);
+}
+
+return fibonacci(30);
