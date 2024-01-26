@@ -395,6 +395,10 @@ class Parser(private val lexer: Lexer, private val optimize: Boolean) : Iterator
             memory.pop()
         }
 
+        if (type.type.value == DataType.Primitive.VOID && body.last() !is Node.Return) {
+            body += Node.Return(Location.none, null)
+        }
+
         resolveBranches(body)
 
         checkUnreachable(body)
