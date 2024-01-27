@@ -360,8 +360,6 @@ interface Node {
 
                     Operator.DIVIDE        -> when (typeLeft) {
                         Primitive.INT   -> when (typeRight) {
-                            Primitive.INT   -> Primitive.INT
-
                             Primitive.FLOAT -> Primitive.FLOAT
 
                             else            -> error("Right operand of type '$typeRight' invalid for '$operator' operator @ ${operandRight.location}!")
@@ -378,10 +376,18 @@ interface Node {
                         else            -> error("Left operand of type '$typeLeft' invalid for '$operator' operator @ ${operandLeft.location}!")
                     }
 
+                    Operator.INT_DIVIDE    -> when (typeLeft) {
+                        Primitive.INT -> when (typeRight) {
+                            Primitive.INT -> Primitive.INT
+
+                            else          -> error("Right operand of type '$typeRight' invalid for '$operator' operator @ ${operandRight.location}!")
+                        }
+
+                        else          -> error("Left operand of type '$typeLeft' invalid for '$operator' operator @ ${operandLeft.location}!")
+                    }
+
                     Operator.MODULUS       -> when (typeLeft) {
                         Primitive.INT   -> when (typeRight) {
-                            Primitive.INT   -> Primitive.INT
-
                             Primitive.FLOAT -> Primitive.FLOAT
 
                             else            -> error("Right operand of type '$typeRight' invalid for '$operator' operator @ ${operandRight.location}!")
@@ -396,6 +402,16 @@ interface Node {
                         }
 
                         else            -> error("Left operand of type '$typeLeft' invalid for '$operator' operator @ ${operandLeft.location}!")
+                    }
+
+                    Operator.INT_MODULUS   -> when (typeLeft) {
+                        Primitive.INT -> when (typeRight) {
+                            Primitive.INT -> Primitive.INT
+
+                            else          -> error("Right operand of type '$typeRight' invalid for '$operator' operator @ ${operandRight.location}!")
+                        }
+
+                        else          -> error("Left operand of type '$typeLeft' invalid for '$operator' operator @ ${operandLeft.location}!")
                     }
                 }
             }
@@ -462,12 +478,28 @@ interface Node {
             DIVIDE(
                 TokenType.Symbol.SLASH,
                 ASMToken.Instruction.DIV
+            ) {
+                override val intVersion get() = INT_DIVIDE
+            },
+
+            INT_DIVIDE(
+                TokenType.Symbol.SLASH,
+                ASMToken.Instruction.IDIV
             ),
 
             MODULUS(
                 TokenType.Symbol.PERCENT,
                 ASMToken.Instruction.MOD
+            ) {
+                override val intVersion get() = INT_MODULUS
+            },
+
+            INT_MODULUS(
+                TokenType.Symbol.PERCENT,
+                ASMToken.Instruction.IMOD
             );
+
+            open val intVersion get() = this
 
             companion object {
                 operator fun get(symbol: TokenType) =

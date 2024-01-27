@@ -145,11 +145,26 @@ class Lexer(private val src: String) : Iterator<Token> {
                 }
                 while (match(Char::isDigit))
             }
+
+            if (match('E') || match('e')) {
+                take()
+
+                do {
+                    take()
+                }
+                while (match(Char::isDigit))
+            }
         }
 
-        val value = result.toFloatOrNull() ?: error("Number too big!")
+        if (result.contains("[Ee.]".toRegex())) {
+            val value = result.toFloatOrNull() ?: error("Number too big float!")
 
-        return Token(location, TokenType.Value(value, DataType.Primitive.FLOAT))
+            return Token(location, TokenType.Value(value, DataType.Primitive.FLOAT))
+        }
+
+        val value = result.toIntOrNull() ?: error("Number too big int!")
+
+        return Token(location, TokenType.Value(value.toFloat(), DataType.Primitive.INT))
     }
 
     private fun hex(length: Int) =

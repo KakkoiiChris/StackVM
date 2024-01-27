@@ -624,11 +624,19 @@ class Parser(private val lexer: Lexer, private val optimize: Boolean) : Iterator
         var expr = unary()
 
         while (matchAny(TokenType.Symbol.STAR, TokenType.Symbol.SLASH, TokenType.Symbol.PERCENT)) {
-            val (location, operator) = token
+            val (location, symbol) = token
 
-            mustSkip(operator)
+            mustSkip(symbol)
 
-            expr = Node.Binary(location, Node.Binary.Operator[operator], expr, unary())
+            var operator = Node.Binary.Operator[symbol]
+
+            val right = unary()
+
+            if (expr.dataType == DataType.Primitive.INT && right.dataType == DataType.Primitive.INT) {
+                operator = operator.intVersion
+            }
+
+            expr = Node.Binary(location, operator, expr, right)
         }
 
         return expr

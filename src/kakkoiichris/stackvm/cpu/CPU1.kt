@@ -203,6 +203,15 @@ object CPU1 : CPU() {
                     pushStack(a / b)
                 }
 
+                ASMToken.Instruction.IDIV -> {
+                    val b = popStack()
+                    val a = popStack()
+
+                    Debug.println("IDIV #${a.truncate()} #${b.truncate()}")
+
+                    pushStack((a.toInt() / b.toInt()).toFloat())
+                }
+
                 ASMToken.Instruction.MOD -> {
                     val b = popStack()
                     val a = popStack()
@@ -210,6 +219,15 @@ object CPU1 : CPU() {
                     Debug.println("MOD #${a.truncate()} #${b.truncate()}")
 
                     pushStack(a % b)
+                }
+
+                ASMToken.Instruction.IMOD -> {
+                    val b = popStack()
+                    val a = popStack()
+
+                    Debug.println("IMOD #${a.truncate()} #${b.truncate()}")
+
+                    pushStack((a.toInt() % b.toInt()).toFloat())
                 }
 
                 ASMToken.Instruction.NEG -> {
