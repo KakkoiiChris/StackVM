@@ -348,6 +348,8 @@ class Parser(private val lexer: Lexer, private val optimize: Boolean) : Iterator
         val id: Int
         val offset: Int
 
+        var isNative = false
+
         try {
             id = memory.getFunctionID()
 
@@ -372,46 +374,52 @@ class Parser(private val lexer: Lexer, private val optimize: Boolean) : Iterator
 
             if (skip(TokenType.Symbol.COLON)) type = type()
 
+            if (skip(TokenType.Symbol.SEMICOLON)) {
+                isNative = true
+            }
+
             val here = memory.pop()!!
-            memory.addFunction(type.dataType, id, Signature(name, params.map { it.dataType }))
+            memory.addFunction(type.dataType, id, Signature(name, params.map { it.dataType }), isNative)
             memory.push(here)
 
-            if (skip(TokenType.Symbol.EQUAL)) {
-                body += expr()
+            if (!isNative) {
+                if (skip(TokenType.Symbol.EQUAL)) {
+                    body += expr()
 
-                mustSkip(TokenType.Symbol.SEMICOLON)
-            }
-            else {
-                mustSkip(TokenType.Symbol.LEFT_BRACE)
-
-                while (!match(TokenType.Symbol.RIGHT_BRACE)) {
-                    body += statement()
+                    mustSkip(TokenType.Symbol.SEMICOLON)
                 }
+                else if (skip(TokenType.Symbol.LEFT_BRACE)) {
+                    while (!match(TokenType.Symbol.RIGHT_BRACE)) {
+                        body += statement()
+                    }
 
-                mustSkip(TokenType.Symbol.RIGHT_BRACE)
+                    mustSkip(TokenType.Symbol.RIGHT_BRACE)
+                }
             }
         }
         finally {
             memory.pop()
         }
 
-        if (type.type.value == DataType.Primitive.VOID && body.last() !is Node.Return) {
-            body += Node.Return(Location.none, null)
+        if (!isNative) {
+            if (type.type.value == DataType.Primitive.VOID && body.last() !is Node.Return) {
+                body += Node.Return(Location.none, null)
+            }
+
+            resolveBranches(body)
+
+            checkUnreachable(body)
+
+            val primaryReturn = getPrimaryReturn(body)
+
+            val returnType = primaryReturn.dataType
+
+            if (returnType != type.type.value) error("Function must return value of type '${type.type.value}' @ ${primaryReturn.location}!")
+
+            resolveBranchReturns(returnType, body)
         }
 
-        resolveBranches(body)
-
-        checkUnreachable(body)
-
-        val primaryReturn = getPrimaryReturn(body)
-
-        val returnType = primaryReturn.dataType
-
-        if (returnType != type.type.value) error("Function must return value of type '${type.type.value}' @ ${primaryReturn.location}!")
-
-        resolveReturnType(returnType, body)
-
-        val function = Node.Function(location, name, id, offset, params, type, body)
+        val function = Node.Function(location, name, id, offset, params, type, body, isNative)
 
         return function
     }
@@ -472,11 +480,11 @@ class Parser(private val lexer: Lexer, private val optimize: Boolean) : Iterator
         }
     }
 
-    private fun resolveReturnType(dataType: DataType, nodes: Nodes) {
+    private fun resolveBranchReturns(dataType: DataType, nodes: Nodes) {
         for (node in nodes) {
             if (node is Node.Return && node.dataType != dataType) error("All paths must return the same type @ ${node.location}!")
 
-            return resolveReturnType(dataType, node.subNodes)
+            return resolveBranchReturns(dataType, node.subNodes)
         }
     }
 
@@ -630,39 +638,12 @@ class Parser(private val lexer: Lexer, private val optimize: Boolean) : Iterator
         if (matchAny(TokenType.Symbol.DASH, TokenType.Symbol.EXCLAMATION, TokenType.Symbol.BACK_SLASH)) {
             val (location, operator) = token
 
-            if (operator == TokenType.Symbol.BACK_SLASH) {
-                return systemCall()
-            }
-
             mustSkip(operator)
 
             return Node.Unary(location, Node.Unary.Operator[operator], unary())
         }
 
         return postfix()
-    }
-
-    private fun systemCall(): Node.SystemCall {
-        val location = here()
-
-        mustSkip(TokenType.Symbol.BACK_SLASH)
-
-        val name = name()
-
-        val args = mutableListOf<Node>()
-
-        mustSkip(TokenType.Symbol.LEFT_PAREN)
-
-        if (!skip(TokenType.Symbol.RIGHT_PAREN)) {
-            do {
-                args += expr()
-            }
-            while (skip(TokenType.Symbol.COMMA))
-
-            mustSkip(TokenType.Symbol.RIGHT_PAREN)
-        }
-
-        return Node.SystemCall(location, name, args)
     }
 
     private fun postfix(): Node {
@@ -686,10 +667,20 @@ class Parser(private val lexer: Lexer, private val optimize: Boolean) : Iterator
                 mustSkip(TokenType.Symbol.RIGHT_PAREN)
             }
 
-            val (dataType, address) = memory
-                .getFunction(Signature(expr, args.map { it.dataType }))
+            val signature = Signature(expr, args.map { it.dataType })
 
-            expr = Node.Invoke(location, expr, dataType, address, args)
+            val (dataType, id, isNative) = memory
+                .getFunction(signature)
+
+            if (isNative) {
+                val systemID = SystemFunctions[signature].takeIf { it != -1 }
+                    ?: error("No system function for '$signature' @ ${expr.location}!")
+
+                expr = Node.SystemCall(location, expr, dataType, systemID, args)
+            }
+            else {
+                expr = Node.Invoke(location, expr, dataType, id, args)
+            }
         }
 
         if (expr is Node.Name) {

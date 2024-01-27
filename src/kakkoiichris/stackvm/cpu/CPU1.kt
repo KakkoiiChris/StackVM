@@ -357,7 +357,7 @@ object CPU1 : CPU() {
 
                     val args = mutableListOf<Float>()
 
-                    repeat(function.arity) {
+                    repeat(function.signature.arity) {
                         args.add(popStack())
                     }
 

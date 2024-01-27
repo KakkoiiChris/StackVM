@@ -2,7 +2,6 @@ package kakkoiichris.stackvm.compiler
 
 import kakkoiichris.stackvm.asm.ASMToken
 import kakkoiichris.stackvm.asm.ASMToken.Instruction.*
-import kakkoiichris.stackvm.cpu.SystemFunctions
 import kakkoiichris.stackvm.lang.Memory
 import kakkoiichris.stackvm.lang.Node
 import kakkoiichris.stackvm.lang.Parser
@@ -426,12 +425,8 @@ class ASMConverter(private val parser: Parser, private val optimize: Boolean) : 
             iTokens += visit(arg)
         }
 
-        val id = SystemFunctions[node.name]
-
-        if (id < 0) error("No system function '${node.name.name}' @ ${node.location}!")
-
         iTokens += SYS.iasm
-        iTokens += ASMToken.Value(id.toFloat()).iasm
+        iTokens += ASMToken.Value(node.id.toFloat()).iasm
 
         pos += 2
 

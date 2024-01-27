@@ -1,6 +1,8 @@
 package kakkoiichris.stackvm.lang
 
 data class Signature(val name: Node.Name, val params: List<DataType>) {
+    val arity = params.size
+
     override fun equals(other: Any?): Boolean {
         if (other !is Signature) return true
 
@@ -19,9 +21,5 @@ data class Signature(val name: Node.Name, val params: List<DataType>) {
         return result
     }
 
-    override fun toString() = buildString {
-        append(name.name.value)
-
-        append(params.joinToString(prefix = "(", separator = ",", postfix = ")"))
-    }
+    override fun toString() = params.joinToString(prefix = "${name.name.value}(", separator = ",", postfix = ")")
 }

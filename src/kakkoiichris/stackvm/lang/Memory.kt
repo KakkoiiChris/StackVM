@@ -72,10 +72,10 @@ class Memory {
 
     fun getFunctionID() = functionID++
 
-    fun addFunction(dataType: DataType, id: Int, signature: Signature) {
-        if (peek().addFunction(dataType, id, signature)) return
+    fun addFunction(dataType: DataType, id: Int, signature: Signature,isNative:Boolean) {
+        if (peek().addFunction(dataType, id, signature, isNative)) return
 
-        if (global.addFunction(dataType, id, signature)) return
+        if (global.addFunction(dataType, id, signature, isNative)) return
 
         error("Redeclared function '$signature' @ ${signature.name.location}!")
     }
@@ -111,12 +111,12 @@ class Memory {
         fun getVariable(name: TokenType.Name) =
             variables[name.value]
 
-        fun addFunction(dataType: DataType, id: Int, signature: Signature): Boolean {
+        fun addFunction(dataType: DataType, id: Int, signature: Signature, isNative: Boolean): Boolean {
             val rep = signature.toString()
 
             if (rep in functions) return false
 
-            functions[rep] = FunctionActivation(dataType, id)
+            functions[rep] = FunctionActivation(dataType, id, isNative)
 
             return true
         }
@@ -134,5 +134,5 @@ class Memory {
 
     data class VariableActivation(val constant: Boolean, val dataType: DataType, val address: Int)
 
-    data class FunctionActivation(val dataType: DataType, val address: Int)
+    data class FunctionActivation(val dataType: DataType, val id: Int, val isNative: Boolean)
 }

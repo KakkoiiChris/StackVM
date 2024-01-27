@@ -151,11 +151,10 @@ interface Node {
         val offset: Int,
         val params: List<Variable>,
         val type: Type,
-        val body: Nodes
+        val body: Nodes,
+        val isNative: Boolean
     ) : Node {
         override val dataType get() = type.dataType
-
-        val signature get() = Signature(name, params.map { it.dataType })
 
         override fun <X> accept(visitor: Visitor<X>): X =
             visitor.visitFunction(this)
@@ -489,13 +488,17 @@ interface Node {
         val id: Int,
         val args: Nodes
     ) : Node {
-        val signature get() = Signature(name, args.map { it.dataType })
-
         override fun <X> accept(visitor: Visitor<X>): X =
             visitor.visitInvoke(this)
     }
 
-    class SystemCall(override val location: Location, val name: Name, val args: Nodes) : Node {
+    class SystemCall(
+        override val location: Location,
+        val name: Name,
+        override val dataType: DataType,
+        val id: Int,
+        val args: Nodes
+    ) : Node {
         override fun <X> accept(visitor: Visitor<X>): X =
             visitor.visitSystemCall(this)
     }

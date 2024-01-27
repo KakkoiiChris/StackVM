@@ -1,6 +1,8 @@
 package kakkoiichris.stackvm.cpu
 
-import kakkoiichris.stackvm.lang.Node
+import kakkoiichris.stackvm.lang.*
+import kakkoiichris.stackvm.lang.DataType.Primitive.*
+import kakkoiichris.stackvm.util.toBool
 import kakkoiichris.stackvm.util.truncate
 import kotlin.math.abs
 
@@ -12,38 +14,68 @@ object SystemFunctions {
     private val functions = mutableListOf<Function>()
 
     init {
-        addFunction("abs", Function(1) { values ->
+        addFunction("abs", FLOAT) { values ->
             val (n) = values
 
             abs(n)
-        })
+        }
 
-        addFunction("read", Function {
+        addFunction("read") {
             readln().toFloatOrNull() ?: error("Number format error!")
-        })
+        }
 
-        addFunction("write", Function(1) { values ->
+        addFunction("write", BOOL) { values ->
             val (n) = values
 
-            println(n.truncate())
+            print(n.toBool())
 
             0F
-        })
+        }
+
+        addFunction("write", INT) { values ->
+            val (n) = values
+
+            print(n.toInt())
+
+            0F
+        }
+
+        addFunction("write", FLOAT) { values ->
+            val (n) = values
+
+            print(n.truncate())
+
+            0F
+        }
+
+        addFunction("write", CHAR) { values ->
+            val (n) = values
+
+            print(n.toInt().toChar())
+
+            0F
+        }
     }
 
-    private fun addFunction(name: String, function: Function) {
+    private fun addFunction(name: String, vararg params: DataType, method: Method) {
+        val node = Node.Name(Location.none, TokenType.Name(name))
+
+        val signature = Signature(node, params.toList())
+
+        val function = Function(signature, method)
+
         functions += function
 
-        functionTable[name] = functions.size - 1
+        functionTable[signature.toString()] = functions.size - 1
     }
 
-    operator fun get(name: Node.Name) =
-        functionTable[name.name.value] ?: -1
+    operator fun get(signature: Signature) =
+        functionTable[signature.toString()] ?: -1
 
     operator fun get(id: Int) =
         functions[id]
 
-    class Function(val arity: Int = 0, private val method: Method) {
+    class Function(val signature: Signature, private val method: Method) {
         operator fun invoke(values: List<Float>) =
             method.invoke(values)
     }
