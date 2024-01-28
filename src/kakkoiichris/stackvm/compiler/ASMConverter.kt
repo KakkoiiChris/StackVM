@@ -392,7 +392,7 @@ class ASMConverter(private val parser: Parser, private val optimize: Boolean) : 
         }
 
         iTokens += PUSH.iasm
-        iTokens += ASMToken.Value(node.elements.size.toFloat()).iasm
+        iTokens += ASMToken.Value(node.dataType.offset.toFloat() - 1).iasm
 
         pos += 2
 
