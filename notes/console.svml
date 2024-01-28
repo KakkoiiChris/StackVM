@@ -1,0 +1,15 @@
+function readBool: bool;
+
+function readFloat: float;
+
+function readInt: int;
+
+function readChar: char;
+
+function write(b: bool);
+
+function write(f: float);
+
+function write(i: int);
+
+function write(c: char);

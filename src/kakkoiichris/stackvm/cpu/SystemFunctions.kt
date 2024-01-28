@@ -3,6 +3,7 @@ package kakkoiichris.stackvm.cpu
 import kakkoiichris.stackvm.lang.*
 import kakkoiichris.stackvm.lang.DataType.Primitive.*
 import kakkoiichris.stackvm.util.toBool
+import kakkoiichris.stackvm.util.toFloat
 import kakkoiichris.stackvm.util.truncate
 import kotlin.math.*
 
@@ -196,8 +197,32 @@ object SystemFunctions {
     }
 
     private fun addConsole() {
-        addFunction("read") {
-            readln().toFloatOrNull() ?: error("Number format error!")
+        addFunction("readBool") {
+            readln()
+                .toBooleanStrictOrNull()
+                ?.toFloat()
+                ?: error("Bool format error!")
+        }
+
+        addFunction("readFloat") {
+            readln()
+                .toFloatOrNull()
+                ?: error("Number format error!")
+        }
+
+        addFunction("readInt") {
+            readln()
+                .toIntOrNull()
+                ?.toFloat()
+                ?: error("Number format error!")
+        }
+
+        addFunction("readChar") {
+            readln()
+                .getOrNull(0)
+                ?.code
+                ?.toFloat()
+                ?: error("Char format error!")
         }
 
         addFunction("write", BOOL) { values ->

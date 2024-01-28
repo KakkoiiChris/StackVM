@@ -1,0 +1,143 @@
+let PI: float = 3.1415927;
+
+let E: float = 2.7182817;
+
+let MIN_FLOAT: float = 1.4E-45;
+
+let MAX_FLOAT: float = 3.4028235E38;
+
+let POSITIVE_INFINITY: float = 1.0 / 0.0;
+
+let NEGATIVE_INFINITY: float = -1.0 / 0.0;
+
+let NaN: float = -(0.0 / 0.0);
+
+function abs(n: float): float {
+	if n < 0 {
+		return -n;
+	}
+	
+	return n;
+}
+
+function abs(n: int): int {
+	if n < 0 {
+		return -n;
+	}
+	
+	return n;
+}
+
+function min(a: float, b: float): float {
+	if a < b {
+		return a;
+	}
+	
+	return b;
+}
+
+function min(a: int, b: int): int {
+	if a < b {
+		return a;
+	}
+	
+	return b;
+}
+
+function max(a: float, b: float): float {
+	if a > b {
+		return a;
+	}
+	
+	return b;
+}
+
+function max(a: int, b: int): int {
+	if a > b {
+		return a;
+	}
+	
+	return b;
+}
+
+function sign(n: float): float {
+	if n < 0 {
+		return -1.0;
+	}
+	
+	if n > 0 {
+		return 1.0;
+	}
+	
+	return 0.0;
+}
+
+function sign(n: int): int {
+	if n < 0 {
+		return -1;
+	}
+	
+	if n > 0 {
+		return 1;
+	}
+	
+	return 0;
+}
+
+function sin(n: float): float;
+
+function cos(n: float): float;
+
+function tan(n: float): float;
+
+function asin(n: float): float;
+
+function acos(n: float): float;
+
+function atan(n: float): float;
+
+function atan2(y: float, x: float): float;
+
+function sinh(n: float): float;
+
+function cosh(n: float): float;
+
+function tanh(n: float): float;
+
+function asinh(n: float): float;
+
+function acosh(n: float): float;
+
+function atanh(n: float): float;
+
+function hypot(x: float, y: float): float;
+
+function sqrt(n: float): float;
+
+function cbrt(n: float): float;
+
+function exp(n: float): float;
+
+function expm1(n: float): float;
+
+function log(n: float, base: float): float;
+
+function ln(n: float): float;
+
+function log10(n: float): float;
+
+function log2(n: float): float;
+
+function ln1p(n: float): float;
+
+function ceil(n: float): float;
+
+function floor(n: float): float;
+
+function truncate(n: float): float;
+
+function round(n: float): float;
+
+function pow(n: float, b: float): float;
+
+function pow(n: float, b: int): float;

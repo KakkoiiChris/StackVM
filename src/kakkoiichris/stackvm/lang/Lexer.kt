@@ -110,7 +110,7 @@ class Lexer(private val src: String) : Iterator<Token> {
             do {
                 take()
             }
-            while (match(Char::isLetterOrDigit))
+            while (match(Char::isLetterOrDigit) || match('_'))
         }
 
         if (result.equals("true", ignoreCase = true)) {
@@ -219,69 +219,69 @@ class Lexer(private val src: String) : Iterator<Token> {
         val location = here()
 
         val symbol = when {
-            skip('+')  -> TokenType.Symbol.PLUS
+            skip('+') -> TokenType.Symbol.PLUS
 
-            skip('-')  -> TokenType.Symbol.DASH
+            skip('-') -> TokenType.Symbol.DASH
 
-            skip('*')  -> TokenType.Symbol.STAR
+            skip('*') -> TokenType.Symbol.STAR
 
-            skip('/')  -> TokenType.Symbol.SLASH
+            skip('/') -> TokenType.Symbol.SLASH
 
-            skip('%')  -> TokenType.Symbol.PERCENT
+            skip('%') -> TokenType.Symbol.PERCENT
 
-            skip('<')  -> when {
+            skip('<') -> when {
                 skip('=') -> TokenType.Symbol.LESS_EQUAL
 
                 else      -> TokenType.Symbol.LESS
             }
 
-            skip('>')  -> when {
+            skip('>') -> when {
                 skip('=') -> TokenType.Symbol.GREATER_EQUAL
 
                 else      -> TokenType.Symbol.GREATER
             }
 
-            skip('=')  -> when {
+            skip('=') -> when {
                 skip('=') -> TokenType.Symbol.DOUBLE_EQUAL
 
                 else      -> TokenType.Symbol.EQUAL
             }
 
-            skip('!')  -> when {
+            skip('!') -> when {
                 skip('=') -> TokenType.Symbol.EXCLAMATION_EQUAL
 
                 else      -> TokenType.Symbol.EXCLAMATION
             }
 
-            skip('&')  -> when {
+            skip('&') -> when {
                 skip('&') -> TokenType.Symbol.DOUBLE_AMPERSAND
 
                 else      -> error("No single ampersand.")
             }
 
-            skip('|')  -> when {
+            skip('|') -> when {
                 skip('|') -> TokenType.Symbol.DOUBLE_PIPE
 
                 else      -> error("No single pipe.")
             }
 
-            skip('(')  -> TokenType.Symbol.LEFT_PAREN
+            skip('(') -> TokenType.Symbol.LEFT_PAREN
 
-            skip(')')  -> TokenType.Symbol.RIGHT_PAREN
+            skip(')') -> TokenType.Symbol.RIGHT_PAREN
 
-            skip('{')  -> TokenType.Symbol.LEFT_BRACE
+            skip('{') -> TokenType.Symbol.LEFT_BRACE
 
-            skip('}')  -> TokenType.Symbol.RIGHT_BRACE
+            skip('}') -> TokenType.Symbol.RIGHT_BRACE
 
-            skip(';')  -> TokenType.Symbol.SEMICOLON
+            skip(';') -> TokenType.Symbol.SEMICOLON
 
-            skip(',')  -> TokenType.Symbol.COMMA
+            skip(',') -> TokenType.Symbol.COMMA
 
-            skip('@')  -> TokenType.Symbol.AT
+            skip('@') -> TokenType.Symbol.AT
 
-            skip(':')  -> TokenType.Symbol.COLON
+            skip(':') -> TokenType.Symbol.COLON
 
-            else       -> error("Unknown symbol '${peek()}'!")
+            else      -> error("Unknown symbol '${peek()}'!")
         }
 
         return Token(location, symbol)
