@@ -273,6 +273,10 @@ class Lexer(private val src: String) : Iterator<Token> {
 
             skip('}') -> TokenType.Symbol.RIGHT_BRACE
 
+            skip('[') -> TokenType.Symbol.LEFT_SQUARE
+
+            skip(']') -> TokenType.Symbol.RIGHT_SQUARE
+
             skip(';') -> TokenType.Symbol.SEMICOLON
 
             skip(',') -> TokenType.Symbol.COMMA

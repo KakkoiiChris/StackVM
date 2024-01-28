@@ -361,6 +361,21 @@ class ASMConverter(private val parser: Parser, private val optimize: Boolean) : 
         error("Should not visit Type!")
     }
 
+    override fun visitArray(node: Node.Array): List<IASMToken> {
+        val iTokens = mutableListOf<IASMToken>()
+
+        for (element in node.elements.reversed()) {
+            iTokens += visit(element)
+        }
+
+        iTokens += PUSH.iasm
+        iTokens += ASMToken.Value(node.elements.size.toFloat()).iasm
+
+        pos += 2
+
+        return iTokens
+    }
+
     override fun visitUnary(node: Node.Unary): List<IASMToken> {
         val iTokens = mutableListOf<IASMToken>()
 

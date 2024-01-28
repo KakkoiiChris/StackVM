@@ -46,6 +46,8 @@ interface Node {
 
         fun visitType(node: Type): X
 
+        fun visitArray(node: Array): X
+
         fun visitUnary(node: Unary): X
 
         fun visitBinary(node: Binary): X
@@ -197,6 +199,24 @@ interface Node {
 
         override fun <X> accept(visitor: Visitor<X>): X =
             visitor.visitType(this)
+    }
+
+    class Array(override val location: Location, val elements: Nodes) : Node {
+        override val dataType: DataType
+            get() {
+                val firstType = elements.firstOrNull()?.dataType ?: TODO("FIRST TYPE")
+
+                for (element in elements.drop(1)) {
+                    if (element.dataType != firstType) {
+                        TODO("ARRAY MUST BE HOMOGENOUS")
+                    }
+                }
+
+                return DataType.Array(firstType, elements.size)
+            }
+
+        override fun <X> accept(visitor: Visitor<X>): X =
+            visitor.visitArray(this)
     }
 
     class Unary(override val location: Location, val operator: Operator, val operand: Node) : Node {

@@ -103,7 +103,26 @@ class Parser(private val lexer: Lexer, private val optimize: Boolean) : Iterator
             else                          -> error("Invalid type!")
         }
 
-        return Node.Type(location, TokenType.Type(baseType))
+        var type: DataType = baseType
+
+        if (match(TokenType.Symbol.LEFT_SQUARE)) {
+            do {
+                mustSkip(TokenType.Symbol.LEFT_SQUARE)
+
+                val sizeNode = value()
+
+                if (sizeNode.dataType != DataType.Primitive.INT) error("Array size must be an int @ ${sizeNode.location}!")
+
+                val size = sizeNode.value.value.toInt()
+
+                mustSkip(TokenType.Symbol.RIGHT_SQUARE)
+
+                type = DataType.Array(type, size)
+            }
+            while (match(TokenType.Symbol.LEFT_SQUARE))
+        }
+
+        return Node.Type(location, TokenType.Type(type))
     }
 
     private fun declare(): Node.Declare {
@@ -722,6 +741,8 @@ class Parser(private val lexer: Lexer, private val optimize: Boolean) : Iterator
 
         match(TokenType.Symbol.LEFT_PAREN) -> nested()
 
+        match(TokenType.Symbol.LEFT_BRACE) -> array()
+
         match(TokenType.Keyword.IF)        -> conditional()
 
         else                               -> error("Not a terminal (${token.type}).")
@@ -749,7 +770,7 @@ class Parser(private val lexer: Lexer, private val optimize: Boolean) : Iterator
     private fun createVariable(
         constant: Boolean,
         name: Node.Name,
-        dataType: DataType = DataType.Inferred
+        dataType: DataType
     ): Node.Variable {
         val location = here()
 
@@ -780,6 +801,25 @@ class Parser(private val lexer: Lexer, private val optimize: Boolean) : Iterator
         mustSkip(TokenType.Symbol.RIGHT_PAREN)
 
         return node
+    }
+
+    private fun array(): Node.Array {
+        val location = here()
+
+        mustSkip(TokenType.Symbol.LEFT_BRACE)
+
+        val elements = mutableListOf<Node>()
+
+        if (!skip(TokenType.Symbol.RIGHT_BRACE)) {
+            do {
+                elements += expr()
+            }
+            while (skip(TokenType.Symbol.COMMA))
+
+            mustSkip(TokenType.Symbol.RIGHT_BRACE)
+        }
+
+        return Node.Array(location, elements)
     }
 
     private fun conditional() =
