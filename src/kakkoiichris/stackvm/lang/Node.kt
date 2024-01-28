@@ -1,14 +1,14 @@
 package kakkoiichris.stackvm.lang
 
 import kakkoiichris.stackvm.asm.ASMToken
-import kakkoiichris.stackvm.lang.DataType.Primitive
+import kakkoiichris.stackvm.lang.DataType.Primitive.*
 
 typealias Nodes = List<Node>
 
 interface Node {
     val location: Location
 
-    val dataType: DataType get() = Primitive.VOID
+    val dataType: DataType get() = VOID
 
     val subNodes: List<Node> get() = emptyList()
 
@@ -161,7 +161,7 @@ interface Node {
     }
 
     class Return(override val location: Location, val node: Node?) : Node {
-        override val dataType get() = node?.dataType ?: Primitive.VOID
+        override val dataType get() = node?.dataType ?: VOID
 
         override val isOrHasReturns get() = true
 
@@ -206,17 +206,17 @@ interface Node {
 
                 return when (operator) {
                     Operator.NEGATE -> when (type) {
-                        Primitive.FLOAT -> Primitive.FLOAT
+                        FLOAT -> FLOAT
 
-                        Primitive.INT   -> Primitive.INT
+                        INT   -> INT
 
-                        else            -> error("Operand of type '$type' invalid for '$operator' operator @ ${operand.location}!")
+                        else  -> error("Operand of type '$type' invalid for '$operator' operator @ ${operand.location}!")
                     }
 
                     Operator.INVERT -> when (type) {
-                        Primitive.BOOL -> Primitive.BOOL
+                        BOOL -> BOOL
 
-                        else           -> error("Operand of type '$type' invalid for '$operator' operator @ ${operand.location}!")
+                        else -> error("Operand of type '$type' invalid for '$operator' operator @ ${operand.location}!")
                     }
                 }
             }
@@ -254,164 +254,146 @@ interface Node {
                 val typeRight = operandRight.dataType
 
                 return when (operator) {
-                    Operator.OR            -> when (typeLeft) {
-                        Primitive.BOOL -> when (typeRight) {
-                            Primitive.BOOL -> Primitive.BOOL
-
-                            else           -> error("Right operand of type '$typeRight' invalid for '$operator' operator @ ${operandRight.location}!")
-                        }
-
-                        else           -> error("Left operand of type '$typeLeft' invalid for '$operator' operator @ ${operandLeft.location}!")
-                    }
-
+                    Operator.OR,
                     Operator.AND           -> when (typeLeft) {
-                        Primitive.BOOL -> when (typeRight) {
-                            Primitive.BOOL -> Primitive.BOOL
+                        BOOL -> when (typeRight) {
+                            BOOL -> BOOL
 
-                            else           -> error("Right operand of type '$typeRight' invalid for '$operator' operator @ ${operandRight.location}!")
+                            else -> error("Right operand of type '$typeRight' invalid for '$operator' operator @ ${operandRight.location}!")
                         }
 
-                        else           -> error("Left operand of type '$typeLeft' invalid for '$operator' operator @ ${operandLeft.location}!")
+                        else -> error("Left operand of type '$typeLeft' invalid for '$operator' operator @ ${operandLeft.location}!")
                     }
 
-                    Operator.EQUAL         -> Primitive.BOOL
+                    Operator.EQUAL,
+                    Operator.NOT_EQUAL     -> when (typeLeft) {
+                        BOOL  -> when (typeRight) {
+                            BOOL -> BOOL
 
-                    Operator.NOT_EQUAL     -> Primitive.BOOL
-
-                    Operator.LESS          -> Primitive.BOOL
-
-                    Operator.LESS_EQUAL    -> Primitive.BOOL
-
-                    Operator.GREATER       -> Primitive.BOOL
-
-                    Operator.GREATER_EQUAL -> Primitive.BOOL
-
-                    Operator.ADD           -> when (typeLeft) {
-                        Primitive.INT   -> when (typeRight) {
-                            Primitive.INT   -> Primitive.INT
-
-                            Primitive.FLOAT -> Primitive.FLOAT
-
-                            else            -> error("Right operand of type '$typeRight' invalid for '$operator' operator @ ${operandRight.location}!")
+                            else -> error("Right operand of type '$typeRight' invalid for '$operator' operator @ ${operandRight.location}!")
                         }
 
-                        Primitive.FLOAT -> when (typeRight) {
-                            Primitive.INT   -> Primitive.FLOAT
+                        FLOAT -> when (typeRight) {
+                            FLOAT, INT -> BOOL
 
-                            Primitive.FLOAT -> Primitive.FLOAT
-
-                            else            -> error("Right operand of type '$typeRight' invalid for '$operator' operator @ ${operandRight.location}!")
+                            else       -> error("Right operand of type '$typeRight' invalid for '$operator' operator @ ${operandRight.location}!")
                         }
 
-                        Primitive.CHAR  -> when (typeRight) {
-                            Primitive.INT -> Primitive.CHAR
+                        INT   -> when (typeRight) {
+                            FLOAT, INT -> BOOL
 
-                            else          -> error("Right operand of type '$typeRight' invalid for '$operator' operator @ ${operandRight.location}!")
+                            else       -> error("Right operand of type '$typeRight' invalid for '$operator' operator @ ${operandRight.location}!")
                         }
 
-                        else            -> error("Left operand of type '$typeLeft' invalid for '$operator' operator @ ${operandLeft.location}!")
+                        CHAR  -> when (typeRight) {
+                            CHAR -> BOOL
+
+                            else -> error("Right operand of type '$typeRight' invalid for '$operator' operator @ ${operandRight.location}!")
+                        }
+
+                        else  -> error("Left operand of type '$typeLeft' invalid for '$operator' operator @ ${operandLeft.location}!")
                     }
 
+                    Operator.LESS,
+                    Operator.LESS_EQUAL,
+                    Operator.GREATER,
+                    Operator.GREATER_EQUAL -> when (typeLeft) {
+                        FLOAT -> when (typeRight) {
+                            FLOAT, INT -> BOOL
+
+                            else       -> error("Right operand of type '$typeRight' invalid for '$operator' operator @ ${operandRight.location}!")
+                        }
+
+                        INT   -> when (typeRight) {
+                            FLOAT, INT -> BOOL
+
+                            else       -> error("Right operand of type '$typeRight' invalid for '$operator' operator @ ${operandRight.location}!")
+                        }
+
+                        CHAR  -> when (typeRight) {
+                            CHAR -> BOOL
+
+                            else -> error("Right operand of type '$typeRight' invalid for '$operator' operator @ ${operandRight.location}!")
+                        }
+
+                        else  -> error("Left operand of type '$typeLeft' invalid for '$operator' operator @ ${operandLeft.location}!")
+                    }
+
+                    Operator.ADD,
                     Operator.SUBTRACT      -> when (typeLeft) {
-                        Primitive.INT   -> when (typeRight) {
-                            Primitive.INT   -> Primitive.INT
+                        INT   -> when (typeRight) {
+                            INT   -> INT
 
-                            Primitive.FLOAT -> Primitive.FLOAT
+                            FLOAT -> FLOAT
 
-                            else            -> error("Right operand of type '$typeRight' invalid for '$operator' operator @ ${operandRight.location}!")
+                            else  -> error("Right operand of type '$typeRight' invalid for '$operator' operator @ ${operandRight.location}!")
                         }
 
-                        Primitive.FLOAT -> when (typeRight) {
-                            Primitive.INT   -> Primitive.FLOAT
+                        FLOAT -> when (typeRight) {
+                            INT   -> FLOAT
 
-                            Primitive.FLOAT -> Primitive.FLOAT
+                            FLOAT -> FLOAT
 
-                            else            -> error("Right operand of type '$typeRight' invalid for '$operator' operator @ ${operandRight.location}!")
+                            else  -> error("Right operand of type '$typeRight' invalid for '$operator' operator @ ${operandRight.location}!")
                         }
 
-                        Primitive.CHAR  -> when (typeRight) {
-                            Primitive.INT -> Primitive.CHAR
+                        CHAR  -> when (typeRight) {
+                            INT  -> CHAR
 
-                            else          -> error("Right operand of type '$typeRight' invalid for '$operator' operator @ ${operandRight.location}!")
+                            else -> error("Right operand of type '$typeRight' invalid for '$operator' operator @ ${operandRight.location}!")
                         }
 
-                        else            -> error("Left operand of type '$typeLeft' invalid for '$operator' operator @ ${operandLeft.location}!")
+                        else  -> error("Left operand of type '$typeLeft' invalid for '$operator' operator @ ${operandLeft.location}!")
                     }
 
                     Operator.MULTIPLY      -> when (typeLeft) {
-                        Primitive.INT   -> when (typeRight) {
-                            Primitive.INT   -> Primitive.INT
+                        INT   -> when (typeRight) {
+                            INT   -> INT
 
-                            Primitive.FLOAT -> Primitive.FLOAT
+                            FLOAT -> FLOAT
 
-                            else            -> error("Right operand of type '$typeRight' invalid for '$operator' operator @ ${operandRight.location}!")
+                            else  -> error("Right operand of type '$typeRight' invalid for '$operator' operator @ ${operandRight.location}!")
                         }
 
-                        Primitive.FLOAT -> when (typeRight) {
-                            Primitive.INT   -> Primitive.FLOAT
+                        FLOAT -> when (typeRight) {
+                            INT   -> FLOAT
 
-                            Primitive.FLOAT -> Primitive.FLOAT
+                            FLOAT -> FLOAT
 
-                            else            -> error("Right operand of type '$typeRight' invalid for '$operator' operator @ ${operandRight.location}!")
+                            else  -> error("Right operand of type '$typeRight' invalid for '$operator' operator @ ${operandRight.location}!")
                         }
 
-                        else            -> error("Left operand of type '$typeLeft' invalid for '$operator' operator @ ${operandLeft.location}!")
+                        else  -> error("Left operand of type '$typeLeft' invalid for '$operator' operator @ ${operandLeft.location}!")
                     }
 
-                    Operator.DIVIDE        -> when (typeLeft) {
-                        Primitive.INT   -> when (typeRight) {
-                            Primitive.FLOAT -> Primitive.FLOAT
-
-                            else            -> error("Right operand of type '$typeRight' invalid for '$operator' operator @ ${operandRight.location}!")
-                        }
-
-                        Primitive.FLOAT -> when (typeRight) {
-                            Primitive.INT   -> Primitive.FLOAT
-
-                            Primitive.FLOAT -> Primitive.FLOAT
-
-                            else            -> error("Right operand of type '$typeRight' invalid for '$operator' operator @ ${operandRight.location}!")
-                        }
-
-                        else            -> error("Left operand of type '$typeLeft' invalid for '$operator' operator @ ${operandLeft.location}!")
-                    }
-
-                    Operator.INT_DIVIDE    -> when (typeLeft) {
-                        Primitive.INT -> when (typeRight) {
-                            Primitive.INT -> Primitive.INT
-
-                            else          -> error("Right operand of type '$typeRight' invalid for '$operator' operator @ ${operandRight.location}!")
-                        }
-
-                        else          -> error("Left operand of type '$typeLeft' invalid for '$operator' operator @ ${operandLeft.location}!")
-                    }
-
+                    Operator.DIVIDE,
                     Operator.MODULUS       -> when (typeLeft) {
-                        Primitive.INT   -> when (typeRight) {
-                            Primitive.FLOAT -> Primitive.FLOAT
+                        INT   -> when (typeRight) {
+                            FLOAT -> FLOAT
 
-                            else            -> error("Right operand of type '$typeRight' invalid for '$operator' operator @ ${operandRight.location}!")
+                            else  -> error("Right operand of type '$typeRight' invalid for '$operator' operator @ ${operandRight.location}!")
                         }
 
-                        Primitive.FLOAT -> when (typeRight) {
-                            Primitive.INT   -> Primitive.FLOAT
+                        FLOAT -> when (typeRight) {
+                            INT   -> FLOAT
 
-                            Primitive.FLOAT -> Primitive.FLOAT
+                            FLOAT -> FLOAT
 
-                            else            -> error("Right operand of type '$typeRight' invalid for '$operator' operator @ ${operandRight.location}!")
+                            else  -> error("Right operand of type '$typeRight' invalid for '$operator' operator @ ${operandRight.location}!")
                         }
 
-                        else            -> error("Left operand of type '$typeLeft' invalid for '$operator' operator @ ${operandLeft.location}!")
+                        else  -> error("Left operand of type '$typeLeft' invalid for '$operator' operator @ ${operandLeft.location}!")
                     }
 
+                    Operator.INT_DIVIDE,
                     Operator.INT_MODULUS   -> when (typeLeft) {
-                        Primitive.INT -> when (typeRight) {
-                            Primitive.INT -> Primitive.INT
+                        INT  -> when (typeRight) {
+                            INT  -> INT
 
-                            else          -> error("Right operand of type '$typeRight' invalid for '$operator' operator @ ${operandRight.location}!")
+                            else -> error("Right operand of type '$typeRight' invalid for '$operator' operator @ ${operandRight.location}!")
                         }
 
-                        else          -> error("Left operand of type '$typeLeft' invalid for '$operator' operator @ ${operandLeft.location}!")
+                        else -> error("Left operand of type '$typeLeft' invalid for '$operator' operator @ ${operandLeft.location}!")
                     }
                 }
             }

@@ -553,6 +553,8 @@ class Parser(private val lexer: Lexer, private val optimize: Boolean) : Iterator
             mustSkip(operator)
 
             expr = Node.Binary(location, Node.Binary.Operator[operator], expr, and())
+
+            expr.dataType
         }
 
         return expr
@@ -567,6 +569,8 @@ class Parser(private val lexer: Lexer, private val optimize: Boolean) : Iterator
             mustSkip(operator)
 
             expr = Node.Binary(location, Node.Binary.Operator[operator], expr, equality())
+
+            expr.dataType
         }
 
         return expr
@@ -581,6 +585,8 @@ class Parser(private val lexer: Lexer, private val optimize: Boolean) : Iterator
             mustSkip(operator)
 
             expr = Node.Binary(location, Node.Binary.Operator[operator], expr, relation())
+
+            expr.dataType
         }
 
         return expr
@@ -601,6 +607,8 @@ class Parser(private val lexer: Lexer, private val optimize: Boolean) : Iterator
             mustSkip(operator)
 
             expr = Node.Binary(location, Node.Binary.Operator[operator], expr, additive())
+
+            expr.dataType
         }
 
         return expr
@@ -615,6 +623,8 @@ class Parser(private val lexer: Lexer, private val optimize: Boolean) : Iterator
             mustSkip(operator)
 
             expr = Node.Binary(location, Node.Binary.Operator[operator], expr, multiplicative())
+
+            expr.dataType
         }
 
         return expr
@@ -637,21 +647,28 @@ class Parser(private val lexer: Lexer, private val optimize: Boolean) : Iterator
             }
 
             expr = Node.Binary(location, operator, expr, right)
+
+            expr.dataType
         }
 
         return expr
     }
 
     private fun unary(): Node {
-        if (matchAny(TokenType.Symbol.DASH, TokenType.Symbol.EXCLAMATION, TokenType.Symbol.BACK_SLASH)) {
+        val expr = if (matchAny(TokenType.Symbol.DASH, TokenType.Symbol.EXCLAMATION)) {
             val (location, operator) = token
 
             mustSkip(operator)
 
-            return Node.Unary(location, Node.Unary.Operator[operator], unary())
+            Node.Unary(location, Node.Unary.Operator[operator], unary())
+        }
+        else {
+            postfix()
         }
 
-        return postfix()
+        expr.dataType
+
+        return expr
     }
 
     private fun postfix(): Node {

@@ -42,7 +42,6 @@ interface TokenType {
         RIGHT_BRACE,
         SEMICOLON,
         COMMA,
-        BACK_SLASH,
         AT,
         COLON
     }

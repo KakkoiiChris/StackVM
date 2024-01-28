@@ -277,8 +277,6 @@ class Lexer(private val src: String) : Iterator<Token> {
 
             skip(',')  -> TokenType.Symbol.COMMA
 
-            skip('\\') -> TokenType.Symbol.BACK_SLASH
-
             skip('@')  -> TokenType.Symbol.AT
 
             skip(':')  -> TokenType.Symbol.COLON
