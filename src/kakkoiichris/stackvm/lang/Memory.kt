@@ -72,7 +72,7 @@ class Memory {
 
     fun getFunctionID() = functionID++
 
-    fun addFunction(dataType: DataType, id: Int, signature: Signature,isNative:Boolean) {
+    fun addFunction(dataType: DataType, id: Int, signature: Signature, isNative: Boolean) {
         if (peek().addFunction(dataType, id, signature, isNative)) return
 
         if (global.addFunction(dataType, id, signature, isNative)) return
@@ -103,7 +103,9 @@ class Memory {
         fun addVariable(constant: Boolean, name: TokenType.Name, dataType: DataType): Boolean {
             if (name.value in variables) return false
 
-            variables[name.value] = VariableActivation(constant, dataType, variableID++)
+            variables[name.value] = VariableActivation(constant, dataType, variableID)
+
+            variableID += dataType.offset
 
             return true
         }

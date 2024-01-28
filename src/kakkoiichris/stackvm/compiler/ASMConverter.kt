@@ -2,6 +2,7 @@ package kakkoiichris.stackvm.compiler
 
 import kakkoiichris.stackvm.asm.ASMToken
 import kakkoiichris.stackvm.asm.ASMToken.Instruction.*
+import kakkoiichris.stackvm.lang.DataType
 import kakkoiichris.stackvm.lang.Memory
 import kakkoiichris.stackvm.lang.Node
 import kakkoiichris.stackvm.lang.Parser
@@ -67,12 +68,25 @@ class ASMConverter(private val parser: Parser, private val optimize: Boolean) : 
             .map { it.resolveLast(last) ?: it }
             .toMutableList()
 
-    override fun visitDeclare(node: Node.Declare): List<IASMToken> {
+    override fun visitDeclareSingle(node: Node.DeclareSingle): List<IASMToken> {
         val iTokens = mutableListOf<IASMToken>()
 
         iTokens += visit(node.node)
 
         iTokens += STORE.iasm
+        iTokens += ASMToken.Value(node.address.toFloat()).iasm
+
+        pos += 2
+
+        return iTokens
+    }
+
+    override fun visitDeclareArray(node: Node.DeclareArray): List<IASMToken> {
+        val iTokens = mutableListOf<IASMToken>()
+
+        iTokens += visit(node.node)
+
+        iTokens += ASTORE.iasm
         iTokens += ASMToken.Value(node.address.toFloat()).iasm
 
         pos += 2
@@ -347,9 +361,18 @@ class ASMConverter(private val parser: Parser, private val optimize: Boolean) : 
         val iTokens = mutableListOf<IASMToken>()
 
         iTokens += when (node.mode) {
-            Memory.Lookup.Mode.GLOBAL -> LOADG.iasm
-            Memory.Lookup.Mode.LOCAL  -> LOAD.iasm
-        }
+            Memory.Lookup.Mode.GLOBAL -> when (node.dataType) {
+                is DataType.Array -> ALOADG
+
+                else              -> LOADG
+            }
+
+            Memory.Lookup.Mode.LOCAL  -> when (node.dataType) {
+                is DataType.Array -> ALOAD
+
+                else              -> LOAD
+            }
+        }.iasm
         iTokens += ASMToken.Value(node.address.toFloat()).iasm
 
         pos += 2

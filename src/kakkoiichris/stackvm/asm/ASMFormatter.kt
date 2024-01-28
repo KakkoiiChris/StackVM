@@ -19,9 +19,20 @@ object ASMFormatter {
 
             appendLine(
                 when (instruction) {
-                    PUSH, JMP, JIF, LOAD, LOADG, STORE, CALL, FRAME, SYS -> " ${fetch().truncate()}"
+                    PUSH,
+                    JMP,
+                    JIF,
+                    LOAD,
+                    ALOAD,
+                    LOADG,
+                    ALOADG,
+                    STORE,
+                    ASTORE,
+                    CALL,
+                    FRAME,
+                    SYS  -> " ${fetch().truncate()}"
 
-                    else                                   -> ""
+                    else -> ""
                 }
             )
         }

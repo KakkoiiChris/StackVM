@@ -20,7 +20,9 @@ interface Node {
         fun visit(node: Node) =
             node.accept(this)
 
-        fun visitDeclare(node: Declare): X
+        fun visitDeclareSingle(node: DeclareSingle): X
+
+        fun visitDeclareArray(node: DeclareArray): X
 
         fun visitIf(node: If): X
 
@@ -61,16 +63,24 @@ interface Node {
         fun visitName(node: Name): X
     }
 
-    class Declare(
+    class DeclareSingle(
         override val location: Location,
-        val constant: Boolean,
         val name: Variable,
         val address: Int,
-        val type: Type,
         val node: Node
     ) : Node {
         override fun <X> accept(visitor: Visitor<X>): X =
-            visitor.visitDeclare(this)
+            visitor.visitDeclareSingle(this)
+    }
+
+    class DeclareArray(
+        override val location: Location,
+        val name: Variable,
+        val address: Int,
+        val node: Node
+    ) : Node {
+        override fun <X> accept(visitor: Visitor<X>): X =
+            visitor.visitDeclareArray(this)
     }
 
     class If(override val location: Location, val branches: List<Branch>) : Node {
@@ -122,7 +132,7 @@ interface Node {
 
     class For(
         override val location: Location,
-        val init: Declare?,
+        val init: DeclareSingle?,
         val condition: Node?,
         val increment: Node?,
         val label: Name?,
@@ -153,8 +163,7 @@ interface Node {
         val offset: Int,
         val params: List<Variable>,
         val type: Type,
-        val body: Nodes,
-        val isNative: Boolean
+        val body: Nodes
     ) : Node {
         override val dataType get() = type.dataType
 

@@ -125,7 +125,7 @@ class Parser(private val lexer: Lexer, private val optimize: Boolean) : Iterator
         return Node.Type(location, TokenType.Type(type))
     }
 
-    private fun declare(): Node.Declare {
+    private fun declare(): Node {
         val location = here()
 
         val constant = skip(TokenType.Keyword.LET)
@@ -157,7 +157,11 @@ class Parser(private val lexer: Lexer, private val optimize: Boolean) : Iterator
 
         mustSkip(TokenType.Symbol.SEMICOLON)
 
-        return Node.Declare(location, constant, variable, address, type, node)
+        if (type.type.value is DataType.Array) {
+            return Node.DeclareArray(location, variable, address, node)
+        }
+
+        return Node.DeclareSingle(location, variable, address, node)
     }
 
     private fun `if`(): Node.If {
@@ -267,7 +271,7 @@ class Parser(private val lexer: Lexer, private val optimize: Boolean) : Iterator
         try {
             memory.push()
 
-            var init: Node.Declare? = null
+            var init: Node.DeclareSingle? = null
 
             if (!skip(TokenType.Symbol.SEMICOLON)) {
                 val name = name()
@@ -289,7 +293,7 @@ class Parser(private val lexer: Lexer, private val optimize: Boolean) : Iterator
 
                 val (_, _, address) = activation
 
-                init = Node.Declare(name.location, false, variable, address, type, node)
+                init = Node.DeclareSingle(name.location, variable, address, node)
 
                 mustSkip(TokenType.Symbol.SEMICOLON)
             }
@@ -438,7 +442,7 @@ class Parser(private val lexer: Lexer, private val optimize: Boolean) : Iterator
             resolveBranchReturns(returnType, body)
         }
 
-        val function = Node.Function(location, name, id, offset, params, type, body, isNative)
+        val function = Node.Function(location, name, id, offset, params, type, body)
 
         return function
     }
