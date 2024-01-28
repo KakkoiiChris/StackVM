@@ -48,7 +48,7 @@ class Parser(private val lexer: Lexer, private val optimize: Boolean) : Iterator
 
     private fun mustSkip(type: TokenType) {
         if (!skip(type)) {
-            error("Invalid type '$type'!")
+            error("Expected a '$type', but encountered a '${token.type}' @ ${here()}!")
         }
     }
 

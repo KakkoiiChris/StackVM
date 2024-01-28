@@ -110,7 +110,7 @@ class Lexer(private val src: String) : Iterator<Token> {
             do {
                 take()
             }
-            while (match(Char::isLetter))
+            while (match(Char::isLetterOrDigit))
         }
 
         if (result.equals("true", ignoreCase = true)) {
