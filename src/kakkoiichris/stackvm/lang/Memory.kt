@@ -1,5 +1,6 @@
 package kakkoiichris.stackvm.lang
 
+import kakkoiichris.stackvm.asm.ASMToken
 import java.util.*
 
 class Memory {
@@ -128,9 +129,25 @@ class Memory {
     }
 
     data class Lookup(val mode: Mode, val activation: VariableActivation) {
-        enum class Mode {
-            GLOBAL,
-            LOCAL
+        enum class Mode(
+            val load: ASMToken.Instruction,
+            val aLoad: ASMToken.Instruction,
+            val iLoad: ASMToken.Instruction,
+            val iaLoad: ASMToken.Instruction,
+        ) {
+            GLOBAL(
+                ASMToken.Instruction.LOADG,
+                ASMToken.Instruction.ALOADG,
+                ASMToken.Instruction.ILOADG,
+                ASMToken.Instruction.IALOADG,
+            ),
+
+            LOCAL(
+                ASMToken.Instruction.LOAD,
+                ASMToken.Instruction.ALOAD,
+                ASMToken.Instruction.ILOAD,
+                ASMToken.Instruction.IALOAD,
+            )
         }
     }
 

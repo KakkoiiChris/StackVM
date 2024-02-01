@@ -3,7 +3,6 @@ package kakkoiichris.stackvm.compiler
 import kakkoiichris.stackvm.asm.ASMToken
 import kakkoiichris.stackvm.asm.ASMToken.Instruction.*
 import kakkoiichris.stackvm.lang.DataType
-import kakkoiichris.stackvm.lang.Memory
 import kakkoiichris.stackvm.lang.Node
 import kakkoiichris.stackvm.lang.Parser
 
@@ -360,18 +359,10 @@ class ASMConverter(private val parser: Parser, private val optimize: Boolean) : 
     override fun visitVariable(node: Node.Variable): List<IASMToken> {
         val iTokens = mutableListOf<IASMToken>()
 
-        iTokens += when (node.mode) {
-            Memory.Lookup.Mode.GLOBAL -> when (node.dataType) {
-                is DataType.Array -> ALOADG
+        iTokens += when (node.dataType) {
+            is DataType.Array -> node.mode.aLoad
 
-                else              -> LOADG
-            }
-
-            Memory.Lookup.Mode.LOCAL  -> when (node.dataType) {
-                is DataType.Array -> ALOAD
-
-                else              -> LOAD
-            }
+            else              -> node.mode.load
         }.iasm
         iTokens += ASMToken.Value(node.address.toFloat()).iasm
 
@@ -467,6 +458,33 @@ class ASMConverter(private val parser: Parser, private val optimize: Boolean) : 
         iTokens += ASMToken.Value(node.id.toFloat()).iasm
 
         pos += 2
+
+        return iTokens
+    }
+
+    override fun visitIndex(node: Node.Index): List<IASMToken> {
+        val iTokens = mutableListOf<IASMToken>()
+
+        val origin = node.variable.address
+
+        val indices = node
+            .indices
+            .reversed()
+            .map { visit(it) }
+
+        for (index in indices) {
+            iTokens += index
+        }
+
+        iTokens += if (node.indices.size < node.arrayType.dimension) {
+            node.variable.mode.iaLoad
+        }
+        else {
+            node.variable.mode.iLoad
+        }.iasm
+        iTokens += ASMToken.Value(origin.toFloat()).iasm
+        iTokens += ASMToken.Value(indices.size.toFloat()).iasm
+        pos += 3
 
         return iTokens
     }

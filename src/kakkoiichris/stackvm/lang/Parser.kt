@@ -697,37 +697,17 @@ class Parser(private val lexer: Lexer, private val optimize: Boolean) : Iterator
     private fun postfix(): Node {
         var expr = terminal()
 
-        if (match(TokenType.Symbol.LEFT_PAREN)) {
-            if (expr !is Node.Name) error("Invalid invoke.")
+        when {
+            match(TokenType.Symbol.LEFT_PAREN)  -> {
+                if (expr !is Node.Name) error("Invalid invoke.")
 
-            val location = token.location
-
-            val args = mutableListOf<Node>()
-
-            mustSkip(TokenType.Symbol.LEFT_PAREN)
-
-            if (!skip(TokenType.Symbol.RIGHT_PAREN)) {
-                do {
-                    args += expr()
-                }
-                while (skip(TokenType.Symbol.COMMA))
-
-                mustSkip(TokenType.Symbol.RIGHT_PAREN)
+                expr = invoke(expr)
             }
 
-            val signature = Signature(expr, args.map { it.dataType })
+            match(TokenType.Symbol.LEFT_SQUARE) -> {
+                if (expr !is Node.Name) error("Invalid index.")
 
-            val (dataType, id, isNative) = memory
-                .getFunction(signature)
-
-            if (isNative) {
-                val systemID = SystemFunctions[signature].takeIf { it != -1 }
-                    ?: error("No system function for '$signature' @ ${expr.location}!")
-
-                expr = Node.SystemCall(location, expr, dataType, systemID, args)
-            }
-            else {
-                expr = Node.Invoke(location, expr, dataType, id, args)
+                expr = getIndex(expr.toVariable())
             }
         }
 
@@ -736,6 +716,52 @@ class Parser(private val lexer: Lexer, private val optimize: Boolean) : Iterator
         }
 
         return expr
+    }
+
+    private fun invoke(name: Node.Name): Node {
+        val location = token.location
+
+        val args = mutableListOf<Node>()
+
+        mustSkip(TokenType.Symbol.LEFT_PAREN)
+
+        if (!skip(TokenType.Symbol.RIGHT_PAREN)) {
+            do {
+                args += expr()
+            }
+            while (skip(TokenType.Symbol.COMMA))
+
+            mustSkip(TokenType.Symbol.RIGHT_PAREN)
+        }
+
+        val signature = Signature(name, args.map { it.dataType })
+
+        val (dataType, id, isNative) = memory
+            .getFunction(signature)
+
+        return if (isNative) {
+            val systemID = SystemFunctions[signature].takeIf { it != -1 }
+                ?: error("No system function for '$signature' @ ${name.location}!")
+
+            Node.SystemCall(location, name, dataType, systemID, args)
+        }
+        else {
+            Node.Invoke(location, name, dataType, id, args)
+        }
+    }
+
+    private fun getIndex(target: Node.Variable): Node.Index {
+        val location = here()
+
+        val indices = mutableListOf<Node>()
+
+        while (skip(TokenType.Symbol.LEFT_SQUARE)) {
+            indices += expr()
+
+            mustSkip(TokenType.Symbol.RIGHT_SQUARE)
+        }
+
+        return Node.Index(location, target, indices)
     }
 
     private fun terminal() = when {

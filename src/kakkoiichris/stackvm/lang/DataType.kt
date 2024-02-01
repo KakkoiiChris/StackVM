@@ -14,6 +14,15 @@ sealed interface DataType {
     data class Array(val subType: DataType, val size: Int) : DataType {
         override val offset get() = (size * subType.offset) + 1
 
+        val dimension: Int
+            get() {
+                if (subType is Array) {
+                    return 1 + subType.dimension
+                }
+
+                return 1
+            }
+
         override fun toString() =
             "$subType[$size]"
     }

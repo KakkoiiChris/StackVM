@@ -60,6 +60,8 @@ interface Node {
 
         fun visitSystemCall(node: SystemCall): X
 
+        fun visitIndex(node: Index): X
+
         fun visitName(node: Name): X
     }
 
@@ -544,6 +546,32 @@ interface Node {
     ) : Node {
         override fun <X> accept(visitor: Visitor<X>): X =
             visitor.visitSystemCall(this)
+    }
+
+    class Index(override val location: Location, val variable: Variable, val indices: List<Node>) : Node {
+        override val dataType: DataType
+            get() {
+                var type = variable.dataType
+
+                var i = 0
+
+                while (i < indices.size) {
+                    if (type !is DataType.Array) break
+
+                    type = type.subType
+
+                    i++
+                }
+
+                if (i < indices.size) error("MISMATCHED INDEXES")
+
+                return type
+            }
+
+        val arrayType get() = variable.dataType as DataType.Array
+
+        override fun <X> accept(visitor: Visitor<X>): X =
+            visitor.visitIndex(this)
     }
 
     class Name(override val location: Location, val name: TokenType.Name) : Node {

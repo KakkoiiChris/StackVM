@@ -30,9 +30,15 @@ object ASMFormatter {
                     ASTORE,
                     CALL,
                     FRAME,
-                    SYS  -> " ${fetch().truncate()}"
+                    SYS    -> " ${fetch().truncate()}"
 
-                    else -> ""
+                    ILOAD,
+                    ILOADG,
+                    IALOAD,
+                    IALOADG,
+                    ISTORE -> " ${fetch().truncate()} ${fetch().truncate()}"
+
+                    else   -> ""
                 }
             )
         }
