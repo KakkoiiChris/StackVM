@@ -136,12 +136,12 @@ object CPU1 : CPU() {
         var running = true
 
         while (running) {
-            Debug {
-                for (i in framePointerOrigin until framePointerOrigin + 20) {
-                    print("${memory[i].truncate()} ")
-                }
-                println()
-            }
+            //Debug {
+            //    for (i in framePointerOrigin until framePointerOrigin + 20) {
+            //        print("${memory[i].truncate()} ")
+            //    }
+            //    println()
+            //}
 
             when (ASMToken.Instruction.entries[fetchInt()]) {
                 ASMToken.Instruction.HALT    -> {
@@ -309,9 +309,9 @@ object CPU1 : CPU() {
                 ASMToken.Instruction.JIF     -> {
                     val address = instructionPointerOrigin + fetchInt()
 
-                    if (popStack().toBool()) {
-                        Debug.println("JIF @${address.toAddress()}")
+                    Debug.println("JIF @${address.toAddress()}")
 
+                    if (popStack().toBool()) {
                         instructionPointer = address
                     }
                 }

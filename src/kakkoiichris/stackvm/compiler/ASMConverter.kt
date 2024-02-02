@@ -501,6 +501,9 @@ class ASMConverter(private val parser: Parser, private val optimize: Boolean) : 
 
         iTokens += visit(node.value)
 
+        iTokens += DUP.iasm
+        pos++
+
         for (index in indices) {
             iTokens += index
         }
