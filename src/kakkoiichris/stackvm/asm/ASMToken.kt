@@ -40,6 +40,7 @@ interface ASMToken {
         STORE,
         ASTORE,
         ISTORE,
+        IASTORE,
         CALL,
         RET,
         FRAME,

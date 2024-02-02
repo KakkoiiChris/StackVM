@@ -36,7 +36,8 @@ object ASMFormatter {
                     ILOADG,
                     IALOAD,
                     IALOADG,
-                    ISTORE -> " ${fetch().truncate()} ${fetch().truncate()}"
+                    ISTORE,
+                    IASTORE -> " ${fetch().truncate()} ${fetch().truncate()}"
 
                     else   -> ""
                 }

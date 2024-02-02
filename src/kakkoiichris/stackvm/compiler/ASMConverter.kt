@@ -462,7 +462,7 @@ class ASMConverter(private val parser: Parser, private val optimize: Boolean) : 
         return iTokens
     }
 
-    override fun visitIndex(node: Node.Index): List<IASMToken> {
+    override fun visitGetIndex(node: Node.GetIndex): List<IASMToken> {
         val iTokens = mutableListOf<IASMToken>()
 
         val origin = node.variable.address
@@ -481,6 +481,35 @@ class ASMConverter(private val parser: Parser, private val optimize: Boolean) : 
         }
         else {
             node.variable.mode.iLoad
+        }.iasm
+        iTokens += ASMToken.Value(origin.toFloat()).iasm
+        iTokens += ASMToken.Value(indices.size.toFloat()).iasm
+        pos += 3
+
+        return iTokens
+    }
+
+    override fun visitSetIndex(node: Node.SetIndex): List<IASMToken> {
+        val iTokens = mutableListOf<IASMToken>()
+
+        val origin = node.variable.address
+
+        val indices = node
+            .indices
+            .reversed()
+            .map { visit(it) }
+
+        iTokens += visit(node.value)
+
+        for (index in indices) {
+            iTokens += index
+        }
+
+        iTokens += if (node.indices.size < node.arrayType.dimension) {
+            IASTORE
+        }
+        else {
+            ISTORE
         }.iasm
         iTokens += ASMToken.Value(origin.toFloat()).iasm
         iTokens += ASMToken.Value(indices.size.toFloat()).iasm

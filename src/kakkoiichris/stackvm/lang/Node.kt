@@ -60,7 +60,9 @@ interface Node {
 
         fun visitSystemCall(node: SystemCall): X
 
-        fun visitIndex(node: Index): X
+        fun visitGetIndex(node: GetIndex): X
+
+        fun visitSetIndex(node: SetIndex): X
 
         fun visitName(node: Name): X
     }
@@ -548,7 +550,7 @@ interface Node {
             visitor.visitSystemCall(this)
     }
 
-    class Index(override val location: Location, val variable: Variable, val indices: List<Node>) : Node {
+    class GetIndex(override val location: Location, val variable: Variable, val indices: List<Node>) : Node {
         override val dataType: DataType
             get() {
                 var type = variable.dataType
@@ -571,7 +573,15 @@ interface Node {
         val arrayType get() = variable.dataType as DataType.Array
 
         override fun <X> accept(visitor: Visitor<X>): X =
-            visitor.visitIndex(this)
+            visitor.visitGetIndex(this)
+    }
+
+    class SetIndex(override val location: Location, val variable: Variable, val indices: List<Node>, val value: Node) :
+        Node {
+        val arrayType get() = variable.dataType as DataType.Array
+
+        override fun <X> accept(visitor: Visitor<X>): X =
+            visitor.visitSetIndex(this)
     }
 
     class Name(override val location: Location, val name: TokenType.Name) : Node {

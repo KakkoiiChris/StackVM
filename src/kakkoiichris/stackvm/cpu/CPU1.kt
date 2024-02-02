@@ -136,12 +136,12 @@ object CPU1 : CPU() {
         var running = true
 
         while (running) {
-            //Debug {
+            Debug {
                 for (i in framePointerOrigin until framePointerOrigin + 20) {
                     print("${memory[i].truncate()} ")
                 }
                 println()
-            //}
+            }
 
             when (ASMToken.Instruction.entries[fetchInt()]) {
                 ASMToken.Instruction.HALT    -> {
@@ -496,7 +496,34 @@ object CPU1 : CPU() {
                     }
                 }
 
-                ASMToken.Instruction.ISTORE  -> TODO("ISTORE")
+                ASMToken.Instruction.ISTORE  -> {
+                    var address = fetchInt() + framePointer
+                    val indexCount = fetchInt()
+
+                    var indexOffset = 0
+
+                    for (i in 0..<indexCount - 1) {
+                        val subSize = memory[address + indexOffset + 1].toInt()
+
+                        val index = popStack().toInt()
+
+                        indexOffset = (indexOffset + 1) + (index * subSize)
+                    }
+
+                    val index = popStack().toInt()
+
+                    indexOffset += index + 1
+
+                    address += indexOffset
+
+                    val value = popStack()
+
+                    Debug.println("ISTORE @${address.toAddress()} #$indexCount #${value.truncate()}")
+
+                    memory[address] = value
+                }
+
+                ASMToken.Instruction.IASTORE -> TODO("IASTORE")
 
                 ASMToken.Instruction.CALL    -> {
                     val address = instructionPointer + 1
@@ -512,12 +539,15 @@ object CPU1 : CPU() {
 
                     Debug.println("RET @${address.toAddress()}")
 
-                    instructionPointer = if (address < 0) {
-                        stackPointerOrigin - 1
+                    if (address < 0) {
+                        result = popStack()
+
+                        running = false
+
+                        continue
                     }
-                    else {
-                        address
-                    }
+
+                    instructionPointer = address
 
                     popFrame()
                 }

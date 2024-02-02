@@ -544,27 +544,56 @@ class Parser(private val lexer: Lexer, private val optimize: Boolean) : Iterator
         var expr = or()
 
         if (match(TokenType.Symbol.EQUAL)) {
-            if (expr !is Node.Variable) error("Invalid assign.")
+            expr = when (expr) {
+                is Node.Variable -> assign(expr)
 
-            val (location, operator) = token
+                is Node.GetIndex -> assignIndex(expr)
 
-            mustSkip(operator)
-
-            val (_, variable) = memory
-                .getVariable(expr)
-
-            val (constant, dataType, address) = variable
-
-            if (constant) error("Variable '${expr.name.value}' cannot be reassigned @ ${expr.location}!")
-
-            val node = or()
-
-            if (dataType != node.dataType) error("Cannot assign a value of type '${node.dataType}' to a variable of type '$dataType' @ $location!")
-
-            expr = Node.Assign(location, expr, address, node)
+                else             -> error("Invalid assign.")
+            }
         }
 
         return expr
+    }
+
+    private fun assign(expr: Node.Variable): Node.Assign {
+        val (location, operator) = token
+
+        mustSkip(operator)
+
+        val (_, variable) = memory
+            .getVariable(expr)
+
+        val (constant, dataType, address) = variable
+
+        if (constant) error("Variable '${expr.name.value}' cannot be reassigned @ ${expr.location}!")
+
+        val node = or()
+
+        if (dataType != node.dataType) error("Cannot assign a value of type '${node.dataType}' to a variable of type '$dataType' @ $location!")
+
+        return Node.Assign(location, expr, address, node)
+    }
+
+    private fun assignIndex(expr: Node.GetIndex): Node.SetIndex {
+        val (location, operator) = token
+
+        mustSkip(operator)
+
+        val (_, variable) = memory
+            .getVariable(expr.variable)
+
+        val (constant, dataType, _) = variable
+
+        if (constant) error("Variable '${expr.variable.name.value}' cannot be reassigned @ ${expr.variable.location}!")
+
+        if (dataType !is DataType.Array) TODO("Cannot index!")
+
+        val node = or()
+
+        if (dataType.subType != node.dataType) error("Cannot assign a value of type '${node.dataType}' to array of type '${dataType.subType}' @ $location!")
+
+        return Node.SetIndex(location, expr.variable, expr.indices, node)
     }
 
     private fun or(): Node {
@@ -750,7 +779,7 @@ class Parser(private val lexer: Lexer, private val optimize: Boolean) : Iterator
         }
     }
 
-    private fun getIndex(target: Node.Variable): Node.Index {
+    private fun getIndex(target: Node.Variable): Node.GetIndex {
         val location = here()
 
         val indices = mutableListOf<Node>()
@@ -761,7 +790,7 @@ class Parser(private val lexer: Lexer, private val optimize: Boolean) : Iterator
             mustSkip(TokenType.Symbol.RIGHT_SQUARE)
         }
 
-        return Node.Index(location, target, indices)
+        return Node.GetIndex(location, target, indices)
     }
 
     private fun terminal() = when {
