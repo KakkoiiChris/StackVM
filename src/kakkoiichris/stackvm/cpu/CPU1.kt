@@ -84,18 +84,18 @@ object CPU1 : CPU() {
             memory[i++] = value
         }
 
-        framePointer = i
-        framePointerOrigin = framePointer
-
-        i += 10_000
-
         callPointer = i
         callPointerOrigin = callPointer
 
-        i += 10_000
+        i += config.maxCalls
 
         stackPointer = i
         stackPointerOrigin = stackPointer
+
+        i += config.maxStack
+
+        framePointer = i
+        framePointerOrigin = framePointer
     }
 
     private fun fetch() = memory[instructionPointer++]
