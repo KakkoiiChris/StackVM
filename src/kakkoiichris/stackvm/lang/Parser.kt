@@ -426,7 +426,10 @@ class Parser(private val lexer: Lexer, private val optimize: Boolean) : Iterator
 
         if (!isNative) {
             if (type.type.value == DataType.Primitive.VOID && body.last() !is Node.Return) {
-                body += Node.Return(Location.none, null)
+                body += Node.Return(
+                    Location.none,
+                    Node.Value(Location.none, TokenType.Value(0F, DataType.Primitive.VOID))
+                )
             }
 
             resolveBranches(body)

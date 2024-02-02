@@ -78,17 +78,21 @@ object CPU1 : CPU() {
         instructionPointer = 8
         instructionPointerOrigin = instructionPointer
 
-        framePointer = memory.size / 3
-        framePointerOrigin = framePointer
-
-        callPointer = 2 * memory.size / 3
-        callPointerOrigin = callPointer
-
         var i = instructionPointer
 
         for (value in values) {
             memory[i++] = value
         }
+
+        framePointer = i
+        framePointerOrigin = framePointer
+
+        i += 10_000
+
+        callPointer = i
+        callPointerOrigin = callPointer
+
+        i += 10_000
 
         stackPointer = i
         stackPointerOrigin = stackPointer
@@ -102,21 +106,28 @@ object CPU1 : CPU() {
         memory[stackPointer++] = value
     }
 
-    private fun popStack() =
-        memory[--stackPointer]
+    private fun popStack(): Float {
+        val address = --stackPointer
+
+        if (address < stackPointerOrigin) error("Stack underflow!")
+
+        return memory[address]
+    }
 
     private fun peekStack() = memory[stackPointer - 1]
 
-    private fun pushFrame(value: Float) {
-        memory[++framePointer] = value
+    private fun pushFrame(offset: Int) {
+        framePointer += offset
+
+        memory[framePointer++] = offset.toFloat()
     }
 
-    private fun popFrame(): Int {
-        if (framePointer > framePointerOrigin) {
-            return memory[framePointer--].toInt()
-        }
+    private fun popFrame() {
+        val offset = memory[--framePointer]
 
-        return -1
+        framePointer -= offset.toInt()
+
+        if (framePointer < framePointerOrigin) error("Frame stack underflow!")
     }
 
     private fun pushCall(value: Float) {
@@ -136,12 +147,13 @@ object CPU1 : CPU() {
         var running = true
 
         while (running) {
-            //Debug {
-            //    for (i in framePointerOrigin until framePointerOrigin + 20) {
-            //        print("${memory[i].truncate()} ")
-            //    }
-            //    println()
-            //}
+            Debug {
+                for (i in framePointerOrigin until framePointerOrigin + 20) {
+                    print("${memory[i].truncate()} ")
+                }
+
+                println()
+            }
 
             when (ASMToken.Instruction.entries[fetchInt()]) {
                 ASMToken.Instruction.HALT    -> {
@@ -163,13 +175,13 @@ object CPU1 : CPU() {
                 ASMToken.Instruction.POP     -> {
                     val value = popStack()
 
-                    Debug.println("POP #${value.truncate()}")
+                    Debug.println("POP <${value.truncate()}>")
                 }
 
                 ASMToken.Instruction.DUP     -> {
                     val value = peekStack()
 
-                    Debug.println("DUP #${value.truncate()}")
+                    Debug.println("DUP <${value.truncate()}>")
 
                     pushStack(value)
                 }
@@ -178,71 +190,87 @@ object CPU1 : CPU() {
                     val b = popStack()
                     val a = popStack()
 
-                    Debug.println("ADD #${a.truncate()} #${b.truncate()}")
+                    val value = a + b
 
-                    pushStack(a + b)
+                    Debug.println("ADD #${a.truncate()} #${b.truncate()} <$value>")
+
+                    pushStack(value)
                 }
 
                 ASMToken.Instruction.SUB     -> {
                     val b = popStack()
                     val a = popStack()
 
-                    Debug.println("SUB #${a.truncate()} #${b.truncate()}")
+                    val value = a - b
 
-                    pushStack(a - b)
+                    Debug.println("SUB #${a.truncate()} #${b.truncate()} <$value>")
+
+                    pushStack(value)
                 }
 
                 ASMToken.Instruction.MUL     -> {
                     val b = popStack()
                     val a = popStack()
 
-                    Debug.println("MUL #${a.truncate()} #${b.truncate()}")
+                    val value = a * b
 
-                    pushStack(a * b)
+                    Debug.println("MUL #${a.truncate()} #${b.truncate()} <$value>")
+
+                    pushStack(value)
                 }
 
                 ASMToken.Instruction.DIV     -> {
                     val b = popStack()
                     val a = popStack()
 
-                    Debug.println("DIV #${a.truncate()} #${b.truncate()}")
+                    val value = a / b
 
-                    pushStack(a / b)
+                    Debug.println("DIV #${a.truncate()} #${b.truncate()} <$value>")
+
+                    pushStack(value)
                 }
 
                 ASMToken.Instruction.IDIV    -> {
                     val b = popStack()
                     val a = popStack()
 
-                    Debug.println("IDIV #${a.truncate()} #${b.truncate()}")
+                    val value = (a.toInt() / b.toInt()).toFloat()
 
-                    pushStack((a.toInt() / b.toInt()).toFloat())
+                    Debug.println("IDIV #${a.truncate()} #${b.truncate()} <$value>")
+
+                    pushStack(value)
                 }
 
                 ASMToken.Instruction.MOD     -> {
                     val b = popStack()
                     val a = popStack()
 
-                    Debug.println("MOD #${a.truncate()} #${b.truncate()}")
+                    val value = a % b
 
-                    pushStack(a % b)
+                    Debug.println("MOD #${a.truncate()} #${b.truncate()} <$value>")
+
+                    pushStack(value)
                 }
 
                 ASMToken.Instruction.IMOD    -> {
                     val b = popStack()
                     val a = popStack()
 
-                    Debug.println("IMOD #${a.truncate()} #${b.truncate()}")
+                    val value = (a.toInt() % b.toInt()).toFloat()
 
-                    pushStack((a.toInt() % b.toInt()).toFloat())
+                    Debug.println("IMOD #${a.truncate()} #${b.truncate()} <$value>")
+
+                    pushStack(value)
                 }
 
                 ASMToken.Instruction.NEG     -> {
-                    val value = popStack()
+                    val a = popStack()
+
+                    val value = -a
 
                     Debug.println("NEG #${value.truncate()}")
 
-                    pushStack(-value)
+                    pushStack(value)
                 }
 
                 ASMToken.Instruction.AND     -> {
@@ -320,7 +348,7 @@ object CPU1 : CPU() {
                     val address = fetchInt() + framePointer
                     val value = memory[address]
 
-                    Debug.println("LOAD @${address.toAddress()} #${value.truncate()}")
+                    Debug.println("LOAD @${address.toAddress()} <${value.truncate()}>")
 
                     pushStack(value)
                 }
@@ -358,7 +386,7 @@ object CPU1 : CPU() {
 
                     val value = memory[address]
 
-                    Debug.println("ILOAD @${address.toAddress()} #$indexCount #${value.truncate()}")
+                    Debug.println("ILOAD @${address.toAddress()} #$indexCount <${value.truncate()}>")
 
                     pushStack(value)
                 }
@@ -395,7 +423,7 @@ object CPU1 : CPU() {
                     val address = fetchInt() + framePointerOrigin
                     val value = memory[address]
 
-                    Debug.println("LOADG @${address.toAddress()} #${value.truncate()}")
+                    Debug.println("LOADG @${address.toAddress()} <${value.truncate()}>")
 
                     pushStack(value)
                 }
@@ -437,7 +465,7 @@ object CPU1 : CPU() {
 
                     val value = memory[address]
 
-                    Debug.println("ILOADG @${address.toAddress()} #$indexCount #${value.truncate()}")
+                    Debug.println("ILOADG @${address.toAddress()} #$indexCount <${value.truncate()}>")
 
                     pushStack(value)
                 }
@@ -474,7 +502,7 @@ object CPU1 : CPU() {
                     val address = fetchInt() + framePointer
                     val value = popStack()
 
-                    Debug.println("STORE @${address.toAddress()} #${value.truncate()}")
+                    Debug.println("STORE @${address.toAddress()} <${value.truncate()}>")
 
                     memory[address] = value
                 }
@@ -518,7 +546,7 @@ object CPU1 : CPU() {
 
                     val value = popStack()
 
-                    Debug.println("ISTORE @${address.toAddress()} #$indexCount #${value.truncate()}")
+                    Debug.println("ISTORE @${address.toAddress()} #$indexCount <${value.truncate()}>")
 
                     memory[address] = value
                 }
@@ -553,7 +581,7 @@ object CPU1 : CPU() {
                 }
 
                 ASMToken.Instruction.FRAME   -> {
-                    val value = fetch()
+                    val value = fetchInt()
 
                     Debug.println("FRAME $$value")
 
@@ -571,14 +599,14 @@ object CPU1 : CPU() {
                         args.add(popStack())
                     }
 
-                    Debug.println("SYS #$id (${args.joinToString()})")
+                    Debug.println("SYS #$id <${args.joinToString()}>")
 
                     pushStack(function(args))
                 }
             }
 
             Debug {
-                print("\tSTACK:")
+                print("\t\t\t\t\t\t\t\tSTACK:")
 
                 for (i in stackPointerOrigin..<stackPointer) {
                     print(" ${memory[i].truncate()}")

@@ -301,9 +301,11 @@ class ASMConverter(private val parser: Parser, private val optimize: Boolean) : 
         }
 
         if (iTokens.none { it is IASMToken.Ok && it.token == RET }) {
+            iTokens += PUSH.iasm
+            iTokens += ASMToken.Value(0F).iasm
             iTokens += RET.iasm
 
-            pos++
+            pos += 3
         }
 
         val end = pos.toFloat()
