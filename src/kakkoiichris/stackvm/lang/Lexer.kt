@@ -1,6 +1,10 @@
 package kakkoiichris.stackvm.lang
 
 class Lexer(private val src: String) : Iterator<Token> {
+    companion object {
+        private const val NUL = '\u0000'
+    }
+
     private var pos = 0
     private var row = 1
     private var col = 1
@@ -45,7 +49,7 @@ class Lexer(private val src: String) : Iterator<Token> {
 
     private fun here() = Location(row, col)
 
-    private fun peek() = if (pos < src.length) src[pos] else '\u0000'
+    private fun peek() = if (pos < src.length) src[pos] else NUL
 
     private fun match(char: Char) =
         peek() == char
@@ -104,7 +108,7 @@ class Lexer(private val src: String) : Iterator<Token> {
         do {
             step()
         }
-        while (!match('\n'))
+        while (!(match('\n') || match(NUL)))
     }
 
     private fun word(): Token {
