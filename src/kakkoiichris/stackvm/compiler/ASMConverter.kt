@@ -290,7 +290,11 @@ class ASMConverter(private val parser: Parser, private val optimize: Boolean) : 
         pos += 2
 
         for (param in node.params) {
-            iTokens += STORE.iasm
+            iTokens += when (param.dataType) {
+                is DataType.Array -> ASTORE.iasm
+
+                else              -> STORE.iasm
+            }
             iTokens += ASMToken.Value(param.address.toFloat()).iasm
 
             pos += 2
