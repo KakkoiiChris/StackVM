@@ -546,24 +546,44 @@ class Parser(private val lexer: Lexer, private val optimize: Boolean) : Iterator
     private fun assign(): Node {
         var expr = or()
 
-        if (match(TokenType.Symbol.EQUAL)) {
-            expr = when (expr) {
-                is Node.Variable -> assign(expr)
+        if (matchAny(
+                TokenType.Symbol.EQUAL,
+                TokenType.Symbol.PLUS_EQUAL,
+                TokenType.Symbol.DASH_EQUAL,
+                TokenType.Symbol.STAR_EQUAL,
+                TokenType.Symbol.SLASH_EQUAL,
+                TokenType.Symbol.PERCENT_EQUAL,
+                TokenType.Symbol.DOUBLE_AMPERSAND_EQUAL,
+                TokenType.Symbol.DOUBLE_PIPE_EQUAL
+            )
+        ) {
+            val (location, symbol) = token
 
-                is Node.GetIndex -> assignIndex(expr)
+            mustSkip(symbol)
 
-                else             -> error("Invalid assign.")
+            expr = when (symbol) {
+                TokenType.Symbol.EQUAL -> when (expr) {
+                    is Node.Variable -> assign(location, expr)
+
+                    is Node.GetIndex -> assignIndex(location, expr)
+
+                    else             -> error("Invalid assign.")
+                }
+
+                else                   -> when (expr) {
+                    is Node.Variable -> desugarAssign(location, expr, symbol as TokenType.Symbol)
+
+                    is Node.GetIndex -> desugarAssignIndex(location, expr, symbol as TokenType.Symbol)
+
+                    else             -> error("Invalid assign desugar.")
+                }
             }
         }
 
         return expr
     }
 
-    private fun assign(expr: Node.Variable): Node.Assign {
-        val (location, operator) = token
-
-        mustSkip(operator)
-
+    private fun assign(location: Location, expr: Node.Variable): Node.Assign {
         val (_, variable) = memory
             .getVariable(expr)
 
@@ -578,11 +598,7 @@ class Parser(private val lexer: Lexer, private val optimize: Boolean) : Iterator
         return Node.Assign(location, expr, address, node)
     }
 
-    private fun assignIndex(expr: Node.GetIndex): Node.SetIndex {
-        val (location, operator) = token
-
-        mustSkip(operator)
-
+    private fun assignIndex(location: Location, expr: Node.GetIndex): Node.SetIndex {
         val (_, variable) = memory
             .getVariable(expr.variable)
 
@@ -597,6 +613,58 @@ class Parser(private val lexer: Lexer, private val optimize: Boolean) : Iterator
         if (dataType.subType != node.dataType) error("Cannot assign a value of type '${node.dataType}' to array of type '${dataType.subType}' @ $location!")
 
         return Node.SetIndex(location, expr.variable, expr.indices, node)
+    }
+
+    private fun desugarAssign(location: Location, expr: Node.Variable, symbol: TokenType.Symbol): Node.Assign {
+        val (_, variable) = memory
+            .getVariable(expr)
+
+        val (constant, dataType, address) = variable
+
+        if (constant) error("Variable '${expr.name.value}' cannot be reassigned @ ${expr.location}!")
+
+        val node = or()
+
+        val desugaredOperator = symbol.desugared ?: TODO("Operator not desugared!")
+
+        var operator = Node.Binary.Operator[desugaredOperator]
+
+        if (expr.dataType == DataType.Primitive.INT && node.dataType == DataType.Primitive.INT) {
+            operator = operator.intVersion
+        }
+
+        val intermediate = Node.Binary(location, operator, expr, node)
+
+        if (dataType != intermediate.dataType) error("Cannot assign a value of type '${intermediate.dataType}' to a variable of type '$dataType' @ $location!")
+
+        return Node.Assign(location, expr, address, intermediate)
+    }
+
+    private fun desugarAssignIndex(location: Location, expr: Node.GetIndex, symbol: TokenType.Symbol): Node.SetIndex {
+        val (_, variable) = memory
+            .getVariable(expr.variable)
+
+        val (constant, dataType, _) = variable
+
+        if (constant) error("Variable '${expr.variable.name.value}' cannot be reassigned @ ${expr.variable.location}!")
+
+        if (dataType !is DataType.Array) TODO("Cannot index!")
+
+        val node = or()
+
+        val desugaredOperator = symbol.desugared ?: TODO("Operator not desugared!")
+
+        var operator = Node.Binary.Operator[desugaredOperator]
+
+        if (expr.dataType == DataType.Primitive.INT && node.dataType == DataType.Primitive.INT) {
+            operator = operator.intVersion
+        }
+
+        val intermediate = Node.Binary(location, operator, expr, node)
+
+        if (dataType.subType != intermediate.dataType) error("Cannot assign a value of type '${intermediate.dataType}' to array of type '${dataType.subType}' @ $location!")
+
+        return Node.SetIndex(location, expr.variable, expr.indices, intermediate)
     }
 
     private fun or(): Node {

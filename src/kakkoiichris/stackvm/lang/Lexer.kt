@@ -219,15 +219,35 @@ class Lexer(private val src: String) : Iterator<Token> {
         val location = here()
 
         val symbol = when {
-            skip('+') -> TokenType.Symbol.PLUS
+            skip('+') -> when {
+                skip('=') -> TokenType.Symbol.PLUS_EQUAL
 
-            skip('-') -> TokenType.Symbol.DASH
+                else      -> TokenType.Symbol.PLUS
+            }
 
-            skip('*') -> TokenType.Symbol.STAR
+            skip('-') -> when {
+                skip('=') -> TokenType.Symbol.DASH_EQUAL
 
-            skip('/') -> TokenType.Symbol.SLASH
+                else      -> TokenType.Symbol.DASH
+            }
 
-            skip('%') -> TokenType.Symbol.PERCENT
+            skip('*') -> when {
+                skip('=') -> TokenType.Symbol.STAR_EQUAL
+
+                else      -> TokenType.Symbol.STAR
+            }
+
+            skip('/') -> when {
+                skip('=') -> TokenType.Symbol.SLASH_EQUAL
+
+                else      -> TokenType.Symbol.SLASH
+            }
+
+            skip('%') -> when {
+                skip('=') -> TokenType.Symbol.PERCENT_EQUAL
+
+                else      -> TokenType.Symbol.PERCENT
+            }
 
             skip('<') -> when {
                 skip('=') -> TokenType.Symbol.LESS_EQUAL
@@ -254,13 +274,21 @@ class Lexer(private val src: String) : Iterator<Token> {
             }
 
             skip('&') -> when {
-                skip('&') -> TokenType.Symbol.DOUBLE_AMPERSAND
+                skip('&') -> when {
+                    skip('=') -> TokenType.Symbol.DOUBLE_AMPERSAND_EQUAL
+
+                    else      -> TokenType.Symbol.DOUBLE_AMPERSAND
+                }
 
                 else      -> error("No single ampersand.")
             }
 
             skip('|') -> when {
-                skip('|') -> TokenType.Symbol.DOUBLE_PIPE
+                skip('|') -> when {
+                    skip('=') -> TokenType.Symbol.DOUBLE_PIPE_EQUAL
+
+                    else      -> TokenType.Symbol.DOUBLE_PIPE
+                }
 
                 else      -> error("No single pipe.")
             }
