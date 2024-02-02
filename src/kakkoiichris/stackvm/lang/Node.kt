@@ -44,6 +44,8 @@ interface Node {
 
         fun visitValue(node: Value): X
 
+        fun visitString(node: String): X
+
         fun visitVariable(node: Variable): X
 
         fun visitType(node: Type): X
@@ -194,6 +196,13 @@ interface Node {
 
         override fun <X> accept(visitor: Visitor<X>): X =
             visitor.visitValue(this)
+    }
+
+    class String(override val location: Location, val value: TokenType.String) : Node {
+        override val dataType get() = DataType.Array(CHAR, value.value.length)
+
+        override fun <X> accept(visitor: Visitor<X>): X =
+            visitor.visitString(this)
     }
 
     class Variable(

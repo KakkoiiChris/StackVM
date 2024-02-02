@@ -354,6 +354,24 @@ class ASMConverter(private val parser: Parser, private val optimize: Boolean) : 
         return iTokens
     }
 
+    override fun visitString(node: Node.String): List<IASMToken> {
+        val iTokens = mutableListOf<IASMToken>()
+
+        for (c in node.value.value.reversed()) {
+            iTokens += PUSH.iasm
+            iTokens += ASMToken.Value(c.code.toFloat()).iasm
+
+            pos += 2
+        }
+
+        iTokens += PUSH.iasm
+        iTokens += ASMToken.Value(node.value.value.length.toFloat()).iasm
+
+        pos += 2
+
+        return iTokens
+    }
+
     override fun visitName(node: Node.Name): List<IASMToken> {
         error("Should not visit Name!")
     }

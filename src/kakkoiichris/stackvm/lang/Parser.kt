@@ -867,6 +867,8 @@ class Parser(private val lexer: Lexer, private val optimize: Boolean) : Iterator
     private fun terminal() = when {
         match<TokenType.Value>()           -> value()
 
+        match<TokenType.String>()->string()
+
         match<TokenType.Name>()            -> name()
 
         match(TokenType.Symbol.LEFT_PAREN) -> nested()
@@ -884,6 +886,14 @@ class Parser(private val lexer: Lexer, private val optimize: Boolean) : Iterator
         val value = get<TokenType.Value>() ?: error("Not a value.")
 
         return Node.Value(location, value)
+    }
+
+    private fun string():Node.String {
+        val location = here()
+
+        val value = get<TokenType.String>() ?: error("Not a value.")
+
+        return Node.String(location, value)
     }
 
     private fun name(): Node.Name {

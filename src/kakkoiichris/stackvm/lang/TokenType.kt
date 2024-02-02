@@ -73,7 +73,9 @@ interface TokenType {
 
     data class Value(val value: Float, val dataType: DataType) : TokenType
 
-    data class Name(val value: String) : TokenType
+    data class String(val value: kotlin.String) : TokenType
+
+    data class Name(val value: kotlin.String) : TokenType
 
     data class Type(val value: DataType) : TokenType
 

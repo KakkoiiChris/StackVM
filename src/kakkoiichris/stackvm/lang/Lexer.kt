@@ -33,6 +33,10 @@ class Lexer(private val src: String) : Iterator<Token> {
                 return char()
             }
 
+            if (match('"')) {
+                return string()
+            }
+
             return symbol()
         }
 
@@ -172,47 +176,63 @@ class Lexer(private val src: String) : Iterator<Token> {
             .toInt(16)
             .toChar()
 
+    private fun getTextChar(delimiter: Char) = if (skip('\\')) when {
+        skip('0')       -> '\u0000'
+
+        skip('a')       -> '\u0007'
+
+        skip('b')       -> '\b'
+
+        skip('f')       -> '\u000C'
+
+        skip('n')       -> '\n'
+
+        skip('r')       -> '\r'
+
+        skip('t')       -> '\t'
+
+        skip('v')       -> '\u000B'
+
+        skip('\\')      -> '\\'
+
+        skip(delimiter) -> delimiter
+
+        skip('x')       -> hex(2)
+
+        skip('u')       -> hex(4)
+
+        else            -> error("Illegal character escape sequence '\\${peek()}'!")
+    }
+    else {
+        get()
+    }
+
     private fun char(): Token {
         val location = here()
 
         mustSkip('\'')
 
-        val result = if (skip('\\')) when {
-            skip('0')  -> '\u0000'
-
-            skip('a')  -> '\u0007'
-
-            skip('b')  -> '\b'
-
-            skip('f')  -> '\u000C'
-
-            skip('n')  -> '\n'
-
-            skip('r')  -> '\r'
-
-            skip('t')  -> '\t'
-
-            skip('v')  -> '\u000B'
-
-            skip('\\') -> '\\'
-
-            skip('\'') -> '\''
-
-            skip('x')  -> hex(2)
-
-            skip('u')  -> hex(4)
-
-            else       -> error("Illegal character escape sequence '\\${peek()}'!")
-        }
-        else {
-            get()
-        }
+        val result = getTextChar('\'')
 
         mustSkip('\'')
 
         val value = result.code.toFloat()
 
         return Token(location, TokenType.Value(value, DataType.Primitive.CHAR))
+    }
+
+    private fun string(): Token {
+        val location = here()
+
+        mustSkip('"')
+
+        val value = buildString {
+            while (!skip('"')) {
+                append(getTextChar('"'))
+            }
+        }
+
+        return Token(location, TokenType.String(value))
     }
 
     private fun symbol(): Token {
