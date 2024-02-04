@@ -3,16 +3,16 @@ package kakkoiichris.stackvm
 import kakkoiichris.stackvm.asm.ASMFormatter
 import kakkoiichris.stackvm.compiler.ASMConverter
 import kakkoiichris.stackvm.compiler.Compiler
-import kakkoiichris.stackvm.cpu.CPU1
+import kakkoiichris.stackvm.cpu.CPU
 import kakkoiichris.stackvm.cpu.Debug
+import kakkoiichris.stackvm.cpu.DebugCPU
+import kakkoiichris.stackvm.cpu.ReleaseCPU
 import kakkoiichris.stackvm.lang.Lexer
 import kakkoiichris.stackvm.lang.Parser
 import kakkoiichris.stackvm.util.length
 import kakkoiichris.stackvm.util.truncate
 import java.io.*
 import kotlin.time.measureTimedValue
-
-val cpu = CPU1
 
 /**
  * Stack VM
@@ -26,6 +26,7 @@ val cpu = CPU1
  * @author Christian Bryce Alexander
  */
 fun main(args: Array<String>) {
+    var cpu: CPU = ReleaseCPU
     var mode = Mode.REPL
     var srcFile = ""
     var dstFile = ""
@@ -34,7 +35,11 @@ fun main(args: Array<String>) {
 
     while (a < args.size) {
         when (args[a++].lowercase()) {
-            "-d" -> Debug.enabled = true
+            "-d" -> {
+                Debug.enabled = true
+
+                cpu = DebugCPU
+            }
 
             "-c" -> {
                 mode = Mode.COMPILE
@@ -56,11 +61,11 @@ fun main(args: Array<String>) {
     }
 
     when (mode) {
-        Mode.REPL    -> repl()
+        Mode.REPL    -> repl(cpu)
 
         Mode.COMPILE -> compile(srcFile, dstFile)
 
-        Mode.RUN     -> run(srcFile)
+        Mode.RUN     -> run(cpu, srcFile)
 
         Mode.FORMAT  -> format(srcFile, dstFile)
     }
@@ -73,7 +78,7 @@ private enum class Mode {
     FORMAT
 }
 
-private fun repl() {
+private fun repl(cpu: CPU) {
     while (true) {
         print("> ")
 
@@ -102,7 +107,7 @@ private fun repl() {
                 println()
             }
 
-            cpu.load(tokens.iterator())
+            cpu.initialize(tokens.iterator())
 
             val (result, runTime) = measureTimedValue { cpu.run() }
 
@@ -139,7 +144,7 @@ private fun compile(srcName: String, dstName: String) {
     out.close()
 }
 
-private fun run(srcName: String) {
+private fun run(cpu: CPU, srcName: String) {
     val srcFile = File(srcName)
 
     val `in` = DataInputStream(BufferedInputStream(FileInputStream(srcFile)))
@@ -152,7 +157,7 @@ private fun run(srcName: String) {
         values[i] = `in`.readFloat()
     }
 
-    cpu.load(values)
+    cpu.initialize(values)
 
     val (result, runTime) = measureTimedValue { cpu.run() }
 

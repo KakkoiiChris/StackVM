@@ -7,12 +7,14 @@ import kakkoiichris.stackvm.util.toFloat
 import kakkoiichris.stackvm.util.truncate
 import kotlin.math.*
 
-typealias Method = (values: List<Float>) -> Float
+typealias Method = (values: List<Float>) -> List<Float>
 
 object SystemFunctions {
     private val functionTable = mutableMapOf<String, Int>()
 
     private val functions = mutableListOf<Function>()
+
+    private val void = listOf(0F)
 
     init {
         addMath()
@@ -24,205 +26,213 @@ object SystemFunctions {
         addFunction("sin", FLOAT) { values ->
             val (n) = values
 
-            sin(n)
+            listOf(sin(n))
         }
 
         addFunction("cos", FLOAT) { values ->
             val (n) = values
 
-            cos(n)
+            listOf(cos(n))
         }
 
         addFunction("tan", FLOAT) { values ->
             val (n) = values
 
-            tan(n)
+            listOf(tan(n))
         }
 
         addFunction("asin", FLOAT) { values ->
             val (n) = values
 
-            asin(n)
+            listOf(asin(n))
         }
 
         addFunction("acos", FLOAT) { values ->
             val (n) = values
 
-            acos(n)
+            listOf(acos(n))
         }
 
         addFunction("atan", FLOAT) { values ->
             val (n) = values
 
-            atan(n)
+            listOf(atan(n))
         }
 
         addFunction("atan2", FLOAT, FLOAT) { values ->
             val (y, x) = values
 
-            atan2(y, x)
+            listOf(atan2(y, x))
         }
 
         addFunction("sinh", FLOAT) { values ->
             val (n) = values
 
-            sinh(n)
+            listOf(sinh(n))
         }
 
         addFunction("cosh", FLOAT) { values ->
             val (n) = values
 
-            cosh(n)
+            listOf(cosh(n))
         }
 
         addFunction("tanh", FLOAT) { values ->
             val (n) = values
 
-            tanh(n)
+            listOf(tanh(n))
         }
 
         addFunction("asinh", FLOAT) { values ->
             val (n) = values
 
-            asinh(n)
+            listOf(asinh(n))
         }
 
         addFunction("acosh", FLOAT) { values ->
             val (n) = values
 
-            acosh(n)
+            listOf(acosh(n))
         }
 
         addFunction("atanh", FLOAT) { values ->
             val (n) = values
 
-            atanh(n)
+            listOf(atanh(n))
         }
 
         addFunction("hypot", FLOAT, FLOAT) { values ->
             val (x, y) = values
 
-            hypot(x, y)
+            listOf(hypot(x, y))
         }
 
         addFunction("sqrt", FLOAT) { values ->
             val (n) = values
 
-            sqrt(n)
+            listOf(sqrt(n))
         }
 
         addFunction("cbrt", FLOAT) { values ->
             val (n) = values
 
-            cbrt(n)
+            listOf(cbrt(n))
         }
 
         addFunction("exp", FLOAT) { values ->
             val (n) = values
 
-            exp(n)
+            listOf(exp(n))
         }
 
         addFunction("expm1", FLOAT) { values ->
             val (n) = values
 
-            expm1(n)
+            listOf(expm1(n))
         }
 
         addFunction("log", FLOAT, FLOAT) { values ->
             val (n, base) = values
 
-            log(n, base)
+            listOf(log(n, base))
         }
 
         addFunction("ln", FLOAT) { values ->
             val (n) = values
 
-            ln(n)
+            listOf(ln(n))
         }
 
         addFunction("log10", FLOAT) { values ->
             val (n) = values
 
-            log10(n)
+            listOf(log10(n))
         }
 
         addFunction("log2", FLOAT) { values ->
             val (n) = values
 
-            log2(n)
+            listOf(log2(n))
         }
 
         addFunction("ln1p", FLOAT) { values ->
             val (n) = values
 
-            ln1p(n)
+            listOf(ln1p(n))
         }
 
         addFunction("ceil", FLOAT) { values ->
             val (n) = values
 
-            ceil(n)
+            listOf(ceil(n))
         }
 
         addFunction("floor", FLOAT) { values ->
             val (n) = values
 
-            floor(n)
+            listOf(floor(n))
         }
 
         addFunction("truncate", FLOAT) { values ->
             val (n) = values
 
-            truncate(n)
+            listOf(truncate(n))
         }
 
         addFunction("round", FLOAT) { values ->
             val (n) = values
 
-            round(n)
+            listOf(round(n))
         }
 
         addFunction("pow", FLOAT, FLOAT) { values ->
             val (b, e) = values
 
-            b.pow(e)
+            listOf(b.pow(e))
         }
 
         addFunction("pow", FLOAT, INT) { values ->
             val (b, e) = values
-            Float.NEGATIVE_INFINITY
-            b.pow(e.toInt())
+
+            listOf(b.pow(e.toInt()))
         }
     }
 
     private fun addConsole() {
         addFunction("readBool") {
-            readln()
-                .toBooleanStrictOrNull()
-                ?.toFloat()
-                ?: error("Bool format error!")
+            listOf(
+                readln()
+                    .toBooleanStrictOrNull()
+                    ?.toFloat()
+                    ?: error("Bool format error!")
+            )
         }
 
         addFunction("readFloat") {
-            readln()
-                .toFloatOrNull()
-                ?: error("Number format error!")
+            listOf(
+                readln()
+                    .toFloatOrNull()
+                    ?: error("Number format error!")
+            )
         }
 
         addFunction("readInt") {
-            readln()
-                .toIntOrNull()
-                ?.toFloat()
-                ?: error("Number format error!")
+            listOf(
+                readln()
+                    .toIntOrNull()
+                    ?.toFloat()
+                    ?: error("Number format error!")
+            )
         }
 
         addFunction("readChar") {
-            readln()
-                .getOrNull(0)
-                ?.code
-                ?.toFloat()
-                ?: error("Char format error!")
+            listOf(
+                readln()
+                    .getOrNull(0)
+                    ?.code
+                    ?.toFloat()
+                    ?: error("Char format error!")
+            )
         }
 
         addFunction("write", BOOL) { values ->
@@ -230,7 +240,7 @@ object SystemFunctions {
 
             print(n.toBool())
 
-            0F
+            void
         }
 
         addFunction("write", INT) { values ->
@@ -238,7 +248,7 @@ object SystemFunctions {
 
             print(n.toInt())
 
-            0F
+            void
         }
 
         addFunction("write", FLOAT) { values ->
@@ -246,7 +256,7 @@ object SystemFunctions {
 
             print(n.truncate())
 
-            0F
+            void
         }
 
         addFunction("write", CHAR) { values ->
@@ -254,7 +264,7 @@ object SystemFunctions {
 
             print(n.toInt().toChar())
 
-            0F
+            void
         }
     }
 
