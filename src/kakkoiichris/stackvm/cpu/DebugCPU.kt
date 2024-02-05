@@ -34,6 +34,8 @@ object DebugCPU : CPU() {
 
         framePointer = i
         framePointerOrigin = framePointer
+
+        pushStack(0F)
     }
 
     private fun fetch() = memory[instructionPointer++]

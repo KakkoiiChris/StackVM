@@ -81,7 +81,7 @@ class Memory {
         error("Redeclared function '$signature' @ ${signature.name.location}!")
     }
 
-    fun getFunction(signature: Signature): FunctionActivation {
+    fun getFunction(signature: Signature): FunctionRecord {
         var here: Scope? = peek()
 
         while (here != null) {
@@ -98,13 +98,13 @@ class Memory {
     class Scope(val parent: Scope? = null) {
         var variableID: Int = parent?.variableID ?: 0
 
-        private val variables = mutableMapOf<String, VariableActivation>()
-        private val functions = mutableMapOf<String, FunctionActivation>()
+        private val variables = mutableMapOf<String, VariableRecord>()
+        private val functions = mutableMapOf<String, FunctionRecord>()
 
         fun addVariable(constant: Boolean, name: TokenType.Name, dataType: DataType): Boolean {
             if (name.value in variables) return false
 
-            variables[name.value] = VariableActivation(constant, dataType, variableID)
+            variables[name.value] = VariableRecord(constant, dataType, variableID)
 
             variableID += dataType.offset
 
@@ -119,7 +119,7 @@ class Memory {
 
             if (rep in functions) return false
 
-            functions[rep] = FunctionActivation(dataType, id, isNative)
+            functions[rep] = FunctionRecord(dataType, id, isNative)
 
             return true
         }
@@ -128,7 +128,7 @@ class Memory {
             functions[signature.toString()]
     }
 
-    data class Lookup(val mode: Mode, val activation: VariableActivation) {
+    data class Lookup(val mode: Mode, val record: VariableRecord) {
         enum class Mode(
             val load: ASMToken.Instruction,
             val aLoad: ASMToken.Instruction,
@@ -151,7 +151,7 @@ class Memory {
         }
     }
 
-    data class VariableActivation(val constant: Boolean, val dataType: DataType, val address: Int)
+    data class VariableRecord(val constant: Boolean, val dataType: DataType, val address: Int)
 
-    data class FunctionActivation(val dataType: DataType, val id: Int, val isNative: Boolean)
+    data class FunctionRecord(val dataType: DataType, val id: Int, val isNative: Boolean)
 }

@@ -362,67 +362,76 @@ class Parser(private val lexer: Lexer, private val optimize: Boolean) : Iterator
 
         val name = name()
 
+        val id = memory.getFunctionID()
+
+        memory.push()
+
+        val offset = memory.peek().variableID
+
         val params = mutableListOf<Node.Variable>()
 
-        var type = Node.Type(Location.none, TokenType.Type(DataType.Primitive.VOID))
+        if (skip(TokenType.Symbol.LEFT_PAREN) && !skip(TokenType.Symbol.RIGHT_PAREN)) {
+            do {
+                val paramName = name()
+
+                mustSkip(TokenType.Symbol.COLON)
+
+                val paramType = type()
+
+                params += createVariable(true, paramName, paramType.dataType)
+            }
+            while (skip(TokenType.Symbol.COMMA))
+
+            mustSkip(TokenType.Symbol.RIGHT_PAREN)
+        }
+
+        var type: Node.Type? = null
+
+        if (skip(TokenType.Symbol.COLON)) type = type()
 
         val body = mutableListOf<Node>()
 
-        val id: Int
-        val offset: Int
+        val isNative = skip(TokenType.Symbol.SEMICOLON)
 
-        var isNative = false
+        if (!isNative) {
+            if (skip(TokenType.Symbol.EQUAL)) {
+                val expr = expr()
 
-        try {
-            id = memory.getFunctionID()
+                type = Node.Type(expr.location, TokenType.Type(expr.dataType))
 
-            memory.push()
+                val here = memory.pop()!!
+                memory.addFunction(type.dataType, id, Signature(name, params.map { it.dataType }), isNative)
+                memory.push(here)
 
-            offset = memory.peek().variableID
+                body += Node.Return(here(), expr)
 
-            if (skip(TokenType.Symbol.LEFT_PAREN) && !skip(TokenType.Symbol.RIGHT_PAREN)) {
-                do {
-                    val paramName = name()
+                mustSkip(TokenType.Symbol.SEMICOLON)
+            }
+            else {
+                mustSkip(TokenType.Symbol.LEFT_BRACE)
 
-                    mustSkip(TokenType.Symbol.COLON)
-
-                    val paramType = type()
-
-                    params += createVariable(true, paramName, paramType.dataType)
+                if (type == null) {
+                    type = Node.Type(Location.none, TokenType.Type(DataType.Primitive.VOID))
                 }
-                while (skip(TokenType.Symbol.COMMA))
 
-                mustSkip(TokenType.Symbol.RIGHT_PAREN)
+                val here = memory.pop()!!
+                memory.addFunction(type.dataType, id, Signature(name, params.map { it.dataType }), isNative)
+                memory.push(here)
+
+                while (!skip(TokenType.Symbol.RIGHT_BRACE)) {
+                    body += statement()
+                }
             }
-
-            if (skip(TokenType.Symbol.COLON)) type = type()
-
-            if (skip(TokenType.Symbol.SEMICOLON)) {
-                isNative = true
-            }
+        }
+        else {
+            if (type == null) error("")
 
             val here = memory.pop()!!
             memory.addFunction(type.dataType, id, Signature(name, params.map { it.dataType }), isNative)
             memory.push(here)
-
-            if (!isNative) {
-                if (skip(TokenType.Symbol.EQUAL)) {
-                    body += Node.Return(here(), expr())
-
-                    mustSkip(TokenType.Symbol.SEMICOLON)
-                }
-                else if (skip(TokenType.Symbol.LEFT_BRACE)) {
-                    while (!match(TokenType.Symbol.RIGHT_BRACE)) {
-                        body += statement()
-                    }
-
-                    mustSkip(TokenType.Symbol.RIGHT_BRACE)
-                }
-            }
         }
-        finally {
-            memory.pop()
-        }
+
+        memory.pop()
 
         if (!isNative) {
             if (type.type.value == DataType.Primitive.VOID && body.last() !is Node.Return) {
@@ -445,9 +454,7 @@ class Parser(private val lexer: Lexer, private val optimize: Boolean) : Iterator
             resolveBranchReturns(returnType, body)
         }
 
-        val function = Node.Function(location, name, id, offset, params, type, body)
-
-        return function
+        return Node.Function(location, name, id, offset, params, type, body)
     }
 
     private fun resolveBranches(nodes: Nodes) {
@@ -867,7 +874,7 @@ class Parser(private val lexer: Lexer, private val optimize: Boolean) : Iterator
     private fun terminal() = when {
         match<TokenType.Value>()           -> value()
 
-        match<TokenType.String>()->string()
+        match<TokenType.String>()          -> string()
 
         match<TokenType.Name>()            -> name()
 
@@ -888,7 +895,7 @@ class Parser(private val lexer: Lexer, private val optimize: Boolean) : Iterator
         return Node.Value(location, value)
     }
 
-    private fun string():Node.String {
+    private fun string(): Node.String {
         val location = here()
 
         val value = get<TokenType.String>() ?: error("Not a value.")
