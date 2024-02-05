@@ -407,7 +407,7 @@ class Parser(private val lexer: Lexer, private val optimize: Boolean) : Iterator
 
             if (!isNative) {
                 if (skip(TokenType.Symbol.EQUAL)) {
-                    body += expr()
+                    body += Node.Return(here(), expr())
 
                     mustSkip(TokenType.Symbol.SEMICOLON)
                 }

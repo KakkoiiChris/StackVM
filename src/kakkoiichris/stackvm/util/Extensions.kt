@@ -1,18 +1,20 @@
 package kakkoiichris.stackvm.util
 
 import kotlin.math.abs
+import kotlin.math.absoluteValue
 import kotlin.math.log10
 
-fun Float.truncate(): String {
-    if (this - toInt() == 0F) {
-        return toInt().toString()
-    }
-
-    return toString()
-}
+fun Float.truncate() =
+    if (this - toInt() == 0F)
+        toInt().toString()
+    else
+        toString()
 
 fun Int.toAddress() =
-    "0x${toString(16)}"
+    if (this < 0)
+        "-0x${absoluteValue.toString(16)}"
+    else
+        "0x${toString(16)}"
 
 fun Int.length() = when {
     this == 0 -> 1
