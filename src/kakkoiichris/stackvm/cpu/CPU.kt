@@ -18,21 +18,21 @@ abstract class CPU(protected val config: Config = Config()) {
 
     internal lateinit var memory: FloatArray
 
-    protected var running by BoolRegister(RUN_ADR)
+    protected var running by Register.Bool(RUN_ADR)
 
-    protected var result by FloatRegister(RES_ADR)
+    protected var result by Register.Float(RES_ADR)
 
-    protected var instructionPointerOrigin by IntRegister(IPO_ADR)
-    protected var instructionPointer by IntRegister(IPA_ADR)
+    protected var instructionPointerOrigin by Register.Int(IPO_ADR)
+    protected var instructionPointer by Register.Int(IPA_ADR)
 
-    protected var stackPointerOrigin by IntRegister(SPO_ADR)
-    protected var stackPointer by IntRegister(SPA_ADR)
+    protected var stackPointerOrigin by Register.Int(SPO_ADR)
+    protected var stackPointer by Register.Int(SPA_ADR)
 
-    protected var framePointerOrigin by IntRegister(FPO_ADR)
-    protected var framePointer by IntRegister(FPA_ADR)
+    protected var framePointerOrigin by Register.Int(FPO_ADR)
+    protected var framePointer by Register.Int(FPA_ADR)
 
-    protected var callPointerOrigin by IntRegister(CPO_ADR)
-    protected var callPointer by IntRegister(CPA_ADR)
+    protected var callPointerOrigin by Register.Int(CPO_ADR)
+    protected var callPointer by Register.Int(CPA_ADR)
 
     abstract fun initialize(instructions: FloatArray)
 
@@ -47,4 +47,10 @@ abstract class CPU(protected val config: Config = Config()) {
     }
 
     abstract fun run(): Float
+
+    data class Config(
+        val memorySize: Int = 0x10000,
+        val maxCalls: Int = 10_000,
+        val maxStack: Int = 10_000
+    )
 }

@@ -391,44 +391,52 @@ class Parser(private val lexer: Lexer, private val optimize: Boolean) : Iterator
 
         val body = mutableListOf<Node>()
 
-        val isNative = skip(TokenType.Symbol.SEMICOLON)
+        fun registerFunction(type: Node.Type, isNative: Boolean) {
+            val here = memory.pop()!!
 
-        if (!isNative) {
-            if (skip(TokenType.Symbol.EQUAL)) {
+            memory.addFunction(type.dataType, id, Signature(name, params.map { it.dataType }), isNative)
+
+            memory.push(here)
+        }
+
+        var isNative = false
+
+        when {
+            skip(TokenType.Symbol.SEMICOLON) -> {
+                isNative = true
+
+                if (type == null) {
+                    type = Node.Type(Location.none, TokenType.Type(DataType.Primitive.VOID))
+                }
+
+                registerFunction(type, true)
+            }
+
+            skip(TokenType.Symbol.EQUAL)     -> {
                 val expr = expr()
 
                 type = Node.Type(expr.location, TokenType.Type(expr.dataType))
 
-                val here = memory.pop()!!
-                memory.addFunction(type.dataType, id, Signature(name, params.map { it.dataType }), isNative)
-                memory.push(here)
+                registerFunction(type, false)
 
                 body += Node.Return(here(), expr)
 
                 mustSkip(TokenType.Symbol.SEMICOLON)
             }
-            else {
+
+            else                             -> {
                 mustSkip(TokenType.Symbol.LEFT_BRACE)
 
                 if (type == null) {
                     type = Node.Type(Location.none, TokenType.Type(DataType.Primitive.VOID))
                 }
 
-                val here = memory.pop()!!
-                memory.addFunction(type.dataType, id, Signature(name, params.map { it.dataType }), isNative)
-                memory.push(here)
+                registerFunction(type, false)
 
                 while (!skip(TokenType.Symbol.RIGHT_BRACE)) {
                     body += statement()
                 }
             }
-        }
-        else {
-            if (type == null) error("")
-
-            val here = memory.pop()!!
-            memory.addFunction(type.dataType, id, Signature(name, params.map { it.dataType }), isNative)
-            memory.push(here)
         }
 
         memory.pop()

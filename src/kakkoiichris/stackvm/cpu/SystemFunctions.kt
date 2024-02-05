@@ -2,8 +2,8 @@ package kakkoiichris.stackvm.cpu
 
 import kakkoiichris.stackvm.lang.*
 import kakkoiichris.stackvm.lang.DataType.Primitive.*
-import kakkoiichris.stackvm.util.toBool
-import kakkoiichris.stackvm.util.toFloat
+import kakkoiichris.stackvm.util.bool
+import kakkoiichris.stackvm.util.float
 import kakkoiichris.stackvm.util.truncate
 import kotlin.math.*
 
@@ -203,7 +203,7 @@ object SystemFunctions {
             listOf(
                 readln()
                     .toBooleanStrictOrNull()
-                    ?.toFloat()
+                    ?.float
                     ?: error("Bool format error!")
             )
         }
@@ -238,7 +238,7 @@ object SystemFunctions {
         addFunction("write", BOOL) { values ->
             val (n) = values
 
-            print(n.toBool())
+            print(n.bool)
 
             void
         }

@@ -1,8 +1,8 @@
 package kakkoiichris.stackvm.cpu
 
 import kakkoiichris.stackvm.asm.ASMToken
-import kakkoiichris.stackvm.util.toBool
-import kakkoiichris.stackvm.util.toFloat
+import kakkoiichris.stackvm.util.bool
+import kakkoiichris.stackvm.util.float
 
 object ReleaseCPU : CPU() {
     override fun initialize(instructions: FloatArray) {
@@ -54,7 +54,7 @@ object ReleaseCPU : CPU() {
 
     private fun popStackInt() = popStack().toInt()
 
-    private fun popStackBool() = popStack().toBool()
+    private fun popStackBool() = popStack().bool
 
 
     private fun peekStack() = memory[stackPointer - 1]
@@ -242,41 +242,41 @@ object ReleaseCPU : CPU() {
         val b = popStack()
         val a = popStack()
 
-        pushStack((a.toBool() && b.toBool()).toFloat())
+        pushStack((a.bool && b.bool).float)
     }
 
     private fun or() {
         val b = popStack()
         val a = popStack()
 
-        pushStack((a.toBool() || b.toBool()).toFloat())
+        pushStack((a.bool || b.bool).float)
     }
 
     private fun not() {
         val value = popStack()
 
-        pushStack((!value.toBool()).toFloat())
+        pushStack((!value.bool).float)
     }
 
     private fun equ() {
         val b = popStack()
         val a = popStack()
 
-        pushStack((a == b).toFloat())
+        pushStack((a == b).float)
     }
 
     private fun grt() {
         val b = popStack()
         val a = popStack()
 
-        pushStack((a > b).toFloat())
+        pushStack((a > b).float)
     }
 
     private fun geq() {
         val b = popStack()
         val a = popStack()
 
-        pushStack((a >= b).toFloat())
+        pushStack((a >= b).float)
     }
 
     private fun jmp() {

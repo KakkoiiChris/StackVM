@@ -1,10 +1,10 @@
 package kakkoiichris.stackvm.cpu
 
 import kakkoiichris.stackvm.asm.ASMToken
-import kakkoiichris.stackvm.util.toAddress
-import kakkoiichris.stackvm.util.toBool
-import kakkoiichris.stackvm.util.toFloat
+import kakkoiichris.stackvm.util.bool
+import kakkoiichris.stackvm.util.float
 import kakkoiichris.stackvm.util.truncate
+import kotlin.math.absoluteValue
 
 object DebugCPU : CPU() {
     override fun initialize(instructions: FloatArray) {
@@ -56,7 +56,7 @@ object DebugCPU : CPU() {
 
     private fun popStackInt() = popStack().toInt()
 
-    private fun popStackBool() = popStack().toBool()
+    private fun popStackBool() = popStack().bool
 
 
     private fun peekStack() = memory[stackPointer - 1]
@@ -87,15 +87,19 @@ object DebugCPU : CPU() {
         return -1
     }
 
+    private fun Int.toAddress() =
+        if (this < 0)
+            "-0x${absoluteValue.toString(16)}"
+        else
+            "0x${toString(16)}"
+
     override fun run(): Float {
         while (running) {
-            Debug {
-                for (i in framePointerOrigin until framePointerOrigin + 20) {
-                    print("${memory[i].truncate()} ")
-                }
-
-                println()
+            for (i in framePointerOrigin until framePointerOrigin + 20) {
+                print("${memory[i].truncate()} ")
             }
+
+            println()
 
             when (ASMToken.Instruction.entries[fetchInt()]) {
                 ASMToken.Instruction.HALT    -> halt()
@@ -171,15 +175,13 @@ object DebugCPU : CPU() {
                 ASMToken.Instruction.SYS     -> sys()
             }
 
-            Debug {
-                print("\t\t\t\t\t\t\t\tSTACK:")
+            print("\t\t\t\t\t\t\t\tSTACK:")
 
-                for (i in stackPointerOrigin..<stackPointer) {
-                    print(" ${memory[i].truncate()}")
-                }
-
-                println()
+            for (i in stackPointerOrigin..<stackPointer) {
+                print(" ${memory[i].truncate()}")
             }
+
+            println()
         }
 
         return result
@@ -188,7 +190,7 @@ object DebugCPU : CPU() {
     private fun halt() {
         result = popStack()
 
-        Debug.println("HALT #${result.truncate()}")
+        println("HALT #${result.truncate()}")
 
         running = false
     }
@@ -196,7 +198,7 @@ object DebugCPU : CPU() {
     private fun push() {
         val value = fetch()
 
-        Debug.println("PUSH #${value.truncate()}")
+        println("PUSH #${value.truncate()}")
 
         pushStack(value)
     }
@@ -204,13 +206,13 @@ object DebugCPU : CPU() {
     private fun pop() {
         val value = popStack()
 
-        Debug.println("POP <${value.truncate()}>")
+        println("POP <${value.truncate()}>")
     }
 
     private fun dup() {
         val value = peekStack()
 
-        Debug.println("DUP <${value.truncate()}>")
+        println("DUP <${value.truncate()}>")
 
         pushStack(value)
     }
@@ -221,7 +223,7 @@ object DebugCPU : CPU() {
 
         val value = a + b
 
-        Debug.println("ADD #${a.truncate()} #${b.truncate()} <$value>")
+        println("ADD #${a.truncate()} #${b.truncate()} <$value>")
 
         pushStack(value)
     }
@@ -232,7 +234,7 @@ object DebugCPU : CPU() {
 
         val value = a - b
 
-        Debug.println("SUB #${a.truncate()} #${b.truncate()} <$value>")
+        println("SUB #${a.truncate()} #${b.truncate()} <$value>")
 
         pushStack(value)
     }
@@ -243,7 +245,7 @@ object DebugCPU : CPU() {
 
         val value = a * b
 
-        Debug.println("MUL #${a.truncate()} #${b.truncate()} <$value>")
+        println("MUL #${a.truncate()} #${b.truncate()} <$value>")
 
         pushStack(value)
     }
@@ -254,7 +256,7 @@ object DebugCPU : CPU() {
 
         val value = a / b
 
-        Debug.println("DIV #${a.truncate()} #${b.truncate()} <$value>")
+        println("DIV #${a.truncate()} #${b.truncate()} <$value>")
 
         pushStack(value)
     }
@@ -265,7 +267,7 @@ object DebugCPU : CPU() {
 
         val value = (a.toInt() / b.toInt()).toFloat()
 
-        Debug.println("IDIV #${a.truncate()} #${b.truncate()} <$value>")
+        println("IDIV #${a.truncate()} #${b.truncate()} <$value>")
 
         pushStack(value)
     }
@@ -276,7 +278,7 @@ object DebugCPU : CPU() {
 
         val value = a % b
 
-        Debug.println("MOD #${a.truncate()} #${b.truncate()} <$value>")
+        println("MOD #${a.truncate()} #${b.truncate()} <$value>")
 
         pushStack(value)
     }
@@ -287,7 +289,7 @@ object DebugCPU : CPU() {
 
         val value = (a.toInt() % b.toInt()).toFloat()
 
-        Debug.println("IMOD #${a.truncate()} #${b.truncate()} <$value>")
+        println("IMOD #${a.truncate()} #${b.truncate()} <$value>")
 
         pushStack(value)
     }
@@ -297,7 +299,7 @@ object DebugCPU : CPU() {
 
         val value = -a
 
-        Debug.println("NEG #${value.truncate()}")
+        println("NEG #${value.truncate()}")
 
         pushStack(value)
     }
@@ -306,59 +308,59 @@ object DebugCPU : CPU() {
         val b = popStack()
         val a = popStack()
 
-        Debug.println("AND #${a.truncate()} #${b.truncate()}")
+        println("AND #${a.truncate()} #${b.truncate()}")
 
-        pushStack((a.toBool() && b.toBool()).toFloat())
+        pushStack((a.bool && b.bool).float)
     }
 
     private fun or() {
         val b = popStack()
         val a = popStack()
 
-        Debug.println("OR #${a.truncate()} #${b.truncate()}")
+        println("OR #${a.truncate()} #${b.truncate()}")
 
-        pushStack((a.toBool() || b.toBool()).toFloat())
+        pushStack((a.bool || b.bool).float)
     }
 
     private fun not() {
         val value = popStack()
 
-        Debug.println("NOT #${value.truncate()}")
+        println("NOT #${value.truncate()}")
 
-        pushStack((!value.toBool()).toFloat())
+        pushStack((!value.bool).float)
     }
 
     private fun equ() {
         val b = popStack()
         val a = popStack()
 
-        Debug.println("EQU #${a.truncate()} #${b.truncate()}")
+        println("EQU #${a.truncate()} #${b.truncate()}")
 
-        pushStack((a == b).toFloat())
+        pushStack((a == b).float)
     }
 
     private fun grt() {
         val b = popStack()
         val a = popStack()
 
-        Debug.println("GRT #${a.truncate()} #${b.truncate()}")
+        println("GRT #${a.truncate()} #${b.truncate()}")
 
-        pushStack((a > b).toFloat())
+        pushStack((a > b).float)
     }
 
     private fun geq() {
         val b = popStack()
         val a = popStack()
 
-        Debug.println("GEQ #${a.truncate()} #${b.truncate()}")
+        println("GEQ #${a.truncate()} #${b.truncate()}")
 
-        pushStack((a >= b).toFloat())
+        pushStack((a >= b).float)
     }
 
     private fun jmp() {
         val address = instructionPointerOrigin + fetchInt()
 
-        Debug.println("JMP @${address.toAddress()}")
+        println("JMP @${address.toAddress()}")
 
         instructionPointer = address
     }
@@ -366,7 +368,7 @@ object DebugCPU : CPU() {
     private fun jif() {
         val address = instructionPointerOrigin + fetchInt()
 
-        Debug.println("JIF @${address.toAddress()}")
+        println("JIF @${address.toAddress()}")
 
         if (popStackBool()) {
             instructionPointer = address
@@ -377,7 +379,7 @@ object DebugCPU : CPU() {
         val address = fetchInt() + framePointer
         val value = memory[address]
 
-        Debug.println("LOAD @${address.toAddress()} <${value.truncate()}>")
+        println("LOAD @${address.toAddress()} <${value.truncate()}>")
 
         pushStack(value)
     }
@@ -388,7 +390,7 @@ object DebugCPU : CPU() {
 
         val elements = FloatArray(size.toInt()) { memory[address + 1 + it] }
 
-        Debug.println("ALOAD @${address.toAddress()} [${elements.joinToString(separator = ",") { it.truncate() }}]")
+        println("ALOAD @${address.toAddress()} [${elements.joinToString(separator = ",") { it.truncate() }}]")
 
         for (element in elements.reversed()) {
             pushStack(element)
@@ -415,7 +417,7 @@ object DebugCPU : CPU() {
 
         val value = memory[address]
 
-        Debug.println("ILOAD @${address.toAddress()} #$indexCount <${value.truncate()}>")
+        println("ILOAD @${address.toAddress()} #$indexCount <${value.truncate()}>")
 
         pushStack(value)
     }
@@ -439,7 +441,7 @@ object DebugCPU : CPU() {
 
         val elements = FloatArray(size.toInt()) { memory[address + 1 + it] }
 
-        Debug.println("IALOAD @${address.toAddress()} [${elements.joinToString(separator = ",") { it.truncate() }}]")
+        println("IALOAD @${address.toAddress()} [${elements.joinToString(separator = ",") { it.truncate() }}]")
 
         for (element in elements.reversed()) {
             pushStack(element)
@@ -452,7 +454,7 @@ object DebugCPU : CPU() {
         val address = fetchInt() + framePointerOrigin
         val value = memory[address]
 
-        Debug.println("LOADG @${address.toAddress()} <${value.truncate()}>")
+        println("LOADG @${address.toAddress()} <${value.truncate()}>")
 
         pushStack(value)
     }
@@ -463,7 +465,7 @@ object DebugCPU : CPU() {
 
         val elements = FloatArray(size.toInt()) { memory[address + 1 + it] }
 
-        Debug.println("ALOADG @${address.toAddress()} [${elements.joinToString(separator = ",") { it.truncate() }}]")
+        println("ALOADG @${address.toAddress()} [${elements.joinToString(separator = ",") { it.truncate() }}]")
 
         for (element in elements.reversed()) {
             pushStack(element)
@@ -494,7 +496,7 @@ object DebugCPU : CPU() {
 
         val value = memory[address]
 
-        Debug.println("ILOADG @${address.toAddress()} #$indexCount <${value.truncate()}>")
+        println("ILOADG @${address.toAddress()} #$indexCount <${value.truncate()}>")
 
         pushStack(value)
     }
@@ -518,7 +520,7 @@ object DebugCPU : CPU() {
 
         val elements = FloatArray(size.toInt()) { memory[address + 1 + it] }
 
-        Debug.println("IALOADG @${address.toAddress()} [${elements.joinToString(separator = ",") { it.truncate() }}]")
+        println("IALOADG @${address.toAddress()} [${elements.joinToString(separator = ",") { it.truncate() }}]")
 
         for (element in elements.reversed()) {
             pushStack(element)
@@ -531,7 +533,7 @@ object DebugCPU : CPU() {
         val address = fetchInt() + framePointer
         val value = popStack()
 
-        Debug.println("STORE @${address.toAddress()} <${value.truncate()}>")
+        println("STORE @${address.toAddress()} <${value.truncate()}>")
 
         memory[address] = value
     }
@@ -544,7 +546,7 @@ object DebugCPU : CPU() {
             popStack()
         }
 
-        Debug.println("ASTORE @${address.toAddress()} [${elements.joinToString(separator = ",") { it.truncate() }}]")
+        println("ASTORE @${address.toAddress()} [${elements.joinToString(separator = ",") { it.truncate() }}]")
 
         memory[address] = size
 
@@ -575,7 +577,7 @@ object DebugCPU : CPU() {
 
         val value = popStack()
 
-        Debug.println("ISTORE @${address.toAddress()} #$indexCount <${value.truncate()}>")
+        println("ISTORE @${address.toAddress()} #$indexCount <${value.truncate()}>")
 
         memory[address] = value
     }
@@ -588,7 +590,7 @@ object DebugCPU : CPU() {
         val address = instructionPointer + 1
         instructionPointer = instructionPointerOrigin + fetchInt()
 
-        Debug.println("CALL @${instructionPointer.toAddress()}")
+        println("CALL @${instructionPointer.toAddress()}")
 
         pushCall(address.toFloat())
     }
@@ -596,7 +598,7 @@ object DebugCPU : CPU() {
     private fun ret() {
         val address = popCall()
 
-        Debug.println("RET @${address.toAddress()}")
+        println("RET @${address.toAddress()}")
 
         if (address < 0) {
             result = popStack()
@@ -614,7 +616,7 @@ object DebugCPU : CPU() {
     private fun frame() {
         val value = fetchInt()
 
-        Debug.println("FRAME $$value")
+        println("FRAME $$value")
 
         pushFrame(value)
     }
@@ -630,7 +632,7 @@ object DebugCPU : CPU() {
             args.add(popStack())
         }
 
-        Debug.println("SYS #$id <${args.joinToString()}>")
+        println("SYS #$id <${args.joinToString()}>")
 
         val result = function(args)
 

@@ -85,9 +85,9 @@ class Memory {
         var here: Scope? = peek()
 
         while (here != null) {
-            val activation = here.getFunction(signature)
+            val record = here.getFunction(signature)
 
-            if (activation != null) return activation
+            if (record != null) return record
 
             here = here.parent
         }

@@ -1,17 +1,16 @@
 package kakkoiichris.stackvm
 
 import kakkoiichris.stackvm.asm.ASMFormatter
-import kakkoiichris.stackvm.compiler.ASMConverter
 import kakkoiichris.stackvm.compiler.Compiler
 import kakkoiichris.stackvm.cpu.CPU
-import kakkoiichris.stackvm.cpu.Debug
 import kakkoiichris.stackvm.cpu.DebugCPU
 import kakkoiichris.stackvm.cpu.ReleaseCPU
 import kakkoiichris.stackvm.lang.Lexer
 import kakkoiichris.stackvm.lang.Parser
-import kakkoiichris.stackvm.util.length
 import kakkoiichris.stackvm.util.truncate
 import java.io.*
+import kotlin.math.abs
+import kotlin.math.log10
 import kotlin.time.measureTimedValue
 
 /**
@@ -36,8 +35,6 @@ fun main(args: Array<String>) {
     while (a < args.size) {
         when (args[a++].lowercase()) {
             "-d" -> {
-                Debug.enabled = true
-
                 cpu = DebugCPU
             }
 
@@ -63,11 +60,11 @@ fun main(args: Array<String>) {
     when (mode) {
         Mode.REPL    -> repl(cpu)
 
-        Mode.COMPILE -> compile(srcFile, dstFile)
+        Mode.COMPILE -> compileFile(srcFile, dstFile)
 
-        Mode.RUN     -> run(cpu, srcFile)
+        Mode.RUN     -> runFile(cpu, srcFile)
 
-        Mode.FORMAT  -> format(srcFile, dstFile)
+        Mode.FORMAT  -> formatFile(srcFile, dstFile)
     }
 }
 
@@ -76,6 +73,22 @@ private enum class Mode {
     COMPILE,
     RUN,
     FORMAT
+}
+
+private fun compile(src: String): FloatArray {
+    val lexer = Lexer(src)
+
+    val parser = Parser(lexer, false)
+
+    val compiler = Compiler(parser, false)
+
+    return compiler.compile()
+}
+
+private fun Int.length() = when {
+    this == 0 -> 1
+    this < 0  -> log10(abs(toFloat())).toInt() + 2
+    else      -> log10(abs(toFloat())).toInt() + 1
 }
 
 private fun repl(cpu: CPU) {
@@ -90,22 +103,12 @@ private fun repl(cpu: CPU) {
 
                 val parser = Parser(lexer, false)
 
-                val converter = ASMConverter(parser, false)
+                val compiler = Compiler(parser, false)
 
-                converter.convert()
+                compiler.convert()
             }
 
-            Debug {
-                println("Compiled: ${compileTime.inWholeMilliseconds / 1E3}s\n")
-
-                val max = tokens.size.length()
-
-                for ((i, token) in tokens.withIndex()) {
-                    println("%0${max}d) %s".format(i, token))
-                }
-
-                println()
-            }
+            println("Compiled: ${compileTime.inWholeMilliseconds / 1E3}s\n")
 
             cpu.initialize(tokens.iterator())
 
@@ -119,14 +122,14 @@ private fun repl(cpu: CPU) {
     }
 }
 
-private fun compile(srcName: String, dstName: String) {
+private fun compileFile(srcName: String, dstName: String) {
     val srcFile = File(srcName)
 
     if (!srcFile.exists()) error("Cannot load source file!")
 
     val src = srcFile.readText()
 
-    val values = Compiler.compile(src)
+    val values = compile(src)
 
     val dstFile = File(dstName)
 
@@ -144,7 +147,8 @@ private fun compile(srcName: String, dstName: String) {
     out.close()
 }
 
-private fun run(cpu: CPU, srcName: String) {
+
+private fun runFile(cpu: CPU, srcName: String) {
     val srcFile = File(srcName)
 
     val `in` = DataInputStream(BufferedInputStream(FileInputStream(srcFile)))
@@ -164,14 +168,14 @@ private fun run(cpu: CPU, srcName: String) {
     println("\n< ${result.truncate()} (${runTime.inWholeNanoseconds / 1E9}s)\n")
 }
 
-private fun format(srcName: String, dstName: String) {
+private fun formatFile(srcName: String, dstName: String) {
     val srcFile = File(srcName)
 
     if (!srcFile.exists()) error("Cannot load source file!")
 
     val src = srcFile.readText()
 
-    val values = Compiler.compile(src)
+    val values = compile(src)
 
     val dstFile = File(dstName)
 
