@@ -1,6 +1,5 @@
 package kakkoiichris.stackvm.cpu
 
-import kakkoiichris.stackvm.asm.ASMToken
 import kakkoiichris.stackvm.util.bool
 import kakkoiichris.stackvm.util.float
 import kakkoiichris.stackvm.util.truncate
@@ -38,55 +37,6 @@ object DebugCPU : CPU() {
         pushStack(0F)
     }
 
-    private fun fetch() = memory[instructionPointer++]
-
-    private fun fetchInt() = fetch().toInt()
-
-    private fun pushStack(value: Float) {
-        memory[stackPointer++] = value
-    }
-
-    private fun popStack(): Float {
-        val address = --stackPointer
-
-        if (address < stackPointerOrigin) error("Stack underflow!")
-
-        return memory[address]
-    }
-
-    private fun popStackInt() = popStack().toInt()
-
-    private fun popStackBool() = popStack().bool
-
-
-    private fun peekStack() = memory[stackPointer - 1]
-
-    private fun pushFrame(offset: Int) {
-        framePointer += offset
-
-        memory[framePointer++] = offset.toFloat()
-    }
-
-    private fun popFrame() {
-        val offset = memory[--framePointer]
-
-        framePointer -= offset.toInt()
-
-        if (framePointer < framePointerOrigin) error("Frame stack underflow!")
-    }
-
-    private fun pushCall(value: Float) {
-        memory[++callPointer] = value
-    }
-
-    private fun popCall(): Int {
-        if (callPointer > callPointerOrigin) {
-            return memory[callPointer--].toInt()
-        }
-
-        return -1
-    }
-
     private fun Int.toAddress() =
         if (this < 0)
             "-0x${absoluteValue.toString(16)}"
@@ -101,79 +51,7 @@ object DebugCPU : CPU() {
 
             println()
 
-            when (ASMToken.Instruction.entries[fetchInt()]) {
-                ASMToken.Instruction.HALT    -> halt()
-
-                ASMToken.Instruction.PUSH    -> push()
-
-                ASMToken.Instruction.POP     -> pop()
-
-                ASMToken.Instruction.DUP     -> dup()
-
-                ASMToken.Instruction.ADD     -> add()
-
-                ASMToken.Instruction.SUB     -> sub()
-
-                ASMToken.Instruction.MUL     -> mul()
-
-                ASMToken.Instruction.DIV     -> div()
-
-                ASMToken.Instruction.IDIV    -> idiv()
-
-                ASMToken.Instruction.MOD     -> mod()
-
-                ASMToken.Instruction.IMOD    -> imod()
-
-                ASMToken.Instruction.NEG     -> neg()
-
-                ASMToken.Instruction.AND     -> and()
-
-                ASMToken.Instruction.OR      -> or()
-
-                ASMToken.Instruction.NOT     -> not()
-
-                ASMToken.Instruction.EQU     -> equ()
-
-                ASMToken.Instruction.GRT     -> grt()
-
-                ASMToken.Instruction.GEQ     -> geq()
-
-                ASMToken.Instruction.JMP     -> jmp()
-
-                ASMToken.Instruction.JIF     -> jif()
-
-                ASMToken.Instruction.LOAD    -> load()
-
-                ASMToken.Instruction.ALOAD   -> aload()
-
-                ASMToken.Instruction.ILOAD   -> iload()
-
-                ASMToken.Instruction.IALOAD  -> iaload()
-
-                ASMToken.Instruction.LOADG   -> loadg()
-
-                ASMToken.Instruction.ALOADG  -> aloadg()
-
-                ASMToken.Instruction.ILOADG  -> iloadg()
-
-                ASMToken.Instruction.IALOADG -> ialoadg()
-
-                ASMToken.Instruction.STORE   -> store()
-
-                ASMToken.Instruction.ASTORE  -> astore()
-
-                ASMToken.Instruction.ISTORE  -> istore()
-
-                ASMToken.Instruction.IASTORE -> iastore()
-
-                ASMToken.Instruction.CALL    -> call()
-
-                ASMToken.Instruction.RET     -> ret()
-
-                ASMToken.Instruction.FRAME   -> frame()
-
-                ASMToken.Instruction.SYS     -> sys()
-            }
+            decode()
 
             print("\t\t\t\t\t\t\t\tSTACK:")
 
@@ -187,7 +65,7 @@ object DebugCPU : CPU() {
         return result
     }
 
-    private fun halt() {
+    override fun halt() {
         result = popStack()
 
         println("HALT #${result.truncate()}")
@@ -195,7 +73,7 @@ object DebugCPU : CPU() {
         running = false
     }
 
-    private fun push() {
+    override fun push() {
         val value = fetch()
 
         println("PUSH #${value.truncate()}")
@@ -203,13 +81,13 @@ object DebugCPU : CPU() {
         pushStack(value)
     }
 
-    private fun pop() {
+    override fun pop() {
         val value = popStack()
 
         println("POP <${value.truncate()}>")
     }
 
-    private fun dup() {
+    override fun dup() {
         val value = peekStack()
 
         println("DUP <${value.truncate()}>")
@@ -217,7 +95,7 @@ object DebugCPU : CPU() {
         pushStack(value)
     }
 
-    private fun add() {
+    override fun add() {
         val b = popStack()
         val a = popStack()
 
@@ -228,7 +106,7 @@ object DebugCPU : CPU() {
         pushStack(value)
     }
 
-    private fun sub() {
+    override fun sub() {
         val b = popStack()
         val a = popStack()
 
@@ -239,7 +117,7 @@ object DebugCPU : CPU() {
         pushStack(value)
     }
 
-    private fun mul() {
+    override fun mul() {
         val b = popStack()
         val a = popStack()
 
@@ -250,7 +128,7 @@ object DebugCPU : CPU() {
         pushStack(value)
     }
 
-    private fun div() {
+    override fun div() {
         val b = popStack()
         val a = popStack()
 
@@ -261,7 +139,7 @@ object DebugCPU : CPU() {
         pushStack(value)
     }
 
-    private fun idiv() {
+    override fun idiv() {
         val b = popStack()
         val a = popStack()
 
@@ -272,7 +150,7 @@ object DebugCPU : CPU() {
         pushStack(value)
     }
 
-    private fun mod() {
+    override fun mod() {
         val b = popStack()
         val a = popStack()
 
@@ -283,7 +161,7 @@ object DebugCPU : CPU() {
         pushStack(value)
     }
 
-    private fun imod() {
+    override fun imod() {
         val b = popStack()
         val a = popStack()
 
@@ -294,7 +172,7 @@ object DebugCPU : CPU() {
         pushStack(value)
     }
 
-    private fun neg() {
+    override fun neg() {
         val a = popStack()
 
         val value = -a
@@ -304,7 +182,7 @@ object DebugCPU : CPU() {
         pushStack(value)
     }
 
-    private fun and() {
+    override fun and() {
         val b = popStack()
         val a = popStack()
 
@@ -313,7 +191,7 @@ object DebugCPU : CPU() {
         pushStack((a.bool && b.bool).float)
     }
 
-    private fun or() {
+    override fun or() {
         val b = popStack()
         val a = popStack()
 
@@ -322,7 +200,7 @@ object DebugCPU : CPU() {
         pushStack((a.bool || b.bool).float)
     }
 
-    private fun not() {
+    override fun not() {
         val value = popStack()
 
         println("NOT #${value.truncate()}")
@@ -330,7 +208,7 @@ object DebugCPU : CPU() {
         pushStack((!value.bool).float)
     }
 
-    private fun equ() {
+    override fun equ() {
         val b = popStack()
         val a = popStack()
 
@@ -339,7 +217,7 @@ object DebugCPU : CPU() {
         pushStack((a == b).float)
     }
 
-    private fun grt() {
+    override fun grt() {
         val b = popStack()
         val a = popStack()
 
@@ -348,7 +226,7 @@ object DebugCPU : CPU() {
         pushStack((a > b).float)
     }
 
-    private fun geq() {
+    override fun geq() {
         val b = popStack()
         val a = popStack()
 
@@ -357,7 +235,7 @@ object DebugCPU : CPU() {
         pushStack((a >= b).float)
     }
 
-    private fun jmp() {
+    override fun jmp() {
         val address = instructionPointerOrigin + fetchInt()
 
         println("JMP @${address.toAddress()}")
@@ -365,7 +243,7 @@ object DebugCPU : CPU() {
         instructionPointer = address
     }
 
-    private fun jif() {
+    override fun jif() {
         val address = instructionPointerOrigin + fetchInt()
 
         println("JIF @${address.toAddress()}")
@@ -375,7 +253,7 @@ object DebugCPU : CPU() {
         }
     }
 
-    private fun load() {
+    override fun load() {
         val address = fetchInt() + framePointer
         val value = memory[address]
 
@@ -384,7 +262,7 @@ object DebugCPU : CPU() {
         pushStack(value)
     }
 
-    private fun aload() {
+    override fun aload() {
         val address = fetchInt() + framePointer
         val size = memory[address]
 
@@ -399,7 +277,7 @@ object DebugCPU : CPU() {
         pushStack(size)
     }
 
-    private fun iload() {
+    override fun iload() {
         var address = fetchInt() + framePointer
         val indexCount = fetchInt()
 
@@ -422,7 +300,7 @@ object DebugCPU : CPU() {
         pushStack(value)
     }
 
-    private fun iaload() {
+    override fun iaload() {
         var address = fetchInt() + framePointer
         val indexCount = fetchInt()
 
@@ -450,7 +328,7 @@ object DebugCPU : CPU() {
         pushStack(size)
     }
 
-    private fun loadg() {
+    override fun loadg() {
         val address = fetchInt() + framePointerOrigin
         val value = memory[address]
 
@@ -459,7 +337,7 @@ object DebugCPU : CPU() {
         pushStack(value)
     }
 
-    private fun aloadg() {
+    override fun aloadg() {
         val address = fetchInt() + framePointerOrigin
         val size = memory[address]
 
@@ -474,7 +352,7 @@ object DebugCPU : CPU() {
         pushStack(size)
     }
 
-    private fun iloadg() {
+    override fun iloadg() {
         var address = fetchInt() + framePointerOrigin
         val indexCount = fetchInt()
 
@@ -501,7 +379,7 @@ object DebugCPU : CPU() {
         pushStack(value)
     }
 
-    private fun ialoadg() {
+    override fun ialoadg() {
         var address = fetchInt() + framePointerOrigin
         val indexCount = fetchInt()
 
@@ -529,7 +407,7 @@ object DebugCPU : CPU() {
         pushStack(size)
     }
 
-    private fun store() {
+    override fun store() {
         val address = fetchInt() + framePointer
         val value = popStack()
 
@@ -538,7 +416,7 @@ object DebugCPU : CPU() {
         memory[address] = value
     }
 
-    private fun astore() {
+    override fun astore() {
         val address = fetchInt() + framePointer
         val size = popStack()
 
@@ -555,7 +433,7 @@ object DebugCPU : CPU() {
         }
     }
 
-    private fun istore() {
+    override fun istore() {
         var address = fetchInt() + framePointer
         val indexCount = fetchInt()
 
@@ -582,11 +460,11 @@ object DebugCPU : CPU() {
         memory[address] = value
     }
 
-    private fun iastore() {
+    override fun iastore() {
         TODO("IASTORE")
     }
 
-    private fun call() {
+    override fun call() {
         val address = instructionPointer + 1
         instructionPointer = instructionPointerOrigin + fetchInt()
 
@@ -595,7 +473,7 @@ object DebugCPU : CPU() {
         pushCall(address.toFloat())
     }
 
-    private fun ret() {
+    override fun ret() {
         val address = popCall()
 
         println("RET @${address.toAddress()}")
@@ -613,7 +491,7 @@ object DebugCPU : CPU() {
         popFrame()
     }
 
-    private fun frame() {
+    override fun frame() {
         val value = fetchInt()
 
         println("FRAME $$value")
@@ -621,7 +499,7 @@ object DebugCPU : CPU() {
         pushFrame(value)
     }
 
-    private fun sys() {
+    override fun sys() {
         val id = fetchInt()
 
         val function = SystemFunctions[id]
