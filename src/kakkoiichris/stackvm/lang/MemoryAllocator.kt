@@ -124,21 +124,19 @@ object MemoryAllocator : Node.Visitor<Unit> {
     }
 
     override fun visitFor(node: Node.For) {
-        val startAddress = offsets.pop()
-
-        var offset = startAddress
+        var offset = offsets.pop()
 
         if (node.init != null) {
             offset = allocateSingle(node.init, offset)
         }
-
-        offset = allocateDecls(node.body, offset)
 
         node.init?.let { visit(it) }
 
         node.condition?.let { visit(it) }
 
         node.increment?.let { visit(it) }
+
+        offset = allocateDecls(node.body, offset)
 
         for (statement in node.body) {
             offsets.push(offset)
@@ -152,7 +150,27 @@ object MemoryAllocator : Node.Visitor<Unit> {
     override fun visitContinue(node: Node.Continue) = Unit
 
     override fun visitFunction(node: Node.Function) {
-        TODO("Not yet implemented")
+        val offset = offsets.pop()
+
+        node.offset = offset
+
+        var addressCounter = 0
+
+        for (param in node.params) {
+            param.address = addressCounter
+
+            addresses[param.id] = addressCounter
+
+            addressCounter += param.dataType.offset
+        }
+
+        allocateDecls(node.body, addressCounter)
+
+        for (statement in node.body) {
+            offsets.push(offset)
+
+            visit(statement)
+        }
     }
 
     override fun visitReturn(node: Node.Return) {
@@ -168,7 +186,7 @@ object MemoryAllocator : Node.Visitor<Unit> {
     override fun visitString(node: Node.String) = Unit
 
     override fun visitVariable(node: Node.Variable) {
-        node.address = addresses[node.id] ?: TODO("ALLOCATE ERROR '${node.name}'")
+        node.address = addresses[node.id]!!
     }
 
     override fun visitType(node: Node.Type) = Unit

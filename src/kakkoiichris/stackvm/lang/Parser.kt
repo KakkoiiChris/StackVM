@@ -367,8 +367,6 @@ class Parser(private val lexer: Lexer, private val optimize: Boolean) {
 
         memory.push()
 
-        val offset = memory.peek().variableID
-
         val params = mutableListOf<Node.Variable>()
 
         if (skip(TokenType.Symbol.LEFT_PAREN) && !skip(TokenType.Symbol.RIGHT_PAREN)) {
@@ -463,7 +461,7 @@ class Parser(private val lexer: Lexer, private val optimize: Boolean) {
             resolveBranchReturns(returnType, body)
         }
 
-        return Node.Function(location, name, id, offset, params, type, body)
+        return Node.Function(location, name, id, params, type, body)
     }
 
     private fun resolveBranches(nodes: Nodes) {

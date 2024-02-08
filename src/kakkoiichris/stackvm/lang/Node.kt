@@ -177,11 +177,12 @@ interface Node {
         override val location: Location,
         val name: Name,
         val id: Int,
-        val offset: Int,
         val params: List<Variable>,
         val type: Type,
         val body: Nodes
     ) : Node {
+        var offset = -1
+
         override val dataType get() = type.dataType
 
         override fun <X> accept(visitor: Visitor<X>): X =
