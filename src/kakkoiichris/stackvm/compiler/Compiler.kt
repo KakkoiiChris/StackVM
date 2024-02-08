@@ -20,19 +20,18 @@ class Compiler(private val parser: Parser, private val optimize: Boolean) : Node
         try {
             parser.open()
 
-            val tokens = mutableListOf<ASMToken>()
+            val file =parser.parse()
 
-            for (statement in parser) {
-                val iTokens = visit(statement)
+            val iTokens = visit(file).toMutableList()
 
                 val subTokens = iTokens.filterIsInstance<IASMToken.Ok>()
 
                 if (iTokens.size > subTokens.size) error("Unresolved intermediate token.")
 
-                tokens.addAll(subTokens.map { it.token })
-            }
-
-            tokens.add(HALT)
+                val tokens=subTokens
+                    .map { it.token }
+                    .toMutableList()
+                    .apply { add(HALT)}
 
             if (optimize) {
                 var i = 0
@@ -71,6 +70,16 @@ class Compiler(private val parser: Parser, private val optimize: Boolean) : Node
         iTokens
             .map { it.resolveLast(last) ?: it }
             .toMutableList()
+
+    override fun visitFile(node: Node.File): List<IASMToken> {
+        val iTokens = mutableListOf<IASMToken>()
+
+        for (statement in node.statements) {
+            iTokens += visit(statement)
+        }
+
+        return iTokens
+    }
 
     override fun visitDeclareSingle(node: Node.DeclareSingle): List<IASMToken> {
         val iTokens = mutableListOf<IASMToken>()

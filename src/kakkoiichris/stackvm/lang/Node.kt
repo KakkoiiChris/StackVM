@@ -20,6 +20,8 @@ interface Node {
         fun visit(node: Node) =
             node.accept(this)
 
+        fun visitFile(node: File): X
+
         fun visitDeclareSingle(node: DeclareSingle): X
 
         fun visitDeclareArray(node: DeclareArray): X
@@ -67,6 +69,11 @@ interface Node {
         fun visitSetIndex(node: SetIndex): X
 
         fun visitName(node: Name): X
+    }
+
+    class File(override val location: Location, val statements: Nodes) : Node {
+        override fun <X> accept(visitor: Visitor<X>): X =
+            visitor.visitFile(this)
     }
 
     class DeclareSingle(

@@ -133,10 +133,13 @@ private fun compileFile(srcName: String, dstName: String) {
 
     val dstFile = File(dstName)
 
-    if (!dstFile.delete()) error("Cannot delete destination file!")
-    if (!dstFile.createNewFile()) error("Cannot create destination file!")
+    if (!dstFile.exists()) {
+        if (!dstFile.createNewFile()) {
+            error("Cannot create destination file!")
+        }
+    }
 
-    val out = DataOutputStream(BufferedOutputStream(FileOutputStream(dstFile)))
+    val out = DataOutputStream(BufferedOutputStream(FileOutputStream(dstFile, false)))
 
     out.writeInt(values.size)
 

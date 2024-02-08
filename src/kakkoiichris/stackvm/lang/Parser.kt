@@ -2,16 +2,13 @@ package kakkoiichris.stackvm.lang
 
 import kakkoiichris.stackvm.cpu.SystemFunctions
 
-class Parser(private val lexer: Lexer, private val optimize: Boolean) : Iterator<Node> {
+class Parser(private val lexer: Lexer, private val optimize: Boolean) {
     private val memory = Memory()
 
     private var token = lexer.next()
 
-    override fun hasNext() =
-        !match(TokenType.End)
-
-    override fun next() =
-        statement()
+    fun parse() =
+        file()
 
     fun open() {
         SystemFunctions
@@ -62,6 +59,18 @@ class Parser(private val lexer: Lexer, private val optimize: Boolean) : Iterator
         }
 
         return null
+    }
+
+    private fun file(): Node.File {
+        val location = here()
+
+        val statements = mutableListOf<Node>()
+
+        while (!match(TokenType.End)) {
+            statements += statement()
+        }
+
+        return Node.File(location, statements)
     }
 
     private fun statement() = when {
