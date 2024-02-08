@@ -78,7 +78,7 @@ interface Node {
 
     class DeclareSingle(
         override val location: Location,
-        val name: Variable,
+        val variable: Variable,
         val id: Int,
         val node: Node
     ) : Node {
@@ -545,7 +545,7 @@ interface Node {
         }
     }
 
-    class Assign(override val location: Location, val name: Variable, val address: Int, val node: Node) : Node {
+    class Assign(override val location: Location, val variable: Variable, val node: Node) : Node {
         override fun <X> accept(visitor: Visitor<X>): X =
             visitor.visitAssign(this)
     }

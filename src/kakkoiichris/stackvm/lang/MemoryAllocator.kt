@@ -42,11 +42,15 @@ object MemoryAllocator : Node.Visitor<Unit> {
     private fun allocateSingle(node: Node.DeclareSingle, startAddress: Int): Int {
         node.address = startAddress
 
+        addresses[node.id] = startAddress
+
         return startAddress + 1
     }
 
     private fun allocateArray(node: Node.DeclareArray, startAddress: Int): Int {
         node.address = startAddress
+
+        addresses[node.id] = startAddress
 
         return startAddress + node.dataType.offset
     }
@@ -62,7 +66,7 @@ object MemoryAllocator : Node.Visitor<Unit> {
     }
 
     override fun visitDeclareSingle(node: Node.DeclareSingle) {
-        visit(node.name)
+        visit(node.variable)
 
         visit(node.node)
     }
@@ -186,7 +190,7 @@ object MemoryAllocator : Node.Visitor<Unit> {
     }
 
     override fun visitAssign(node: Node.Assign) {
-        visit(node.name)
+        visit(node.variable)
 
         visit(node.node)
     }

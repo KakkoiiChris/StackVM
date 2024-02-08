@@ -451,7 +451,7 @@ class Compiler(private val program: Node.Program, private val optimize: Boolean)
 
         iTokens += DUP.iasm
         iTokens += STORE.iasm
-        iTokens += ASMToken.Value(node.address.toFloat()).iasm
+        iTokens += ASMToken.Value(node.variable.address.toFloat()).iasm
 
         pos += 3
 

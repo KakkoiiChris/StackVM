@@ -7,7 +7,7 @@ class Parser(private val lexer: Lexer, private val optimize: Boolean) {
 
     private var token = lexer.next()
 
-    fun parse():Node.Program {
+    fun parse(): Node.Program {
         SystemFunctions
 
         memory.open()
@@ -225,16 +225,13 @@ class Parser(private val lexer: Lexer, private val optimize: Boolean) {
 
         mustSkip(TokenType.Symbol.LEFT_BRACE)
 
-        try {
-            memory.push()
+        memory.push()
 
-            while (!match(TokenType.Symbol.RIGHT_BRACE)) {
-                body += statement()
-            }
+        while (!match(TokenType.Symbol.RIGHT_BRACE)) {
+            body += statement()
         }
-        finally {
-            memory.pop()
-        }
+
+        memory.pop()
 
         mustSkip(TokenType.Symbol.RIGHT_BRACE)
 
@@ -252,16 +249,13 @@ class Parser(private val lexer: Lexer, private val optimize: Boolean) {
 
         mustSkip(TokenType.Symbol.LEFT_BRACE)
 
-        try {
-            memory.push()
+        memory.push()
 
-            while (!match(TokenType.Symbol.RIGHT_BRACE)) {
-                body += statement()
-            }
+        while (!match(TokenType.Symbol.RIGHT_BRACE)) {
+            body += statement()
         }
-        finally {
-            memory.pop()
-        }
+
+        memory.pop()
 
         mustSkip(TokenType.Symbol.RIGHT_BRACE)
         mustSkip(TokenType.Keyword.WHILE)
@@ -278,67 +272,64 @@ class Parser(private val lexer: Lexer, private val optimize: Boolean) {
 
         mustSkip(TokenType.Keyword.FOR)
 
-        try {
-            memory.push()
+        memory.push()
 
-            var init: Node.DeclareSingle? = null
+        var init: Node.DeclareSingle? = null
 
-            if (!skip(TokenType.Symbol.SEMICOLON)) {
-                val name = name()
+        if (!skip(TokenType.Symbol.SEMICOLON)) {
+            val name = name()
 
-                var type = if (skip(TokenType.Symbol.COLON)) type() else null
+            var type = if (skip(TokenType.Symbol.COLON)) type() else null
 
-                mustSkip(TokenType.Symbol.EQUAL)
+            mustSkip(TokenType.Symbol.EQUAL)
 
-                val node = expr()
+            val node = expr()
 
-                if (type == null) {
-                    type = Node.Type(Location.none, TokenType.Type(node.dataType))
-                }
-
-                val variable = createVariable(false, name, type.dataType)
-
-                val (_, activation) = memory
-                    .getVariable(variable)
-
-                val (_, _, address) = activation
-
-                init = Node.DeclareSingle(name.location, variable, address, node)
-
-                mustSkip(TokenType.Symbol.SEMICOLON)
+            if (type == null) {
+                type = Node.Type(Location.none, TokenType.Type(node.dataType))
             }
 
-            var condition: Node? = null
+            val variable = createVariable(false, name, type.dataType)
 
-            if (!skip(TokenType.Symbol.SEMICOLON)) {
-                condition = expr()
+            val (_, activation) = memory
+                .getVariable(variable)
 
-                mustSkip(TokenType.Symbol.SEMICOLON)
-            }
+            val (_, _, id) = activation
 
-            var increment: Node? = null
+            init = Node.DeclareSingle(name.location, variable, id, node)
 
-            if (!matchAny(TokenType.Symbol.AT, TokenType.Symbol.LEFT_BRACE)) {
-                increment = expr()
-            }
-
-            val label = label()
-
-            val body = mutableListOf<Node>()
-
-            mustSkip(TokenType.Symbol.LEFT_BRACE)
-
-            while (!match(TokenType.Symbol.RIGHT_BRACE)) {
-                body += statement()
-            }
-
-            mustSkip(TokenType.Symbol.RIGHT_BRACE)
-
-            return Node.For(location, init, condition, increment, label, body)
+            mustSkip(TokenType.Symbol.SEMICOLON)
         }
-        finally {
-            memory.pop()
+
+        var condition: Node? = null
+
+        if (!skip(TokenType.Symbol.SEMICOLON)) {
+            condition = expr()
+
+            mustSkip(TokenType.Symbol.SEMICOLON)
         }
+
+        var increment: Node? = null
+
+        if (!matchAny(TokenType.Symbol.AT, TokenType.Symbol.LEFT_BRACE)) {
+            increment = expr()
+        }
+
+        val label = label()
+
+        val body = mutableListOf<Node>()
+
+        mustSkip(TokenType.Symbol.LEFT_BRACE)
+
+        while (!match(TokenType.Symbol.RIGHT_BRACE)) {
+            body += statement()
+        }
+
+        memory.pop()
+
+        mustSkip(TokenType.Symbol.RIGHT_BRACE)
+
+        return Node.For(location, init, condition, increment, label, body)
     }
 
     private fun `break`(): Node.Break {
@@ -612,7 +603,7 @@ class Parser(private val lexer: Lexer, private val optimize: Boolean) {
         val (_, variable) = memory
             .getVariable(expr)
 
-        val (constant, dataType, address) = variable
+        val (constant, dataType, _) = variable
 
         if (constant) error("Variable '${expr.name.value}' cannot be reassigned @ ${expr.location}!")
 
@@ -620,7 +611,7 @@ class Parser(private val lexer: Lexer, private val optimize: Boolean) {
 
         if (dataType != node.dataType) error("Cannot assign a value of type '${node.dataType}' to a variable of type '$dataType' @ $location!")
 
-        return Node.Assign(location, expr, address, node)
+        return Node.Assign(location, expr, node)
     }
 
     private fun assignIndex(location: Location, expr: Node.GetIndex): Node.SetIndex {
@@ -644,7 +635,7 @@ class Parser(private val lexer: Lexer, private val optimize: Boolean) {
         val (_, variable) = memory
             .getVariable(expr)
 
-        val (constant, dataType, address) = variable
+        val (constant, dataType, _) = variable
 
         if (constant) error("Variable '${expr.name.value}' cannot be reassigned @ ${expr.location}!")
 
@@ -662,7 +653,7 @@ class Parser(private val lexer: Lexer, private val optimize: Boolean) {
 
         if (dataType != intermediate.dataType) error("Cannot assign a value of type '${intermediate.dataType}' to a variable of type '$dataType' @ $location!")
 
-        return Node.Assign(location, expr, address, intermediate)
+        return Node.Assign(location, expr, intermediate)
     }
 
     private fun desugarAssignIndex(location: Location, expr: Node.GetIndex, symbol: TokenType.Symbol): Node.SetIndex {
