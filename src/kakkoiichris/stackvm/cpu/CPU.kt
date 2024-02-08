@@ -6,20 +6,23 @@ import kakkoiichris.stackvm.util.bool
 abstract class CPU(protected val config: Config = Config()) {
     companion object {
         private const val RUN_ADR = 0
-        private const val RES_ADR = 1
-        private const val IPO_ADR = 2
-        private const val IPA_ADR = 3
-        private const val SPO_ADR = 4
-        private const val SPA_ADR = 5
-        private const val FPO_ADR = 6
-        private const val FPA_ADR = 7
-        private const val CPO_ADR = 8
-        private const val CPA_ADR = 9
+        private const val GLO_ADR = 1
+        private const val RES_ADR = 2
+        private const val IPO_ADR = 3
+        private const val IPA_ADR = 4
+        private const val SPO_ADR = 5
+        private const val SPA_ADR = 6
+        private const val FPO_ADR = 7
+        private const val FPA_ADR = 8
+        private const val CPO_ADR = 9
+        private const val CPA_ADR = 10
     }
 
     internal lateinit var memory: FloatArray
 
     protected var running by Register.Bool(RUN_ADR)
+
+    protected var global by Register.Bool(GLO_ADR)
 
     protected var result by Register.Float(RES_ADR)
 
@@ -50,7 +53,9 @@ abstract class CPU(protected val config: Config = Config()) {
     abstract fun run(): Float
 
     protected fun decode() {
-        when (ASMToken.Instruction.entries[fetchInt()]) {
+        val index = fetchInt()
+
+        when (ASMToken.Instruction.entries[index]) {
             ASMToken.Instruction.HALT    -> halt()
 
             ASMToken.Instruction.PUSH    -> push()
@@ -91,6 +96,8 @@ abstract class CPU(protected val config: Config = Config()) {
 
             ASMToken.Instruction.JIF     -> jif()
 
+            ASMToken.Instruction.GLOBAL  -> global()
+
             ASMToken.Instruction.LOAD    -> load()
 
             ASMToken.Instruction.ALOAD   -> aload()
@@ -98,14 +105,6 @@ abstract class CPU(protected val config: Config = Config()) {
             ASMToken.Instruction.ILOAD   -> iload()
 
             ASMToken.Instruction.IALOAD  -> iaload()
-
-            ASMToken.Instruction.LOADG   -> loadg()
-
-            ASMToken.Instruction.ALOADG  -> aloadg()
-
-            ASMToken.Instruction.ILOADG  -> iloadg()
-
-            ASMToken.Instruction.IALOADG -> ialoadg()
 
             ASMToken.Instruction.STORE   -> store()
 
@@ -174,6 +173,16 @@ abstract class CPU(protected val config: Config = Config()) {
         return -1
     }
 
+    protected fun getLoadOffset(): Int {
+        if (global) {
+            global = false
+
+            return framePointerOrigin
+        }
+
+        return framePointer
+    }
+
     abstract fun halt()
 
     abstract fun push()
@@ -214,6 +223,8 @@ abstract class CPU(protected val config: Config = Config()) {
 
     abstract fun jif()
 
+    abstract fun global()
+
     abstract fun load()
 
     abstract fun aload()
@@ -221,14 +232,6 @@ abstract class CPU(protected val config: Config = Config()) {
     abstract fun iload()
 
     abstract fun iaload()
-
-    abstract fun loadg()
-
-    abstract fun aloadg()
-
-    abstract fun iloadg()
-
-    abstract fun ialoadg()
 
     abstract fun store()
 

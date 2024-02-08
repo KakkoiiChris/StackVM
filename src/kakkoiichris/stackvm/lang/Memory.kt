@@ -1,6 +1,5 @@
 package kakkoiichris.stackvm.lang
 
-import kakkoiichris.stackvm.asm.ASMToken
 import java.util.*
 
 class Memory {
@@ -59,14 +58,14 @@ class Memory {
         while (here != null && here != global) {
             val variable = here.getVariable(name)
 
-            if (variable != null) return Lookup(Lookup.Mode.LOCAL, variable)
+            if (variable != null) return Lookup(false, variable)
 
             here = here.parent
         }
 
         val variable = global.getVariable(name)
 
-        if (variable != null) return Lookup(Lookup.Mode.GLOBAL, variable)
+        if (variable != null) return Lookup(true, variable)
 
         error("Undeclared variable '${name.value}' @ ${location}!")
     }
@@ -128,28 +127,7 @@ class Memory {
             functions[signature.toString()]
     }
 
-    data class Lookup(val mode: Mode, val record: VariableRecord) {
-        enum class Mode(
-            val load: ASMToken.Instruction,
-            val aLoad: ASMToken.Instruction,
-            val iLoad: ASMToken.Instruction,
-            val iaLoad: ASMToken.Instruction,
-        ) {
-            GLOBAL(
-                ASMToken.Instruction.LOADG,
-                ASMToken.Instruction.ALOADG,
-                ASMToken.Instruction.ILOADG,
-                ASMToken.Instruction.IALOADG,
-            ),
-
-            LOCAL(
-                ASMToken.Instruction.LOAD,
-                ASMToken.Instruction.ALOAD,
-                ASMToken.Instruction.ILOAD,
-                ASMToken.Instruction.IALOAD,
-            )
-        }
-    }
+    data class Lookup(val isGlobal: Boolean, val record: VariableRecord)
 
     data class VariableRecord(val isConstant: Boolean, val dataType: DataType, val id: Int)
 

@@ -24,8 +24,6 @@ object ASMFormatter {
                     JIF,
                     LOAD,
                     ALOAD,
-                    LOADG,
-                    ALOADG,
                     STORE,
                     ASTORE,
                     CALL,
@@ -33,9 +31,7 @@ object ASMFormatter {
                     SYS    -> " ${fetch().truncate()}"
 
                     ILOAD,
-                    ILOADG,
                     IALOAD,
-                    IALOADG,
                     ISTORE,
                     IASTORE -> " ${fetch().truncate()} ${fetch().truncate()}"
 

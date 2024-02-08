@@ -12,26 +12,26 @@ object DebugCPU : CPU() {
         running = true
         result = Float.NaN
 
-        instructionPointer = 10
+        instructionPointer = 11
         instructionPointerOrigin = instructionPointer
 
-        var i = instructionPointer
+        var address = instructionPointer
 
         for (value in instructions) {
-            memory[i++] = value
+            memory[address++] = value
         }
 
-        callPointer = i
+        callPointer = address
         callPointerOrigin = callPointer
 
-        i += config.maxCalls
+        address += config.maxCalls
 
-        stackPointer = i
+        stackPointer = address
         stackPointerOrigin = stackPointer
 
-        i += config.maxStack
+        address += config.maxStack
 
-        framePointer = i
+        framePointer = address
         framePointerOrigin = framePointer
 
         pushStack(0F)
@@ -253,8 +253,14 @@ object DebugCPU : CPU() {
         }
     }
 
+    override fun global() {
+        global = true
+
+        println("GLOBAL")
+    }
+
     override fun load() {
-        val address = fetchInt() + framePointer
+        val address = fetchInt() + getLoadOffset()
         val value = memory[address]
 
         println("LOAD @${address.toAddress()} <${value.truncate()}>")
@@ -263,7 +269,7 @@ object DebugCPU : CPU() {
     }
 
     override fun aload() {
-        val address = fetchInt() + framePointer
+        val address = fetchInt() + getLoadOffset()
         val size = memory[address]
 
         val elements = FloatArray(size.toInt()) { memory[address + 1 + it] }
@@ -278,7 +284,7 @@ object DebugCPU : CPU() {
     }
 
     override fun iload() {
-        var address = fetchInt() + framePointer
+        var address = fetchInt() + getLoadOffset()
         val indexCount = fetchInt()
 
         var indexOffset = 0
@@ -307,7 +313,7 @@ object DebugCPU : CPU() {
     }
 
     override fun iaload() {
-        var address = fetchInt() + framePointer
+        var address = fetchInt() + getLoadOffset()
         val indexCount = fetchInt()
 
         var indexOffset = 0
@@ -326,85 +332,6 @@ object DebugCPU : CPU() {
         val elements = FloatArray(size.toInt()) { memory[address + 1 + it] }
 
         println("IALOAD @${address.toAddress()} [${elements.joinToString(separator = ",") { it.truncate() }}]")
-
-        for (element in elements.reversed()) {
-            pushStack(element)
-        }
-
-        pushStack(size)
-    }
-
-    override fun loadg() {
-        val address = fetchInt() + framePointerOrigin
-        val value = memory[address]
-
-        println("LOADG @${address.toAddress()} <${value.truncate()}>")
-
-        pushStack(value)
-    }
-
-    override fun aloadg() {
-        val address = fetchInt() + framePointerOrigin
-        val size = memory[address]
-
-        val elements = FloatArray(size.toInt()) { memory[address + 1 + it] }
-
-        println("ALOADG @${address.toAddress()} [${elements.joinToString(separator = ",") { it.truncate() }}]")
-
-        for (element in elements.reversed()) {
-            pushStack(element)
-        }
-
-        pushStack(size)
-    }
-
-    override fun iloadg() {
-        var address = fetchInt() + framePointerOrigin
-        val indexCount = fetchInt()
-
-        var indexOffset = 0
-
-        for (i in 0..<indexCount - 1) {
-            val subSize = memory[address + indexOffset + 1].toInt()
-
-            val index = popStackInt()
-
-            indexOffset = (indexOffset + 1) + (index * (subSize + 1))
-        }
-
-        val index = popStackInt()
-
-        indexOffset = (indexOffset + 1) + index
-
-        address += indexOffset
-
-        val value = memory[address]
-
-        println("ILOADG @${address.toAddress()} #$indexCount <${value.truncate()}>")
-
-        pushStack(value)
-    }
-
-    override fun ialoadg() {
-        var address = fetchInt() + framePointerOrigin
-        val indexCount = fetchInt()
-
-        var indexOffset = 0
-
-        for (i in 0..<indexCount - 1) {
-            val subSize = memory[address + indexOffset + 1].toInt()
-
-            val index = popStackInt()
-
-            indexOffset = (indexOffset + 1) + (index * subSize)
-        }
-
-        address += indexOffset
-        val size = memory[address]
-
-        val elements = FloatArray(size.toInt()) { memory[address + 1 + it] }
-
-        println("IALOADG @${address.toAddress()} [${elements.joinToString(separator = ",") { it.truncate() }}]")
 
         for (element in elements.reversed()) {
             pushStack(element)

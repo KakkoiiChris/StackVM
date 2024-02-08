@@ -221,7 +221,7 @@ interface Node {
         override val location: Location,
         val name: TokenType.Name,
         val id: Int,
-        val mode: Memory.Lookup.Mode,
+        val isGlobal: Boolean,
         override val dataType: DataType
     ) : Node {
         var address = -1

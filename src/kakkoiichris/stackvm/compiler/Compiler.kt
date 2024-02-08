@@ -387,11 +387,13 @@ class Compiler(private val program: Node.Program, private val optimize: Boolean)
     override fun visitVariable(node: Node.Variable): List<IASMToken> {
         val iTokens = mutableListOf<IASMToken>()
 
-        iTokens += when (node.dataType) {
-            is DataType.Array -> node.mode.aLoad
+        if (node.isGlobal) {
+            iTokens += GLOBAL.iasm
 
-            else              -> node.mode.load
-        }.iasm
+            pos++
+        }
+
+        iTokens += (if (node.dataType is DataType.Array) ALOAD else LOAD).iasm
         iTokens += ASMToken.Value(node.address.toFloat()).iasm
 
         pos += 2
@@ -504,12 +506,13 @@ class Compiler(private val program: Node.Program, private val optimize: Boolean)
             iTokens += index
         }
 
-        iTokens += if (node.indices.size < node.arrayType.dimension) {
-            node.variable.mode.iaLoad
+        if (node.variable.isGlobal) {
+            iTokens += GLOBAL.iasm
+
+            pos++
         }
-        else {
-            node.variable.mode.iLoad
-        }.iasm
+
+        iTokens += (if (node.indices.size < node.arrayType.dimension) IALOAD else ILOAD).iasm
         iTokens += ASMToken.Value(origin.toFloat()).iasm
         iTokens += ASMToken.Value(indices.size.toFloat()).iasm
         pos += 3
