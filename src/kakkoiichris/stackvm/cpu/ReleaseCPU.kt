@@ -196,13 +196,19 @@ object ReleaseCPU : CPU() {
 
         var indexOffset = 0
 
-        for (i in 0..<indexCount) {
+        for (i in 0..<indexCount-1) {
             val subSize = memory[address + indexOffset + 1].toInt()
 
             val index = popStackInt()
 
             indexOffset = (indexOffset + 1) + (index * subSize)
         }
+
+        indexOffset++
+
+        val index = popStackInt()
+
+        indexOffset += index
 
         address += indexOffset
 
