@@ -4,9 +4,8 @@ import kakkoiichris.stackvm.asm.ASMToken
 import kakkoiichris.stackvm.asm.ASMToken.Instruction.*
 import kakkoiichris.stackvm.lang.DataType
 import kakkoiichris.stackvm.lang.Node
-import kakkoiichris.stackvm.lang.Parser
 
-class Compiler(private val parser: Parser, private val optimize: Boolean) : Node.Visitor<List<IASMToken>> {
+class Compiler(private val program: Node.Program, private val optimize: Boolean) : Node.Visitor<List<IASMToken>> {
     private var pos = 0
 
     private val functions = mutableMapOf<Int, Int>()
@@ -17,43 +16,34 @@ class Compiler(private val parser: Parser, private val optimize: Boolean) : Node
             .toFloatArray()
 
     fun convert(): List<ASMToken> {
-        try {
-            parser.open()
+        val iTokens = visit(program).toMutableList()
 
-            val file =parser.parse()
+        val subTokens = iTokens.filterIsInstance<IASMToken.Ok>()
 
-            val iTokens = visit(file).toMutableList()
+        if (iTokens.size > subTokens.size) error("Unresolved intermediate token.")
 
-                val subTokens = iTokens.filterIsInstance<IASMToken.Ok>()
+        val tokens = subTokens
+            .map { it.token }
+            .toMutableList()
+            .apply { add(HALT) }
 
-                if (iTokens.size > subTokens.size) error("Unresolved intermediate token.")
+        if (optimize) {
+            var i = 0
 
-                val tokens=subTokens
-                    .map { it.token }
-                    .toMutableList()
-                    .apply { add(HALT)}
+            while (i < tokens.lastIndex) {
+                val a = tokens[i]
+                val b = tokens[i + 1]
 
-            if (optimize) {
-                var i = 0
-
-                while (i < tokens.lastIndex) {
-                    val a = tokens[i]
-                    val b = tokens[i + 1]
-
-                    if (a === b && a in listOf(NOT, NEG)) {
-                        repeat(2) { tokens.removeAt(i) }
-                    }
-                    else {
-                        i++
-                    }
+                if (a === b && a in listOf(NOT, NEG)) {
+                    repeat(2) { tokens.removeAt(i) }
+                }
+                else {
+                    i++
                 }
             }
+        }
 
-            return tokens
-        }
-        finally {
-            parser.close()
-        }
+        return tokens
     }
 
     private fun resolveStartAndEnd(iTokens: List<IASMToken>, start: Float, end: Float) =
@@ -71,7 +61,7 @@ class Compiler(private val parser: Parser, private val optimize: Boolean) : Node
             .map { it.resolveLast(last) ?: it }
             .toMutableList()
 
-    override fun visitFile(node: Node.File): List<IASMToken> {
+    override fun visitProgram(node: Node.Program): List<IASMToken> {
         val iTokens = mutableListOf<IASMToken>()
 
         for (statement in node.statements) {

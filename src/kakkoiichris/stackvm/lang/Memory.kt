@@ -42,10 +42,10 @@ class Memory {
         return scopes.peek()
     }
 
-    fun addVariable(constant: Boolean, name: TokenType.Name, dataType: DataType, location: Location) {
+    fun addVariable(isConstant: Boolean, name: TokenType.Name, dataType: DataType, location: Location) {
         val scope = peek()
 
-        if (scope.addVariable(constant, name, dataType)) return
+        if (scope.addVariable(isConstant, name, dataType)) return
 
         error("Redeclared variable '${name.value}' @ ${location}!")
     }
@@ -101,12 +101,12 @@ class Memory {
         private val variables = mutableMapOf<String, VariableRecord>()
         private val functions = mutableMapOf<String, FunctionRecord>()
 
-        fun addVariable(constant: Boolean, name: TokenType.Name, dataType: DataType): Boolean {
+        fun addVariable(isConstant: Boolean, name: TokenType.Name, dataType: DataType): Boolean {
             if (name.value in variables) return false
 
-            variables[name.value] = VariableRecord(constant, dataType, variableID)
+            variables[name.value] = VariableRecord(isConstant, dataType, variableID)
 
-            variableID += dataType.offset
+            variableID++
 
             return true
         }
@@ -119,7 +119,7 @@ class Memory {
 
             if (rep in functions) return false
 
-            functions[rep] = FunctionRecord(dataType, id, isNative)
+            functions[rep] = FunctionRecord(isNative, dataType, id)
 
             return true
         }
@@ -151,7 +151,7 @@ class Memory {
         }
     }
 
-    data class VariableRecord(val constant: Boolean, val dataType: DataType, val address: Int)
+    data class VariableRecord(val isConstant: Boolean, val dataType: DataType, val id: Int)
 
-    data class FunctionRecord(val dataType: DataType, val id: Int, val isNative: Boolean)
+    data class FunctionRecord(val isNative: Boolean, val dataType: DataType, val id: Int)
 }

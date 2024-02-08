@@ -20,7 +20,7 @@ interface Node {
         fun visit(node: Node) =
             node.accept(this)
 
-        fun visitFile(node: File): X
+        fun visitProgram(node: Program): X
 
         fun visitDeclareSingle(node: DeclareSingle): X
 
@@ -71,27 +71,31 @@ interface Node {
         fun visitName(node: Name): X
     }
 
-    class File(override val location: Location, val statements: Nodes) : Node {
+    class Program(override val location: Location, val statements: Nodes) : Node {
         override fun <X> accept(visitor: Visitor<X>): X =
-            visitor.visitFile(this)
+            visitor.visitProgram(this)
     }
 
     class DeclareSingle(
         override val location: Location,
         val name: Variable,
-        val address: Int,
+        val id: Int,
         val node: Node
     ) : Node {
+        var address = -1
+
         override fun <X> accept(visitor: Visitor<X>): X =
             visitor.visitDeclareSingle(this)
     }
 
     class DeclareArray(
         override val location: Location,
-        val name: Variable,
-        val address: Int,
+        val variable: Variable,
+        val id: Int,
         val node: Node
     ) : Node {
+        var address = -1
+
         override fun <X> accept(visitor: Visitor<X>): X =
             visitor.visitDeclareArray(this)
     }
@@ -215,10 +219,12 @@ interface Node {
     class Variable(
         override val location: Location,
         val name: TokenType.Name,
-        val address: Int,
+        val id: Int,
         val mode: Memory.Lookup.Mode,
         override val dataType: DataType
     ) : Node {
+        var address = -1
+
         override fun <X> accept(visitor: Visitor<X>): X =
             visitor.visitVariable(this)
     }

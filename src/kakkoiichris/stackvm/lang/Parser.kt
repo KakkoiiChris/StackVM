@@ -7,16 +7,17 @@ class Parser(private val lexer: Lexer, private val optimize: Boolean) {
 
     private var token = lexer.next()
 
-    fun parse() =
-        file()
-
-    fun open() {
+    fun parse():Node.Program {
         SystemFunctions
 
         memory.open()
-    }
 
-    fun close() = memory.close()
+        val program = program()
+
+        memory.close()
+
+        return program
+    }
 
     private fun here() = token.location
 
@@ -61,7 +62,7 @@ class Parser(private val lexer: Lexer, private val optimize: Boolean) {
         return null
     }
 
-    private fun file(): Node.File {
+    private fun program(): Node.Program {
         val location = here()
 
         val statements = mutableListOf<Node>()
@@ -70,7 +71,7 @@ class Parser(private val lexer: Lexer, private val optimize: Boolean) {
             statements += statement()
         }
 
-        return Node.File(location, statements)
+        return Node.Program(location, statements)
     }
 
     private fun statement() = when {
@@ -860,7 +861,7 @@ class Parser(private val lexer: Lexer, private val optimize: Boolean) {
 
         val signature = Signature(name, args.map { it.dataType })
 
-        val (dataType, id, isNative) = memory
+        val (isNative, dataType, id) = memory
             .getFunction(signature)
 
         return if (isNative) {
@@ -931,11 +932,7 @@ class Parser(private val lexer: Lexer, private val optimize: Boolean) {
     private fun label() =
         if (skip(TokenType.Symbol.AT)) name() else null
 
-    private fun createVariable(
-        constant: Boolean,
-        name: Node.Name,
-        dataType: DataType
-    ): Node.Variable {
+    private fun createVariable(constant: Boolean, name: Node.Name, dataType: DataType): Node.Variable {
         val location = here()
 
         memory.addVariable(constant, name.name, dataType, location)
@@ -943,9 +940,9 @@ class Parser(private val lexer: Lexer, private val optimize: Boolean) {
         val (mode, variable) = memory
             .getVariable(name.name, location)
 
-        val (_, type, address) = variable
+        val (_, type, id) = variable
 
-        return Node.Variable(location, name.name, address, mode, type)
+        return Node.Variable(location, name.name, id, mode, type)
     }
 
     private fun Node.Name.toVariable(): Node.Variable {
