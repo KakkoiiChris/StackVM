@@ -114,6 +114,8 @@ abstract class CPU(protected val config: Config = Config()) {
 
             ASMToken.Instruction.IASTORE -> iastore()
 
+            ASMToken.Instruction.SIZE    -> size()
+
             ASMToken.Instruction.CALL    -> call()
 
             ASMToken.Instruction.RET     -> ret()
@@ -240,6 +242,8 @@ abstract class CPU(protected val config: Config = Config()) {
     abstract fun istore()
 
     abstract fun iastore()
+
+    abstract fun size()
 
     abstract fun call()
 

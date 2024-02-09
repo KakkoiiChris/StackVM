@@ -2,16 +2,23 @@ package kakkoiichris.stackvm.lang
 
 import java.util.*
 
-class Memory {
+object Memory {
     private val scopes = Stack<Scope>()
 
     private val global = Scope()
 
+    private var variableID = 0
     private var functionID = 0
 
-    fun open() = push(global)
+    init {
+        scopes.push(global)
+    }
 
-    fun close() = pop()
+    fun reset() {
+        scopes.clear()
+
+        global.clear()
+    }
 
     fun push(scope: Scope? = null) {
         if (scope != null) {
@@ -95,17 +102,18 @@ class Memory {
     }
 
     class Scope(val parent: Scope? = null) {
-        var variableID: Int = parent?.variableID ?: 0
-
         private val variables = mutableMapOf<String, VariableRecord>()
         private val functions = mutableMapOf<String, FunctionRecord>()
+
+        fun clear() {
+            variables.clear()
+            functions.clear()
+        }
 
         fun addVariable(isConstant: Boolean, name: TokenType.Name, dataType: DataType): Boolean {
             if (name.value in variables) return false
 
-            variables[name.value] = VariableRecord(isConstant, dataType, variableID)
-
-            variableID++
+            variables[name.value] = VariableRecord(isConstant, dataType, variableID++)
 
             return true
         }

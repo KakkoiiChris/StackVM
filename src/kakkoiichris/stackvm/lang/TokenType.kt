@@ -66,7 +66,8 @@ interface TokenType {
         SEMICOLON,
         COMMA,
         AT,
-        COLON;
+        COLON,
+        POUND;
 
         open val desugared: Symbol? = null
     }

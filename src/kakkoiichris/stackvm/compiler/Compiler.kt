@@ -61,6 +61,8 @@ class Compiler(private val program: Node.Program, private val optimize: Boolean)
             .map { it.resolveLast(last) ?: it }
             .toMutableList()
 
+    private val Float.iasm get() = IASMToken.Ok(ASMToken.Value(this))
+
     override fun visitProgram(node: Node.Program): List<IASMToken> {
         val iTokens = mutableListOf<IASMToken>()
 
@@ -77,7 +79,7 @@ class Compiler(private val program: Node.Program, private val optimize: Boolean)
         iTokens += visit(node.node)
 
         iTokens += STORE.iasm
-        iTokens += ASMToken.Value(node.address.toFloat()).iasm
+        iTokens += node.address.toFloat().iasm
 
         pos += 2
 
@@ -90,7 +92,7 @@ class Compiler(private val program: Node.Program, private val optimize: Boolean)
         iTokens += visit(node.node)
 
         iTokens += ASTORE.iasm
-        iTokens += ASMToken.Value(node.address.toFloat()).iasm
+        iTokens += node.address.toFloat().iasm
 
         pos += 2
 
@@ -289,7 +291,7 @@ class Compiler(private val program: Node.Program, private val optimize: Boolean)
         functions[node.id] = pos
 
         iTokens += FRAME.iasm
-        iTokens += ASMToken.Value(node.offset.toFloat()).iasm
+        iTokens += node.offset.toFloat().iasm
 
         pos += 2
 
@@ -299,7 +301,7 @@ class Compiler(private val program: Node.Program, private val optimize: Boolean)
 
                 else              -> STORE.iasm
             }
-            iTokens += ASMToken.Value(param.address.toFloat()).iasm
+            iTokens += param.address.toFloat().iasm
 
             pos += 2
         }
@@ -310,7 +312,7 @@ class Compiler(private val program: Node.Program, private val optimize: Boolean)
 
         if (iTokens.none { it is IASMToken.Ok && it.token == RET }) {
             iTokens += PUSH.iasm
-            iTokens += ASMToken.Value(0F).iasm
+            iTokens += 0F.iasm
             iTokens += RET.iasm
 
             pos += 3
@@ -355,7 +357,7 @@ class Compiler(private val program: Node.Program, private val optimize: Boolean)
         val iTokens = mutableListOf<IASMToken>()
 
         iTokens += PUSH.iasm
-        iTokens += ASMToken.Value(node.value.value).iasm
+        iTokens += node.value.value.iasm
 
         pos += 2
 
@@ -367,13 +369,13 @@ class Compiler(private val program: Node.Program, private val optimize: Boolean)
 
         for (c in node.value.value.reversed()) {
             iTokens += PUSH.iasm
-            iTokens += ASMToken.Value(c.code.toFloat()).iasm
+            iTokens += c.code.toFloat().iasm
 
             pos += 2
         }
 
         iTokens += PUSH.iasm
-        iTokens += ASMToken.Value(node.value.value.length.toFloat()).iasm
+        iTokens += node.value.value.length.toFloat().iasm
 
         pos += 2
 
@@ -394,7 +396,7 @@ class Compiler(private val program: Node.Program, private val optimize: Boolean)
         }
 
         iTokens += (if (node.dataType is DataType.Array) ALOAD else LOAD).iasm
-        iTokens += ASMToken.Value(node.address.toFloat()).iasm
+        iTokens += node.address.toFloat().iasm
 
         pos += 2
 
@@ -432,6 +434,23 @@ class Compiler(private val program: Node.Program, private val optimize: Boolean)
         return iTokens
     }
 
+    override fun visitSize(node: Node.Size): List<IASMToken> {
+        val iTokens = mutableListOf<IASMToken>()
+
+        if (node.variable.dataType is DataType.Array) {
+            iTokens += SIZE.iasm
+            iTokens += node.variable.address.toFloat().iasm
+        }
+        else {
+            iTokens += PUSH.iasm
+            iTokens += 1F.iasm
+        }
+
+        pos += 2
+
+        return iTokens
+    }
+
     override fun visitBinary(node: Node.Binary): List<IASMToken> {
         val iTokens = mutableListOf<IASMToken>()
 
@@ -453,7 +472,7 @@ class Compiler(private val program: Node.Program, private val optimize: Boolean)
 
         iTokens += DUP.iasm
         iTokens += STORE.iasm
-        iTokens += ASMToken.Value(node.variable.address.toFloat()).iasm
+        iTokens += node.variable.address.toFloat().iasm
 
         pos += 3
 
@@ -470,7 +489,7 @@ class Compiler(private val program: Node.Program, private val optimize: Boolean)
         val address = functions[node.id] ?: error("Function does not exist!")
 
         iTokens += CALL.iasm
-        iTokens += ASMToken.Value(address.toFloat()).iasm
+        iTokens += address.toFloat().iasm
 
         pos += 2
 
@@ -485,7 +504,7 @@ class Compiler(private val program: Node.Program, private val optimize: Boolean)
         }
 
         iTokens += SYS.iasm
-        iTokens += ASMToken.Value(node.id.toFloat()).iasm
+        iTokens += node.id.toFloat().iasm
 
         pos += 2
 
@@ -513,8 +532,8 @@ class Compiler(private val program: Node.Program, private val optimize: Boolean)
         }
 
         iTokens += (if (node.indices.size < node.arrayType.dimension) IALOAD else ILOAD).iasm
-        iTokens += ASMToken.Value(origin.toFloat()).iasm
-        iTokens += ASMToken.Value(indices.size.toFloat()).iasm
+        iTokens += origin.toFloat().iasm
+        iTokens += indices.size.toFloat().iasm
         pos += 3
 
         return iTokens
@@ -545,8 +564,8 @@ class Compiler(private val program: Node.Program, private val optimize: Boolean)
         else {
             ISTORE
         }.iasm
-        iTokens += ASMToken.Value(origin.toFloat()).iasm
-        iTokens += ASMToken.Value(indices.size.toFloat()).iasm
+        iTokens += origin.toFloat().iasm
+        iTokens += indices.size.toFloat().iasm
         pos += 3
 
         return iTokens

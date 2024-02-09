@@ -56,6 +56,8 @@ interface Node {
 
         fun visitUnary(node: Unary): X
 
+        fun visitSize(node: Size): X
+
         fun visitBinary(node: Binary): X
 
         fun visitAssign(node: Assign): X
@@ -296,6 +298,13 @@ interface Node {
                     entries.first { it.symbol == symbol }
             }
         }
+    }
+
+    class Size(override val location: Location, val variable: Variable) : Node {
+        override val dataType get() = DataType.Primitive.INT
+
+        override fun <X> accept(visitor: Visitor<X>): X =
+            visitor.visitSize(this)
     }
 
     class Binary(

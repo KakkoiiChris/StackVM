@@ -6,7 +6,7 @@ import kakkoiichris.stackvm.cpu.CPU
 import kakkoiichris.stackvm.cpu.DebugCPU
 import kakkoiichris.stackvm.cpu.ReleaseCPU
 import kakkoiichris.stackvm.lang.Lexer
-import kakkoiichris.stackvm.lang.MemoryAllocator
+import kakkoiichris.stackvm.lang.Allocator
 import kakkoiichris.stackvm.lang.Parser
 import kakkoiichris.stackvm.util.truncate
 import java.io.*
@@ -83,7 +83,7 @@ private fun compile(src: String): FloatArray {
 
     val program = parser.parse()
 
-    MemoryAllocator.allocate(program)
+    Allocator.allocate(program)
 
     val compiler = Compiler(program, false)
 
@@ -112,7 +112,7 @@ private fun repl(cpu: CPU) {
 
                 val program = parser.parse()
 
-                MemoryAllocator.allocate(program)
+                Allocator.allocate(program)
 
                 val compiler = Compiler(program, false)
 

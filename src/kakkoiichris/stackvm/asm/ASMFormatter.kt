@@ -26,16 +26,17 @@ object ASMFormatter {
                     ALOAD,
                     STORE,
                     ASTORE,
+                    SIZE,
                     CALL,
                     FRAME,
-                    SYS    -> " ${fetch().truncate()}"
+                    SYS     -> " ${fetch().truncate()}"
 
                     ILOAD,
                     IALOAD,
                     ISTORE,
                     IASTORE -> " ${fetch().truncate()} ${fetch().truncate()}"
 
-                    else   -> ""
+                    else    -> ""
                 }
             )
         }

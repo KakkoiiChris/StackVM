@@ -19,7 +19,7 @@ class Lexer(private val src: String) : Iterator<Token> {
                 continue
             }
 
-            if (match('#')) {
+            if (match("//")) {
                 skipComment()
 
                 continue
@@ -49,13 +49,23 @@ class Lexer(private val src: String) : Iterator<Token> {
 
     private fun here() = Location(row, col)
 
-    private fun peek() = if (pos < src.length) src[pos] else NUL
+    private fun peek(offset: Int = 0) = if (pos + offset < src.length)
+        src[pos + offset]
+    else
+        NUL
+
+    private fun look(length: Int) = buildString {
+        repeat(length) { i -> append(peek(i)) }
+    }
 
     private fun match(char: Char) =
         peek() == char
 
     private fun match(predicate: (Char) -> Boolean) =
         predicate(peek())
+
+    private fun match(string: String) =
+        look(string.length) == string
 
     private fun step() {
         if (match('\n')) {
@@ -105,6 +115,8 @@ class Lexer(private val src: String) : Iterator<Token> {
     }
 
     private fun skipComment() {
+        step()
+
         do {
             step()
         }
@@ -336,6 +348,8 @@ class Lexer(private val src: String) : Iterator<Token> {
             skip('@') -> TokenType.Symbol.AT
 
             skip(':') -> TokenType.Symbol.COLON
+
+            skip('#') -> TokenType.Symbol.POUND
 
             else      -> error("Unknown symbol '${peek()}'!")
         }

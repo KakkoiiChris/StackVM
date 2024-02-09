@@ -38,6 +38,7 @@ interface ASMToken {
         ASTORE,
         ISTORE,
         IASTORE,
+        SIZE,
         CALL,
         RET,
         FRAME,

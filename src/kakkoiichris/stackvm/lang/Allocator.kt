@@ -2,7 +2,7 @@ package kakkoiichris.stackvm.lang
 
 import java.util.*
 
-object MemoryAllocator : Node.Visitor<Unit> {
+object Allocator : Node.Visitor<Unit> {
     private val offsets = Stack<Int>()
 
     private val addresses = mutableMapOf<Int, Int>()
@@ -199,6 +199,10 @@ object MemoryAllocator : Node.Visitor<Unit> {
 
     override fun visitUnary(node: Node.Unary) {
         visit(node.operand)
+    }
+
+    override fun visitSize(node: Node.Size) {
+        visit(node.variable)
     }
 
     override fun visitBinary(node: Node.Binary) {

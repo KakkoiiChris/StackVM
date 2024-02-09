@@ -3,18 +3,14 @@ package kakkoiichris.stackvm.lang
 import kakkoiichris.stackvm.cpu.SystemFunctions
 
 class Parser(private val lexer: Lexer, private val optimize: Boolean) {
-    private val memory = Memory()
-
     private var token = lexer.next()
 
     fun parse(): Node.Program {
         SystemFunctions
 
-        memory.open()
-
         val program = program()
 
-        memory.close()
+        Memory.reset()
 
         return program
     }
@@ -160,7 +156,7 @@ class Parser(private val lexer: Lexer, private val optimize: Boolean) {
 
         val variable = createVariable(constant, name, type.dataType)
 
-        val (_, activation) = memory
+        val (_, activation) = Memory
             .getVariable(variable)
 
         val (_, _, address) = activation
@@ -192,14 +188,14 @@ class Parser(private val lexer: Lexer, private val optimize: Boolean) {
             mustSkip(TokenType.Symbol.LEFT_BRACE)
 
             try {
-                memory.push()
+                Memory.push()
 
                 while (!match(TokenType.Symbol.RIGHT_BRACE)) {
                     body += statement()
                 }
             }
             finally {
-                memory.pop()
+                Memory.pop()
             }
 
             mustSkip(TokenType.Symbol.RIGHT_BRACE)
@@ -225,13 +221,13 @@ class Parser(private val lexer: Lexer, private val optimize: Boolean) {
 
         mustSkip(TokenType.Symbol.LEFT_BRACE)
 
-        memory.push()
+        Memory.push()
 
         while (!match(TokenType.Symbol.RIGHT_BRACE)) {
             body += statement()
         }
 
-        memory.pop()
+        Memory.pop()
 
         mustSkip(TokenType.Symbol.RIGHT_BRACE)
 
@@ -249,13 +245,13 @@ class Parser(private val lexer: Lexer, private val optimize: Boolean) {
 
         mustSkip(TokenType.Symbol.LEFT_BRACE)
 
-        memory.push()
+        Memory.push()
 
         while (!match(TokenType.Symbol.RIGHT_BRACE)) {
             body += statement()
         }
 
-        memory.pop()
+        Memory.pop()
 
         mustSkip(TokenType.Symbol.RIGHT_BRACE)
         mustSkip(TokenType.Keyword.WHILE)
@@ -272,7 +268,7 @@ class Parser(private val lexer: Lexer, private val optimize: Boolean) {
 
         mustSkip(TokenType.Keyword.FOR)
 
-        memory.push()
+        Memory.push()
 
         var init: Node.DeclareSingle? = null
 
@@ -291,7 +287,7 @@ class Parser(private val lexer: Lexer, private val optimize: Boolean) {
 
             val variable = createVariable(false, name, type.dataType)
 
-            val (_, activation) = memory
+            val (_, activation) = Memory
                 .getVariable(variable)
 
             val (_, _, id) = activation
@@ -325,7 +321,7 @@ class Parser(private val lexer: Lexer, private val optimize: Boolean) {
             body += statement()
         }
 
-        memory.pop()
+        Memory.pop()
 
         mustSkip(TokenType.Symbol.RIGHT_BRACE)
 
@@ -363,9 +359,9 @@ class Parser(private val lexer: Lexer, private val optimize: Boolean) {
 
         val name = name()
 
-        val id = memory.getFunctionID()
+        val id = Memory.getFunctionID()
 
-        memory.push()
+        Memory.push()
 
         val params = mutableListOf<Node.Variable>()
 
@@ -391,11 +387,11 @@ class Parser(private val lexer: Lexer, private val optimize: Boolean) {
         val body = mutableListOf<Node>()
 
         fun registerFunction(type: Node.Type, isNative: Boolean) {
-            val here = memory.pop()!!
+            val here = Memory.pop()!!
 
-            memory.addFunction(type.dataType, id, Signature(name, params.map { it.dataType }), isNative)
+            Memory.addFunction(type.dataType, id, Signature(name, params.map { it.dataType }), isNative)
 
-            memory.push(here)
+            Memory.push(here)
         }
 
         var isNative = false
@@ -438,7 +434,7 @@ class Parser(private val lexer: Lexer, private val optimize: Boolean) {
             }
         }
 
-        memory.pop()
+        Memory.pop()
 
         if (!isNative) {
             if (type.type.value == DataType.Primitive.VOID && body.last() !is Node.Return) {
@@ -598,7 +594,7 @@ class Parser(private val lexer: Lexer, private val optimize: Boolean) {
     }
 
     private fun assign(location: Location, expr: Node.Variable): Node.Assign {
-        val (_, variable) = memory
+        val (_, variable) = Memory
             .getVariable(expr)
 
         val (constant, dataType, _) = variable
@@ -613,7 +609,7 @@ class Parser(private val lexer: Lexer, private val optimize: Boolean) {
     }
 
     private fun assignIndex(location: Location, expr: Node.GetIndex): Node.SetIndex {
-        val (_, variable) = memory
+        val (_, variable) = Memory
             .getVariable(expr.variable)
 
         val (constant, dataType, _) = variable
@@ -630,7 +626,7 @@ class Parser(private val lexer: Lexer, private val optimize: Boolean) {
     }
 
     private fun desugarAssign(location: Location, expr: Node.Variable, symbol: TokenType.Symbol): Node.Assign {
-        val (_, variable) = memory
+        val (_, variable) = Memory
             .getVariable(expr)
 
         val (constant, dataType, _) = variable
@@ -655,7 +651,7 @@ class Parser(private val lexer: Lexer, private val optimize: Boolean) {
     }
 
     private fun desugarAssignIndex(location: Location, expr: Node.GetIndex, symbol: TokenType.Symbol): Node.SetIndex {
-        val (_, variable) = memory
+        val (_, variable) = Memory
             .getVariable(expr.variable)
 
         val (constant, dataType, _) = variable
@@ -792,12 +788,17 @@ class Parser(private val lexer: Lexer, private val optimize: Boolean) {
     }
 
     private fun unary(): Node {
-        val expr = if (matchAny(TokenType.Symbol.DASH, TokenType.Symbol.EXCLAMATION)) {
+        val expr = if (matchAny(TokenType.Symbol.DASH, TokenType.Symbol.EXCLAMATION, TokenType.Symbol.POUND)) {
             val (location, operator) = token
 
             mustSkip(operator)
 
-            Node.Unary(location, Node.Unary.Operator[operator], unary())
+            if (operator == TokenType.Symbol.POUND) {
+                Node.Size(location, name().toVariable())
+            }
+            else {
+                Node.Unary(location, Node.Unary.Operator[operator], unary())
+            }
         }
         else {
             postfix()
@@ -850,7 +851,7 @@ class Parser(private val lexer: Lexer, private val optimize: Boolean) {
 
         val signature = Signature(name, args.map { it.dataType })
 
-        val (isNative, dataType, id) = memory
+        val (isNative, dataType, id) = Memory
             .getFunction(signature)
 
         return if (isNative) {
@@ -924,9 +925,9 @@ class Parser(private val lexer: Lexer, private val optimize: Boolean) {
     private fun createVariable(constant: Boolean, name: Node.Name, dataType: DataType): Node.Variable {
         val location = here()
 
-        memory.addVariable(constant, name.name, dataType, location)
+        Memory.addVariable(constant, name.name, dataType, location)
 
-        val (mode, variable) = memory
+        val (mode, variable) = Memory
             .getVariable(name.name, location)
 
         val (_, type, id) = variable
@@ -935,7 +936,7 @@ class Parser(private val lexer: Lexer, private val optimize: Boolean) {
     }
 
     private fun Node.Name.toVariable(): Node.Variable {
-        val (mode, variable) = memory
+        val (mode, variable) = Memory
             .getVariable(name, location)
 
         val (_, type, address) = variable

@@ -397,6 +397,14 @@ object DebugCPU : CPU() {
         TODO("IASTORE")
     }
 
+    override fun size() {
+        val address = fetchInt() + getLoadOffset()
+
+        val totalSize = memory[address].toInt()
+
+        pushStack(totalSize.toFloat())
+    }
+
     override fun call() {
         val address = instructionPointer + 1
         instructionPointer = instructionPointerOrigin + fetchInt()
