@@ -1,30 +1,49 @@
 package kakkoiichris.stackvm.cpu
 
-import kakkoiichris.stackvm.lang.parser.DataType.Primitive.*
 import kakkoiichris.stackvm.lang.lexer.Location
 import kakkoiichris.stackvm.lang.lexer.TokenType
 import kakkoiichris.stackvm.lang.parser.DataType
+import kakkoiichris.stackvm.lang.parser.DataType.Primitive.*
 import kakkoiichris.stackvm.lang.parser.Node
 import kakkoiichris.stackvm.lang.parser.Signature
 import kakkoiichris.stackvm.util.bool
 import kakkoiichris.stackvm.util.float
 import kakkoiichris.stackvm.util.truncate
+import java.io.File
 import kotlin.math.*
 
 typealias Method = (values: List<Float>) -> List<Float>
 
-object SystemFunctions {
+object StandardLibrary {
     private val functionTable = mutableMapOf<String, Int>()
 
     private val functions = mutableListOf<Function>()
 
+    private val sources = mutableMapOf<String, File>()
+
     private val void = listOf(0F)
 
     init {
+        val folder = File(javaClass.getResource("/")!!.toURI())
+
+        val files = folder
+            .listFiles()!!
+            .filter { it.isFile && it.extension == "svml" }
+
+        for (file in files) {
+            sources[file.nameWithoutExtension] = file
+        }
+
         addMath()
 
         addConsole()
     }
+
+    fun hasSource(name: String) =
+        name in sources
+
+    fun getSource(name: String) =
+        sources[name]!!
 
     private fun addMath() {
         addFunction("sin", FLOAT) { values ->

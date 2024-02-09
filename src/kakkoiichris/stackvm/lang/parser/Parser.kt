@@ -1,23 +1,24 @@
 package kakkoiichris.stackvm.lang.parser
 
-import kakkoiichris.stackvm.cpu.SystemFunctions
+import kakkoiichris.stackvm.cpu.StandardLibrary
 import kakkoiichris.stackvm.lang.Directory
 import kakkoiichris.stackvm.lang.lexer.Lexer
 import kakkoiichris.stackvm.lang.lexer.Location
+import kakkoiichris.stackvm.lang.lexer.Token
 import kakkoiichris.stackvm.lang.lexer.TokenType
 import java.util.*
 
 class Parser(lexer: Lexer, private val optimize: Boolean) {
     private val lexers = Stack<Lexer>()
 
-    private var token = lexer.next()
+    private lateinit var token: Token
 
     init {
         lexers.push(lexer)
     }
 
     fun parse(): Node.Program {
-        SystemFunctions
+        StandardLibrary
 
         val program = program()
 
@@ -38,14 +39,10 @@ class Parser(lexer: Lexer, private val optimize: Boolean) {
         T::class.isInstance(token.type)
 
     private fun step() {
+        if (lexers.isEmpty()) return
+
         if (lexers.peek().hasNext()) {
             token = lexers.peek().next()
-
-            if (token.type is TokenType.End && lexers.size > 1) {
-                lexers.pop()
-
-                token = lexers.peek().next()
-            }
         }
     }
 
@@ -76,18 +73,28 @@ class Parser(lexer: Lexer, private val optimize: Boolean) {
     }
 
     private fun program(): Node.Program {
+        importFile(Node.Name(Location.none(), TokenType.Name("common")))
+
+        step()
+
         val location = here()
 
         val statements = mutableListOf<Node>()
 
-        while (!match(TokenType.End)) {
-            if (match(TokenType.Keyword.IMPORT)) {
-                import()
+        while (lexers.isNotEmpty()) {
+            while (!match(TokenType.End)) {
+                if (match(TokenType.Keyword.IMPORT)) {
+                    import()
 
-                continue
+                    continue
+                }
+
+                statements += statement()
             }
 
-            statements += statement()
+            lexers.pop()
+
+            step()
         }
 
         return Node.Program(location, statements)
@@ -100,15 +107,22 @@ class Parser(lexer: Lexer, private val optimize: Boolean) {
 
         val name = name()
 
-        val file = Directory.getFile(name.name.value)
+        importFile(name)
 
-        if (!file.exists()) error("Cannot import file '${name.name.value}' @ $location!")
+        mustSkip(TokenType.Symbol.SEMICOLON)
+    }
+
+    private fun importFile(name: Node.Name) {
+        val file = if (StandardLibrary.hasSource(name.name.value))
+            StandardLibrary.getSource(name.name.value)
+        else
+            Directory.getFile(name.name.value)
+
+        if (!file.exists()) error("Cannot import file '${name.name.value}' @ ${name.location}!")
 
         val lexer = Lexer(file.name, file.readText())
 
         lexers.push(lexer)
-
-        mustSkip(TokenType.Symbol.SEMICOLON)
     }
 
     private fun statement() = when {
@@ -889,7 +903,7 @@ class Parser(lexer: Lexer, private val optimize: Boolean) {
         val (isNative, dataType, id) = Memory.getFunction(signature)
 
         return if (isNative) {
-            val systemID = SystemFunctions[signature].takeIf { it != -1 }
+            val systemID = StandardLibrary[signature].takeIf { it != -1 }
                 ?: error("No system function for '$signature' @ ${name.location}!")
 
             Node.SystemCall(location, name, dataType, systemID, args)

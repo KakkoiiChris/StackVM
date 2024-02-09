@@ -328,7 +328,7 @@ object ReleaseCPU : CPU() {
     }
 
     override fun sys() {
-        val function = SystemFunctions[fetchInt()]
+        val function = StandardLibrary[fetchInt()]
 
         val args = mutableListOf<Float>()
 

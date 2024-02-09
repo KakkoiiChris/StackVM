@@ -1,16 +1,16 @@
-let PI: float = 3.1415927;
+let PI               : float = 3.1415927;
 
-let E: float = 2.7182817;
+let E                : float = 2.7182817;
 
-let MIN_FLOAT: float = 1.4E-45;
+let MIN_FLOAT        : float = 1.4E-45;
 
-let MAX_FLOAT: float = 3.4028235E38;
+let MAX_FLOAT        : float = 3.4028235E38;
 
 let POSITIVE_INFINITY: float = 1.0 / 0.0;
 
 let NEGATIVE_INFINITY: float = -1.0 / 0.0;
 
-let NaN: float = -(0.0 / 0.0);
+let NaN              : float = -(0.0 / 0.0);
 
 function abs(n: float): float {
 	if n < 0 {

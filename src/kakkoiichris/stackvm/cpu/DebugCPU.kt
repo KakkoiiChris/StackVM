@@ -443,7 +443,7 @@ object DebugCPU : CPU() {
     override fun sys() {
         val id = fetchInt()
 
-        val function = SystemFunctions[id]
+        val function = StandardLibrary[id]
 
         val args = mutableListOf<Float>()
 
