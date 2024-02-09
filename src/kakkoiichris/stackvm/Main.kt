@@ -1,13 +1,14 @@
 package kakkoiichris.stackvm
 
 import kakkoiichris.stackvm.asm.ASMFormatter
-import kakkoiichris.stackvm.compiler.Compiler
+import kakkoiichris.stackvm.lang.compiler.Compiler
 import kakkoiichris.stackvm.cpu.CPU
 import kakkoiichris.stackvm.cpu.DebugCPU
 import kakkoiichris.stackvm.cpu.ReleaseCPU
-import kakkoiichris.stackvm.lang.Lexer
+import kakkoiichris.stackvm.lang.lexer.Lexer
 import kakkoiichris.stackvm.lang.Allocator
-import kakkoiichris.stackvm.lang.Parser
+import kakkoiichris.stackvm.lang.Directory
+import kakkoiichris.stackvm.lang.parser.Parser
 import kakkoiichris.stackvm.util.truncate
 import java.io.*
 import kotlin.math.abs
@@ -136,6 +137,8 @@ private fun repl(cpu: CPU) {
 private fun compileFile(srcName: String, dstName: String) {
     val srcFile = File(srcName)
 
+    Directory.root = srcFile.parentFile
+
     if (!srcFile.exists()) error("Cannot load source file!")
 
     val src = srcFile.readText()
@@ -184,6 +187,8 @@ private fun runFile(cpu: CPU, srcName: String) {
 
 private fun formatFile(srcName: String, dstName: String) {
     val srcFile = File(srcName)
+
+    Directory.root = srcFile.parentFile
 
     if (!srcFile.exists()) error("Cannot load source file!")
 

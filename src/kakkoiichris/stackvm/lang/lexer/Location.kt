@@ -1,4 +1,4 @@
-package kakkoiichris.stackvm.lang
+package kakkoiichris.stackvm.lang.lexer
 
 data class Location(val row: Int, val col: Int) {
     override fun toString() =

@@ -1,5 +1,7 @@
 package kakkoiichris.stackvm.lang
 
+import kakkoiichris.stackvm.lang.parser.Node
+import kakkoiichris.stackvm.lang.parser.Nodes
 import java.util.*
 
 object Allocator : Node.Visitor<Unit> {

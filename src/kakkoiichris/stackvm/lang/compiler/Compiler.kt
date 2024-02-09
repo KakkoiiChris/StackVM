@@ -1,9 +1,9 @@
-package kakkoiichris.stackvm.compiler
+package kakkoiichris.stackvm.lang.compiler
 
 import kakkoiichris.stackvm.asm.ASMToken
 import kakkoiichris.stackvm.asm.ASMToken.Instruction.*
-import kakkoiichris.stackvm.lang.DataType
-import kakkoiichris.stackvm.lang.Node
+import kakkoiichris.stackvm.lang.parser.DataType
+import kakkoiichris.stackvm.lang.parser.Node
 
 class Compiler(private val program: Node.Program, private val optimize: Boolean) : Node.Visitor<List<IASMToken>> {
     private var pos = 0

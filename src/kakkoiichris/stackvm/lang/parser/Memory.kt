@@ -1,5 +1,7 @@
-package kakkoiichris.stackvm.lang
+package kakkoiichris.stackvm.lang.parser
 
+import kakkoiichris.stackvm.lang.lexer.Location
+import kakkoiichris.stackvm.lang.lexer.TokenType
 import java.util.*
 
 object Memory {

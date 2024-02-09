@@ -1,4 +1,4 @@
-package kakkoiichris.stackvm.lang
+package kakkoiichris.stackvm.lang.parser
 
 sealed interface DataType {
     val offset get() = 1

@@ -1,4 +1,6 @@
-package kakkoiichris.stackvm.lang
+package kakkoiichris.stackvm.lang.lexer
+
+import kakkoiichris.stackvm.lang.parser.DataType
 
 interface TokenType {
     enum class Keyword : TokenType {
@@ -13,6 +15,7 @@ interface TokenType {
         CONTINUE,
         FUNCTION,
         RETURN,
+        IMPORT,
         VOID,
         BOOL,
         INT,

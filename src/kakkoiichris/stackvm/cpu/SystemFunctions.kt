@@ -1,7 +1,11 @@
 package kakkoiichris.stackvm.cpu
 
-import kakkoiichris.stackvm.lang.*
-import kakkoiichris.stackvm.lang.DataType.Primitive.*
+import kakkoiichris.stackvm.lang.parser.DataType.Primitive.*
+import kakkoiichris.stackvm.lang.lexer.Location
+import kakkoiichris.stackvm.lang.lexer.TokenType
+import kakkoiichris.stackvm.lang.parser.DataType
+import kakkoiichris.stackvm.lang.parser.Node
+import kakkoiichris.stackvm.lang.parser.Signature
 import kakkoiichris.stackvm.util.bool
 import kakkoiichris.stackvm.util.float
 import kakkoiichris.stackvm.util.truncate

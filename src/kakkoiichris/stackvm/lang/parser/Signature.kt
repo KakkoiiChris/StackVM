@@ -1,4 +1,4 @@
-package kakkoiichris.stackvm.lang
+package kakkoiichris.stackvm.lang.parser
 
 data class Signature(val name: Node.Name, val params: List<DataType>) {
     val arity = params.size

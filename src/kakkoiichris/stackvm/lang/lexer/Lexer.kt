@@ -1,4 +1,6 @@
-package kakkoiichris.stackvm.lang
+package kakkoiichris.stackvm.lang.lexer
+
+import kakkoiichris.stackvm.lang.parser.DataType
 
 class Lexer(private val src: String) : Iterator<Token> {
     companion object {

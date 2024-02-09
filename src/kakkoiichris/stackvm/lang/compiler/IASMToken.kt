@@ -1,7 +1,7 @@
-package kakkoiichris.stackvm.compiler
+package kakkoiichris.stackvm.lang.compiler
 
 import kakkoiichris.stackvm.asm.ASMToken
-import kakkoiichris.stackvm.lang.Node
+import kakkoiichris.stackvm.lang.parser.Node
 
 interface IASMToken {
     fun resolveStartAndEnd(start: Float, end: Float): Ok? = null

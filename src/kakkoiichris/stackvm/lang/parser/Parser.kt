@@ -1,9 +1,20 @@
-package kakkoiichris.stackvm.lang
+package kakkoiichris.stackvm.lang.parser
 
 import kakkoiichris.stackvm.cpu.SystemFunctions
+import kakkoiichris.stackvm.lang.Directory
+import kakkoiichris.stackvm.lang.lexer.Lexer
+import kakkoiichris.stackvm.lang.lexer.Location
+import kakkoiichris.stackvm.lang.lexer.TokenType
+import java.util.*
 
-class Parser(private val lexer: Lexer, private val optimize: Boolean) {
+class Parser(lexer: Lexer, private val optimize: Boolean) {
+    private val lexers = Stack<Lexer>()
+
     private var token = lexer.next()
+
+    init {
+        lexers.push(lexer)
+    }
 
     fun parse(): Node.Program {
         SystemFunctions
@@ -27,8 +38,14 @@ class Parser(private val lexer: Lexer, private val optimize: Boolean) {
         T::class.isInstance(token.type)
 
     private fun step() {
-        if (lexer.hasNext()) {
-            token = lexer.next()
+        if (lexers.peek().hasNext()) {
+            token = lexers.peek().next()
+
+            if (token.type is TokenType.End && lexers.size > 1) {
+                lexers.pop()
+
+                token = lexers.peek().next()
+            }
         }
     }
 
@@ -64,10 +81,34 @@ class Parser(private val lexer: Lexer, private val optimize: Boolean) {
         val statements = mutableListOf<Node>()
 
         while (!match(TokenType.End)) {
+            if (match(TokenType.Keyword.IMPORT)) {
+                import()
+
+                continue
+            }
+
             statements += statement()
         }
 
         return Node.Program(location, statements)
+    }
+
+    private fun import() {
+        val location = here()
+
+        mustSkip(TokenType.Keyword.IMPORT)
+
+        val name = name()
+
+        val file = Directory.getFile(name.name.value)
+
+        if (!file.exists()) error("Cannot import file '${name.name.value}' @ $location!")
+
+        val lexer = Lexer(file.readText())
+
+        lexers.push(lexer)
+
+        mustSkip(TokenType.Symbol.SEMICOLON)
     }
 
     private fun statement() = when {
@@ -156,8 +197,7 @@ class Parser(private val lexer: Lexer, private val optimize: Boolean) {
 
         val variable = createVariable(constant, name, type.dataType)
 
-        val (_, activation) = Memory
-            .getVariable(variable)
+        val (_, activation) = Memory.getVariable(variable)
 
         val (_, _, address) = activation
 
@@ -287,8 +327,7 @@ class Parser(private val lexer: Lexer, private val optimize: Boolean) {
 
             val variable = createVariable(false, name, type.dataType)
 
-            val (_, activation) = Memory
-                .getVariable(variable)
+            val (_, activation) = Memory.getVariable(variable)
 
             val (_, _, id) = activation
 
@@ -594,8 +633,7 @@ class Parser(private val lexer: Lexer, private val optimize: Boolean) {
     }
 
     private fun assign(location: Location, expr: Node.Variable): Node.Assign {
-        val (_, variable) = Memory
-            .getVariable(expr)
+        val (_, variable) = Memory.getVariable(expr)
 
         val (constant, dataType, _) = variable
 
@@ -609,8 +647,7 @@ class Parser(private val lexer: Lexer, private val optimize: Boolean) {
     }
 
     private fun assignIndex(location: Location, expr: Node.GetIndex): Node.SetIndex {
-        val (_, variable) = Memory
-            .getVariable(expr.variable)
+        val (_, variable) = Memory.getVariable(expr.variable)
 
         val (constant, dataType, _) = variable
 
@@ -626,8 +663,7 @@ class Parser(private val lexer: Lexer, private val optimize: Boolean) {
     }
 
     private fun desugarAssign(location: Location, expr: Node.Variable, symbol: TokenType.Symbol): Node.Assign {
-        val (_, variable) = Memory
-            .getVariable(expr)
+        val (_, variable) = Memory.getVariable(expr)
 
         val (constant, dataType, _) = variable
 
@@ -651,8 +687,7 @@ class Parser(private val lexer: Lexer, private val optimize: Boolean) {
     }
 
     private fun desugarAssignIndex(location: Location, expr: Node.GetIndex, symbol: TokenType.Symbol): Node.SetIndex {
-        val (_, variable) = Memory
-            .getVariable(expr.variable)
+        val (_, variable) = Memory.getVariable(expr.variable)
 
         val (constant, dataType, _) = variable
 
@@ -851,8 +886,7 @@ class Parser(private val lexer: Lexer, private val optimize: Boolean) {
 
         val signature = Signature(name, args.map { it.dataType })
 
-        val (isNative, dataType, id) = Memory
-            .getFunction(signature)
+        val (isNative, dataType, id) = Memory.getFunction(signature)
 
         return if (isNative) {
             val systemID = SystemFunctions[signature].takeIf { it != -1 }
@@ -927,8 +961,7 @@ class Parser(private val lexer: Lexer, private val optimize: Boolean) {
 
         Memory.addVariable(constant, name.name, dataType, location)
 
-        val (mode, variable) = Memory
-            .getVariable(name.name, location)
+        val (mode, variable) = Memory.getVariable(name.name, location)
 
         val (_, type, id) = variable
 
@@ -936,8 +969,7 @@ class Parser(private val lexer: Lexer, private val optimize: Boolean) {
     }
 
     private fun Node.Name.toVariable(): Node.Variable {
-        val (mode, variable) = Memory
-            .getVariable(name, location)
+        val (mode, variable) = Memory.getVariable(name, location)
 
         val (_, type, address) = variable
 

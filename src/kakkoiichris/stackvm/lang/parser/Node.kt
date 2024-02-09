@@ -1,7 +1,9 @@
-package kakkoiichris.stackvm.lang
+package kakkoiichris.stackvm.lang.parser
 
 import kakkoiichris.stackvm.asm.ASMToken
-import kakkoiichris.stackvm.lang.DataType.Primitive.*
+import kakkoiichris.stackvm.lang.parser.DataType.Primitive.*
+import kakkoiichris.stackvm.lang.lexer.Location
+import kakkoiichris.stackvm.lang.lexer.TokenType
 
 typealias Nodes = List<Node>
 

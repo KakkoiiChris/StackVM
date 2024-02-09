@@ -1,6 +1,6 @@
 package kakkoiichris.stackvm.asm
 
-import kakkoiichris.stackvm.compiler.IASMToken
+import kakkoiichris.stackvm.lang.compiler.IASMToken
 import kakkoiichris.stackvm.util.truncate
 
 interface ASMToken {
