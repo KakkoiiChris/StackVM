@@ -1,9 +1,9 @@
 package kakkoiichris.stackvm.lang.parser
 
 import kakkoiichris.stackvm.asm.ASMToken
-import kakkoiichris.stackvm.lang.parser.DataType.Primitive.*
 import kakkoiichris.stackvm.lang.lexer.Location
 import kakkoiichris.stackvm.lang.lexer.TokenType
+import kakkoiichris.stackvm.lang.parser.DataType.Primitive.*
 
 typealias Nodes = List<Node>
 
@@ -182,12 +182,10 @@ interface Node {
         val name: Name,
         val id: Int,
         val params: List<Variable>,
-        val type: Type,
+        override val dataType: DataType,
         val body: Nodes
     ) : Node {
         var offset = -1
-
-        override val dataType get() = type.dataType
 
         override fun <X> accept(visitor: Visitor<X>): X =
             visitor.visitFunction(this)
@@ -244,11 +242,12 @@ interface Node {
     class Array(override val location: Location, val elements: Nodes) : Node {
         override val dataType: DataType
             get() {
-                val firstType = elements.firstOrNull()?.dataType ?: TODO("FIRST TYPE")
+                val firstType =
+                    elements.firstOrNull()?.dataType ?: error("Type of empty array cannot be inferred @ $location!")
 
                 for (element in elements.drop(1)) {
                     if (element.dataType != firstType) {
-                        TODO("ARRAY MUST BE HOMOGENOUS")
+                        error("Array of type '$firstType' cannot store value of type '${element.dataType}' @ ${element.location}!")
                     }
                 }
 

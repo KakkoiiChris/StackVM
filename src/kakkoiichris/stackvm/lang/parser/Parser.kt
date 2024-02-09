@@ -104,7 +104,7 @@ class Parser(lexer: Lexer, private val optimize: Boolean) {
 
         if (!file.exists()) error("Cannot import file '${name.name.value}' @ $location!")
 
-        val lexer = Lexer(file.readText())
+        val lexer = Lexer(file.name, file.readText())
 
         lexers.push(lexer)
 
@@ -190,7 +190,7 @@ class Parser(lexer: Lexer, private val optimize: Boolean) {
         val node = expr()
 
         if (type == null) {
-            type = Node.Type(Location.none, TokenType.Type(node.dataType))
+            type = Node.Type(Location.none(), TokenType.Type(node.dataType))
         }
 
         if (type.dataType != node.dataType) error("Cannot declare a variable of type '${type.dataType}' with value of type '${node.dataType}' @ ${node.location}!")
@@ -322,7 +322,7 @@ class Parser(lexer: Lexer, private val optimize: Boolean) {
             val node = expr()
 
             if (type == null) {
-                type = Node.Type(Location.none, TokenType.Type(node.dataType))
+                type = Node.Type(Location.none(), TokenType.Type(node.dataType))
             }
 
             val variable = createVariable(false, name, type.dataType)
@@ -440,7 +440,7 @@ class Parser(lexer: Lexer, private val optimize: Boolean) {
                 isNative = true
 
                 if (type == null) {
-                    type = Node.Type(Location.none, TokenType.Type(DataType.Primitive.VOID))
+                    type = Node.Type(Location.none(), TokenType.Type(DataType.Primitive.VOID))
                 }
 
                 registerFunction(type, true)
@@ -462,7 +462,7 @@ class Parser(lexer: Lexer, private val optimize: Boolean) {
                 mustSkip(TokenType.Symbol.LEFT_BRACE)
 
                 if (type == null) {
-                    type = Node.Type(Location.none, TokenType.Type(DataType.Primitive.VOID))
+                    type = Node.Type(Location.none(), TokenType.Type(DataType.Primitive.VOID))
                 }
 
                 registerFunction(type, false)
@@ -478,8 +478,8 @@ class Parser(lexer: Lexer, private val optimize: Boolean) {
         if (!isNative) {
             if (type.type.value == DataType.Primitive.VOID && body.last() !is Node.Return) {
                 body += Node.Return(
-                    Location.none,
-                    Node.Value(Location.none, TokenType.Value(0F, DataType.Primitive.VOID))
+                    Location.none(),
+                    Node.Value(Location.none(), TokenType.Value(0F, DataType.Primitive.VOID))
                 )
             }
 
@@ -496,7 +496,7 @@ class Parser(lexer: Lexer, private val optimize: Boolean) {
             resolveBranchReturns(returnType, body)
         }
 
-        return Node.Function(location, name, id, params, type, body)
+        return Node.Function(location, name, id, params, type.type.value, body)
     }
 
     private fun resolveBranches(nodes: Nodes) {
@@ -653,7 +653,7 @@ class Parser(lexer: Lexer, private val optimize: Boolean) {
 
         if (constant) error("Variable '${expr.variable.name.value}' cannot be reassigned @ ${expr.variable.location}!")
 
-        if (dataType !is DataType.Array) TODO("Cannot index!")
+        if (dataType !is DataType.Array) error("Cannot index a value of type '$dataType' @ ${expr.variable.location}!")
 
         val node = or()
 
@@ -671,7 +671,7 @@ class Parser(lexer: Lexer, private val optimize: Boolean) {
 
         val node = or()
 
-        val desugaredOperator = symbol.desugared ?: TODO("Operator not desugared!")
+        val desugaredOperator = symbol.desugared!!
 
         var operator = Node.Binary.Operator[desugaredOperator]
 
@@ -693,11 +693,11 @@ class Parser(lexer: Lexer, private val optimize: Boolean) {
 
         if (constant) error("Variable '${expr.variable.name.value}' cannot be reassigned @ ${expr.variable.location}!")
 
-        if (dataType !is DataType.Array) TODO("Cannot index!")
+        if (dataType !is DataType.Array) error("Cannot assign an index for a value of type '$dataType' @ ${expr.variable.location}!")
 
         val node = or()
 
-        val desugaredOperator = symbol.desugared ?: TODO("Operator not desugared!")
+        val desugaredOperator = symbol.desugared!!
 
         var operator = Node.Binary.Operator[desugaredOperator]
 
@@ -901,6 +901,8 @@ class Parser(lexer: Lexer, private val optimize: Boolean) {
 
     private fun getIndex(target: Node.Variable): Node.GetIndex {
         val location = here()
+
+        if (target.dataType !is DataType.Array) error("Value of type '${target.dataType}' cannot be indexed @ $location!")
 
         val indices = mutableListOf<Node>()
 

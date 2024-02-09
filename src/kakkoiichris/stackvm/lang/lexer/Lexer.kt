@@ -1,8 +1,9 @@
 package kakkoiichris.stackvm.lang.lexer
 
 import kakkoiichris.stackvm.lang.parser.DataType
+import java.io.File
 
-class Lexer(private val src: String) : Iterator<Token> {
+class Lexer(private val file: String, private val src: String) : Iterator<Token> {
     companion object {
         private const val NUL = '\u0000'
     }
@@ -49,7 +50,7 @@ class Lexer(private val src: String) : Iterator<Token> {
         return Token(here(), TokenType.End)
     }
 
-    private fun here() = Location(row, col)
+    private fun here() = Location(file, row, col)
 
     private fun peek(offset: Int = 0) = if (pos + offset < src.length)
         src[pos + offset]

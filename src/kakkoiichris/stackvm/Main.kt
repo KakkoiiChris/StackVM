@@ -1,18 +1,16 @@
 package kakkoiichris.stackvm
 
 import kakkoiichris.stackvm.asm.ASMFormatter
-import kakkoiichris.stackvm.lang.compiler.Compiler
 import kakkoiichris.stackvm.cpu.CPU
 import kakkoiichris.stackvm.cpu.DebugCPU
 import kakkoiichris.stackvm.cpu.ReleaseCPU
-import kakkoiichris.stackvm.lang.lexer.Lexer
 import kakkoiichris.stackvm.lang.Allocator
 import kakkoiichris.stackvm.lang.Directory
+import kakkoiichris.stackvm.lang.compiler.Compiler
+import kakkoiichris.stackvm.lang.lexer.Lexer
 import kakkoiichris.stackvm.lang.parser.Parser
 import kakkoiichris.stackvm.util.truncate
 import java.io.*
-import kotlin.math.abs
-import kotlin.math.log10
 import kotlin.time.measureTimedValue
 
 /**
@@ -77,8 +75,12 @@ private enum class Mode {
     FORMAT
 }
 
-private fun compile(src: String): FloatArray {
-    val lexer = Lexer(src)
+private fun compile(srcFile: File): FloatArray {
+    val name = srcFile.name
+
+    val src = srcFile.readText()
+
+    val lexer = Lexer(name, src)
 
     val parser = Parser(lexer, false)
 
@@ -91,14 +93,6 @@ private fun compile(src: String): FloatArray {
     return compiler.compile()
 }
 
-private fun Int.length() = when {
-    this == 0 -> 1
-
-    this < 0  -> log10(abs(toFloat())).toInt() + 2
-
-    else      -> log10(abs(toFloat())).toInt() + 1
-}
-
 private fun repl(cpu: CPU) {
     while (true) {
         print("> ")
@@ -107,7 +101,7 @@ private fun repl(cpu: CPU) {
 
         try {
             val (tokens, compileTime) = measureTimedValue {
-                val lexer = Lexer(src)
+                val lexer = Lexer("<REPL>", src)
 
                 val parser = Parser(lexer, false)
 
@@ -141,9 +135,7 @@ private fun compileFile(srcName: String, dstName: String) {
 
     if (!srcFile.exists()) error("Cannot load source file!")
 
-    val src = srcFile.readText()
-
-    val values = compile(src)
+    val values = compile(srcFile)
 
     val dstFile = File(dstName)
 
@@ -192,9 +184,7 @@ private fun formatFile(srcName: String, dstName: String) {
 
     if (!srcFile.exists()) error("Cannot load source file!")
 
-    val src = srcFile.readText()
-
-    val values = compile(src)
+    val values = compile(srcFile)
 
     val dstFile = File(dstName)
 

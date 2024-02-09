@@ -273,7 +273,7 @@ object SystemFunctions {
     }
 
     private fun addFunction(name: String, vararg params: DataType, method: Method) {
-        val node = Node.Name(Location.none, TokenType.Name(name))
+        val node = Node.Name(Location.none(), TokenType.Name(name))
 
         val signature = Signature(node, params.toList())
 
