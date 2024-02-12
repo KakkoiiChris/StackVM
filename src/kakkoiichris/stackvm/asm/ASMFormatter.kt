@@ -11,13 +11,15 @@ object ASMFormatter {
             values[i++]
 
         while (i < values.size) {
+            val pos = i
+
             val value = fetch()
 
             val instruction = ASMToken.Instruction.entries[value.toInt()]
 
             append(instruction)
 
-            appendLine(
+            append(
                 when (instruction) {
                     PUSH,
                     JMP,
@@ -39,6 +41,8 @@ object ASMFormatter {
                     else    -> ""
                 }
             )
+
+            appendLine("; %03d".format(pos))
         }
     }
 }

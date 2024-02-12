@@ -101,8 +101,6 @@ class Parser(lexer: Lexer, private val optimize: Boolean) {
     }
 
     private fun import() {
-        val location = here()
-
         mustSkip(TokenType.Keyword.IMPORT)
 
         val name = name()

@@ -34,9 +34,9 @@ object StandardLibrary {
             sources[file.nameWithoutExtension] = file
         }
 
-        addMath()
-
+        addLang()
         addConsole()
+        addMath()
     }
 
     fun hasSource(name: String) =
@@ -44,6 +44,102 @@ object StandardLibrary {
 
     fun getSource(name: String) =
         sources[name]!!
+
+    private fun addLang() {
+        addFunction("toFloat", INT) { values ->
+            val (i) = values
+
+            listOf(i)
+        }
+
+        addFunction("toInt", FLOAT) { values ->
+            val (i) = values
+
+            listOf(i.toInt().toFloat())
+        }
+
+        addFunction("toInt", CHAR) { values ->
+            val (i) = values
+
+            listOf(i)
+        }
+
+        addFunction("toChar", INT) { values ->
+            val (i) = values
+
+            listOf(i)
+        }
+    }
+
+    private fun addConsole() {
+        addFunction("readBool") {
+            listOf(
+                readln()
+                    .toBooleanStrictOrNull()
+                    ?.float
+                    ?: error("Bool format error!")
+            )
+        }
+
+        addFunction("readFloat") {
+            listOf(
+                readln()
+                    .toFloatOrNull()
+                    ?: error("Number format error!")
+            )
+        }
+
+        addFunction("readInt") {
+            listOf(
+                readln()
+                    .toIntOrNull()
+                    ?.toFloat()
+                    ?: error("Number format error!")
+            )
+        }
+
+        addFunction("readChar") {
+            listOf(
+                readln()
+                    .getOrNull(0)
+                    ?.code
+                    ?.toFloat()
+                    ?: error("Char format error!")
+            )
+        }
+
+        addFunction("write", BOOL) { values ->
+            val (n) = values
+
+            print(n.bool)
+
+            void
+        }
+
+        addFunction("write", INT) { values ->
+            val (n) = values
+
+            print(n.toInt())
+
+            void
+        }
+
+        addFunction("write", FLOAT) { values ->
+            val (n) = values
+
+            print(n.truncate())
+
+            void
+        }
+
+        addFunction("write", CHAR) { values ->
+            val (n) = values
+
+            print(n.toInt().toChar())
+
+            void
+        }
+    }
 
     private fun addMath() {
         addFunction("sin", FLOAT) { values ->
@@ -218,76 +314,6 @@ object StandardLibrary {
             val (b, e) = values
 
             listOf(b.pow(e.toInt()))
-        }
-    }
-
-    private fun addConsole() {
-        addFunction("readBool") {
-            listOf(
-                readln()
-                    .toBooleanStrictOrNull()
-                    ?.float
-                    ?: error("Bool format error!")
-            )
-        }
-
-        addFunction("readFloat") {
-            listOf(
-                readln()
-                    .toFloatOrNull()
-                    ?: error("Number format error!")
-            )
-        }
-
-        addFunction("readInt") {
-            listOf(
-                readln()
-                    .toIntOrNull()
-                    ?.toFloat()
-                    ?: error("Number format error!")
-            )
-        }
-
-        addFunction("readChar") {
-            listOf(
-                readln()
-                    .getOrNull(0)
-                    ?.code
-                    ?.toFloat()
-                    ?: error("Char format error!")
-            )
-        }
-
-        addFunction("write", BOOL) { values ->
-            val (n) = values
-
-            print(n.bool)
-
-            void
-        }
-
-        addFunction("write", INT) { values ->
-            val (n) = values
-
-            print(n.toInt())
-
-            void
-        }
-
-        addFunction("write", FLOAT) { values ->
-            val (n) = values
-
-            print(n.truncate())
-
-            void
-        }
-
-        addFunction("write", CHAR) { values ->
-            val (n) = values
-
-            print(n.toInt().toChar())
-
-            void
         }
     }
 

@@ -1,0 +1,13 @@
+function toBool(i: int) = i != 0;
+
+function toBool(f: float) = f != 0;
+
+function toFloat(i: int): float;
+
+function toInt(b: bool) = if b { 1; } else { 0; };
+
+function toInt(f: float): int;
+
+function toInt(c: char): int;
+
+function toChar(i: int): char;

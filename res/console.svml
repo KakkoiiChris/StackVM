@@ -14,9 +14,3 @@ function write(f: float);
 function write(i: int);
 
 function write(c: char);
-
-function write(s: char[13]) {
-	for i = 0; i < 13; i += 1 {
-		write(s[i]);
-	}
-}

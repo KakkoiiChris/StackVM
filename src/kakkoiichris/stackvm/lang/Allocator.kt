@@ -152,9 +152,9 @@ object Allocator : Node.Visitor<Unit> {
     override fun visitContinue(node: Node.Continue) = Unit
 
     override fun visitFunction(node: Node.Function) {
-        val offset = offsets.pop()
+        val initialOffset = offsets.pop()
 
-        node.offset = offset
+        node.offset = initialOffset
 
         var addressCounter = 0
 
@@ -169,7 +169,7 @@ object Allocator : Node.Visitor<Unit> {
         allocateDecls(node.body, addressCounter)
 
         for (statement in node.body) {
-            offsets.push(offset)
+            offsets.push(addressCounter)
 
             visit(statement)
         }
