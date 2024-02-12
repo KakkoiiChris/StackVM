@@ -279,6 +279,8 @@ class Compiler(private val program: Node.Program, private val optimize: Boolean)
     }
 
     override fun visitFunction(node: Node.Function): List<IASMToken> {
+        if (node.isNative) return emptyList()
+
         var iTokens = mutableListOf<IASMToken>()
 
         iTokens += JMP.iasm

@@ -183,6 +183,7 @@ interface Node {
         val id: Int,
         val params: List<Variable>,
         override val dataType: DataType,
+        val isNative:Boolean,
         val body: Nodes
     ) : Node {
         var offset = -1

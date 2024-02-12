@@ -1,10 +1,42 @@
-function toBool(i: int) = i != 0;
+/*   ______  ____   ____  ____    ____  _____     
+ * .' ____ \|_  _| |_  _||_   \  /   _||_   _|    
+ * | (___ \_| \ \   / /    |   \/   |    | |      
+ *  _.____`.   \ \ / /     | |\  /| |    | |   _  
+ * | \____) |   \ ' /     _| |_\/_| |_  _| |__/ | 
+ *  \______.'    \_/     |_____||_____||________| 
+ *
+ *         Stack Virtual Machine Language
+ *     Copyright (C) 2024 Christian Alexander
+ */
+let MIN_FLOAT        : float = 1.4E-45;
 
-function toBool(f: float) = f != 0;
+let MAX_FLOAT        : float = 3.4028235E38;
+
+//let MIN_INT          : int   = -2147483648;
+
+//let MAX_INT          : int   = 2147483647;
+
+let POSITIVE_INFINITY: float = 1.0 / 0.0;
+
+let NEGATIVE_INFINITY: float = -1.0 / 0.0;
+
+let NaN              : float = -(0.0 / 0.0);
+
+function toBool(i: int): bool =
+	i != 0;
+
+function toBool(f: float): bool =
+	f != 0;
 
 function toFloat(i: int): float;
 
-function toInt(b: bool) = if b { 1; } else { 0; };
+function toInt(b: bool): int =
+	if b {
+		1;
+	}
+	else {
+		0;
+	};
 
 function toInt(f: float): int;
 

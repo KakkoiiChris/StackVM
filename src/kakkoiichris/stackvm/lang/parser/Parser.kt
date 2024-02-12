@@ -508,7 +508,7 @@ class Parser(lexer: Lexer, private val optimize: Boolean) {
             resolveBranchReturns(returnType, body)
         }
 
-        return Node.Function(location, name, id, params, type.type.value, body)
+        return Node.Function(location, name, id, params, type.type.value, isNative, body)
     }
 
     private fun resolveBranches(nodes: Nodes) {
@@ -940,7 +940,7 @@ class Parser(lexer: Lexer, private val optimize: Boolean) {
 
         match(TokenType.Keyword.IF)        -> conditional()
 
-        else                               -> error("Not a terminal (${token.type}).")
+        else                               -> error("Not a terminal '${token.type}' @ ${here()}.")
     }
 
     private fun value(): Node.Value {

@@ -1,4 +1,13 @@
-// Comment
+/*   ______  ____   ____  ____    ____  _____     
+ * .' ____ \|_  _| |_  _||_   \  /   _||_   _|    
+ * | (___ \_| \ \   / /    |   \/   |    | |      
+ *  _.____`.   \ \ / /     | |\  /| |    | |   _  
+ * | \____) |   \ ' /     _| |_\/_| |_  _| |__/ | 
+ *  \______.'    \_/     |_____||_____||________| 
+ *
+ *         Stack Virtual Machine Language
+ *     Copyright (C) 2024 Christian Alexander
+ */
 function readBool: bool;
 
 function readFloat: float;

@@ -1,7 +1,6 @@
 package kakkoiichris.stackvm.lang.lexer
 
 import kakkoiichris.stackvm.lang.parser.DataType
-import java.io.File
 
 class Lexer(private val file: String, private val src: String) : Iterator<Token> {
     companion object {
@@ -23,7 +22,13 @@ class Lexer(private val file: String, private val src: String) : Iterator<Token>
             }
 
             if (match("//")) {
-                skipComment()
+                skipLineComment()
+
+                continue
+            }
+
+            if (match("/*")) {
+                skipBlockComment()
 
                 continue
             }
@@ -70,16 +75,18 @@ class Lexer(private val file: String, private val src: String) : Iterator<Token>
     private fun match(string: String) =
         look(string.length) == string
 
-    private fun step() {
-        if (match('\n')) {
-            row++
-            col = 1
-        }
-        else {
-            col++
-        }
+    private fun step(amount: Int = 1) {
+        repeat(amount) {
+            if (match('\n')) {
+                row++
+                col = 1
+            }
+            else {
+                col++
+            }
 
-        pos++
+            pos++
+        }
     }
 
     private fun skip(char: Char) =
@@ -90,9 +97,23 @@ class Lexer(private val file: String, private val src: String) : Iterator<Token>
         }
         else false
 
+    private fun skip(string: String) =
+        if (match(string)) {
+            step(string.length)
+
+            true
+        }
+        else false
+
     private fun mustSkip(char: Char) {
         if (!skip(char)) {
-            error("Illegal char '${peek()}'!")
+            error("Illegal char '${peek()}' @ ${here()}!")
+        }
+    }
+
+    private fun mustSkip(string: String) {
+        if (!skip(string)) {
+            error("Illegal string '${look(string.length)}' @ ${here()}!")
         }
     }
 
@@ -117,13 +138,20 @@ class Lexer(private val file: String, private val src: String) : Iterator<Token>
         while (match(Char::isWhitespace))
     }
 
-    private fun skipComment() {
-        step()
+    private fun skipLineComment() {
+        mustSkip("//")
 
-        do {
+        while (!(skip('\n') || match(NUL))) {
             step()
         }
-        while (!(match('\n') || match(NUL)))
+    }
+
+    private fun skipBlockComment() {
+        mustSkip("/*")
+
+        while (!(skip("*/") || match(NUL))) {
+            step()
+        }
     }
 
     private fun word(): Token {
@@ -180,12 +208,12 @@ class Lexer(private val file: String, private val src: String) : Iterator<Token>
         }
 
         if (result.contains("[Ee.]".toRegex())) {
-            val value = result.toFloatOrNull() ?: error("Number too big float!")
+            val value = result.toFloatOrNull() ?: error("Floating point number '$result' is out of bounds @ $location!")
 
             return Token(location, TokenType.Value(value, DataType.Primitive.FLOAT))
         }
 
-        val value = result.toIntOrNull() ?: error("Number too big int!")
+        val value = result.toIntOrNull() ?: error("Integer number '$result' is out of bounds @ $location!")
 
         return Token(location, TokenType.Value(value.toFloat(), DataType.Primitive.INT))
     }
@@ -220,7 +248,7 @@ class Lexer(private val file: String, private val src: String) : Iterator<Token>
 
         skip('u')       -> hex(4)
 
-        else            -> error("Illegal character escape sequence '\\${peek()}'!")
+        else            -> error("Illegal character escape sequence '\\${peek()}' @ ${here()}!")
     }
     else {
         get()
@@ -319,7 +347,7 @@ class Lexer(private val file: String, private val src: String) : Iterator<Token>
                     else      -> TokenType.Symbol.DOUBLE_AMPERSAND
                 }
 
-                else      -> error("No single ampersand.")
+                else      -> error("Unknown symbol '&' @ $location!")
             }
 
             skip('|') -> when {
@@ -329,7 +357,7 @@ class Lexer(private val file: String, private val src: String) : Iterator<Token>
                     else      -> TokenType.Symbol.DOUBLE_PIPE
                 }
 
-                else      -> error("No single pipe.")
+                else      -> error("Unknown symbol '|' @ $location!")
             }
 
             skip('(') -> TokenType.Symbol.LEFT_PAREN
@@ -354,7 +382,7 @@ class Lexer(private val file: String, private val src: String) : Iterator<Token>
 
             skip('#') -> TokenType.Symbol.POUND
 
-            else      -> error("Unknown symbol '${peek()}'!")
+            else      -> error("Unknown character '${peek()}' @ $location!")
         }
 
         return Token(location, symbol)
