@@ -326,7 +326,10 @@ object DebugCPU : CPU() {
             indexOffset = (indexOffset + 1) + (index * subSize)
         }
 
+        indexOffset++
+
         address += indexOffset
+
         val size = memory[address]
 
         val elements = FloatArray(size.toInt()) { memory[address + 1 + it] }
@@ -394,7 +397,38 @@ object DebugCPU : CPU() {
     }
 
     override fun iastore() {
-        TODO("IASTORE")
+        var address = fetchInt() + framePointer
+        val indexCount = fetchInt()
+
+        var indexOffset = 0
+
+        for (i in 0..<indexCount - 1) {
+            val subSize = memory[address + indexOffset + 1].toInt()
+
+            val index = popStackInt()
+
+            indexOffset = (indexOffset + 1) + (index * subSize)
+        }
+
+        val index = popStackInt()
+
+        indexOffset += index + 1
+
+        address += indexOffset
+
+        val size = popStack()
+
+        val elements = FloatArray(size.toInt()) {
+            popStack()
+        }
+
+        println("IASTORE @${address.toAddress()} #$indexCount [${elements.joinToString(separator = ",") { it.truncate() }}]")
+
+        memory[address] = size
+
+        for (offset in elements.indices) {
+            memory[address + offset + 1] = elements[offset]
+        }
     }
 
     override fun size() {
