@@ -1,7 +1,5 @@
 package kakkoiichris.stackvm.util
 
-import kotlin.math.absoluteValue
-
 fun Float.truncate() =
     if (this - toInt() == 0F)
         toInt().toString()

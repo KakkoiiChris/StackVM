@@ -1,9 +1,9 @@
-package kakkoiichris.stackvm.asm
+package kakkoiichris.stackvm.lang.compiler
 
-import kakkoiichris.stackvm.asm.ASMToken.Instruction.*
+import kakkoiichris.stackvm.lang.compiler.Bytecode.Instruction.*
 import kakkoiichris.stackvm.util.truncate
 
-object ASMFormatter {
+object BytecodeFormatter {
     fun format(values: FloatArray) = buildString {
         var i = 0
 
@@ -15,7 +15,7 @@ object ASMFormatter {
 
             val value = fetch()
 
-            val instruction = ASMToken.Instruction.entries[value.toInt()]
+            val instruction = Bytecode.Instruction.entries[value.toInt()]
 
             append(instruction)
 

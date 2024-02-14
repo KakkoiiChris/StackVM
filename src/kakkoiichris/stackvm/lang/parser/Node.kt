@@ -1,6 +1,6 @@
 package kakkoiichris.stackvm.lang.parser
 
-import kakkoiichris.stackvm.asm.ASMToken
+import kakkoiichris.stackvm.lang.compiler.Bytecode
 import kakkoiichris.stackvm.lang.lexer.Location
 import kakkoiichris.stackvm.lang.lexer.TokenType
 import kakkoiichris.stackvm.lang.parser.DataType.Primitive.*
@@ -183,7 +183,7 @@ interface Node {
         val id: Int,
         val params: List<Variable>,
         override val dataType: DataType,
-        val isNative:Boolean,
+        val isNative: Boolean,
         val body: Nodes
     ) : Node {
         var offset = -1
@@ -284,15 +284,15 @@ interface Node {
         override fun <X> accept(visitor: Visitor<X>): X =
             visitor.visitUnary(this)
 
-        enum class Operator(val symbol: TokenType.Symbol, val instruction: ASMToken.Instruction) {
+        enum class Operator(val symbol: TokenType.Symbol, val instruction: Bytecode.Instruction) {
             NEGATE(
                 TokenType.Symbol.DASH,
-                ASMToken.Instruction.NEG
+                Bytecode.Instruction.NEG
             ),
 
             INVERT(
                 TokenType.Symbol.EXCLAMATION,
-                ASMToken.Instruction.NOT
+                Bytecode.Instruction.NOT
             );
 
             companion object {
@@ -468,84 +468,84 @@ interface Node {
         override fun <X> accept(visitor: Visitor<X>): X =
             visitor.visitBinary(this)
 
-        enum class Operator(val symbol: TokenType.Symbol, vararg val instructions: ASMToken.Instruction) {
+        enum class Operator(val symbol: TokenType.Symbol, vararg val instructions: Bytecode.Instruction) {
             OR(
                 TokenType.Symbol.DOUBLE_PIPE,
-                ASMToken.Instruction.OR
+                Bytecode.Instruction.OR
             ),
 
             AND(
                 TokenType.Symbol.DOUBLE_AMPERSAND,
-                ASMToken.Instruction.AND
+                Bytecode.Instruction.AND
             ),
 
             EQUAL(
                 TokenType.Symbol.DOUBLE_EQUAL,
-                ASMToken.Instruction.EQU
+                Bytecode.Instruction.EQU
             ),
 
             NOT_EQUAL(
                 TokenType.Symbol.EXCLAMATION_EQUAL,
-                ASMToken.Instruction.EQU, ASMToken.Instruction.NOT
+                Bytecode.Instruction.EQU, Bytecode.Instruction.NOT
             ),
 
             LESS(
                 TokenType.Symbol.LESS,
-                ASMToken.Instruction.GEQ, ASMToken.Instruction.NOT
+                Bytecode.Instruction.GEQ, Bytecode.Instruction.NOT
             ),
 
             LESS_EQUAL(
                 TokenType.Symbol.LESS_EQUAL,
-                ASMToken.Instruction.GRT, ASMToken.Instruction.NOT
+                Bytecode.Instruction.GRT, Bytecode.Instruction.NOT
             ),
 
             GREATER(
                 TokenType.Symbol.GREATER,
-                ASMToken.Instruction.GRT
+                Bytecode.Instruction.GRT
             ),
 
             GREATER_EQUAL(
                 TokenType.Symbol.GREATER_EQUAL,
-                ASMToken.Instruction.GEQ
+                Bytecode.Instruction.GEQ
             ),
 
             ADD(
                 TokenType.Symbol.PLUS,
-                ASMToken.Instruction.ADD
+                Bytecode.Instruction.ADD
             ),
 
             SUBTRACT(
                 TokenType.Symbol.DASH,
-                ASMToken.Instruction.SUB
+                Bytecode.Instruction.SUB
             ),
 
             MULTIPLY(
                 TokenType.Symbol.STAR,
-                ASMToken.Instruction.MUL
+                Bytecode.Instruction.MUL
             ),
 
             DIVIDE(
                 TokenType.Symbol.SLASH,
-                ASMToken.Instruction.DIV
+                Bytecode.Instruction.DIV
             ) {
                 override val intVersion get() = INT_DIVIDE
             },
 
             INT_DIVIDE(
                 TokenType.Symbol.SLASH,
-                ASMToken.Instruction.IDIV
+                Bytecode.Instruction.IDIV
             ),
 
             MODULUS(
                 TokenType.Symbol.PERCENT,
-                ASMToken.Instruction.MOD
+                Bytecode.Instruction.MOD
             ) {
                 override val intVersion get() = INT_MODULUS
             },
 
             INT_MODULUS(
                 TokenType.Symbol.PERCENT,
-                ASMToken.Instruction.IMOD
+                Bytecode.Instruction.IMOD
             );
 
             open val intVersion get() = this

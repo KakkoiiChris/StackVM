@@ -1,6 +1,6 @@
 package kakkoiichris.stackvm.cpu
 
-import kakkoiichris.stackvm.asm.ASMToken
+import kakkoiichris.stackvm.lang.compiler.Bytecode
 import kakkoiichris.stackvm.util.bool
 
 abstract class CPU(protected val config: Config = Config()) {
@@ -40,7 +40,7 @@ abstract class CPU(protected val config: Config = Config()) {
 
     abstract fun initialize(instructions: FloatArray)
 
-    fun initialize(tokenizer: Iterator<ASMToken>) {
+    fun initialize(tokenizer: Iterator<Bytecode>) {
         val instructions = tokenizer
             .asSequence()
             .toList()
@@ -55,74 +55,74 @@ abstract class CPU(protected val config: Config = Config()) {
     protected fun decode() {
         val index = fetchInt()
 
-        when (ASMToken.Instruction.entries[index]) {
-            ASMToken.Instruction.HALT    -> halt()
+        when (Bytecode.Instruction.entries[index]) {
+            Bytecode.Instruction.HALT    -> halt()
 
-            ASMToken.Instruction.PUSH    -> push()
+            Bytecode.Instruction.PUSH    -> push()
 
-            ASMToken.Instruction.POP     -> pop()
+            Bytecode.Instruction.POP     -> pop()
 
-            ASMToken.Instruction.DUP     -> dup()
+            Bytecode.Instruction.DUP     -> dup()
 
-            ASMToken.Instruction.ADD     -> add()
+            Bytecode.Instruction.ADD     -> add()
 
-            ASMToken.Instruction.SUB     -> sub()
+            Bytecode.Instruction.SUB     -> sub()
 
-            ASMToken.Instruction.MUL     -> mul()
+            Bytecode.Instruction.MUL     -> mul()
 
-            ASMToken.Instruction.DIV     -> div()
+            Bytecode.Instruction.DIV     -> div()
 
-            ASMToken.Instruction.IDIV    -> idiv()
+            Bytecode.Instruction.IDIV    -> idiv()
 
-            ASMToken.Instruction.MOD     -> mod()
+            Bytecode.Instruction.MOD     -> mod()
 
-            ASMToken.Instruction.IMOD    -> imod()
+            Bytecode.Instruction.IMOD    -> imod()
 
-            ASMToken.Instruction.NEG     -> neg()
+            Bytecode.Instruction.NEG     -> neg()
 
-            ASMToken.Instruction.AND     -> and()
+            Bytecode.Instruction.AND     -> and()
 
-            ASMToken.Instruction.OR      -> or()
+            Bytecode.Instruction.OR      -> or()
 
-            ASMToken.Instruction.NOT     -> not()
+            Bytecode.Instruction.NOT     -> not()
 
-            ASMToken.Instruction.EQU     -> equ()
+            Bytecode.Instruction.EQU     -> equ()
 
-            ASMToken.Instruction.GRT     -> grt()
+            Bytecode.Instruction.GRT     -> grt()
 
-            ASMToken.Instruction.GEQ     -> geq()
+            Bytecode.Instruction.GEQ     -> geq()
 
-            ASMToken.Instruction.JMP     -> jmp()
+            Bytecode.Instruction.JMP     -> jmp()
 
-            ASMToken.Instruction.JIF     -> jif()
+            Bytecode.Instruction.JIF     -> jif()
 
-            ASMToken.Instruction.GLOBAL  -> global()
+            Bytecode.Instruction.GLOBAL  -> global()
 
-            ASMToken.Instruction.LOAD    -> load()
+            Bytecode.Instruction.LOAD    -> load()
 
-            ASMToken.Instruction.ALOAD   -> aload()
+            Bytecode.Instruction.ALOAD   -> aload()
 
-            ASMToken.Instruction.ILOAD   -> iload()
+            Bytecode.Instruction.ILOAD   -> iload()
 
-            ASMToken.Instruction.IALOAD  -> iaload()
+            Bytecode.Instruction.IALOAD  -> iaload()
 
-            ASMToken.Instruction.STORE   -> store()
+            Bytecode.Instruction.STORE   -> store()
 
-            ASMToken.Instruction.ASTORE  -> astore()
+            Bytecode.Instruction.ASTORE  -> astore()
 
-            ASMToken.Instruction.ISTORE  -> istore()
+            Bytecode.Instruction.ISTORE  -> istore()
 
-            ASMToken.Instruction.IASTORE -> iastore()
+            Bytecode.Instruction.IASTORE -> iastore()
 
-            ASMToken.Instruction.SIZE    -> size()
+            Bytecode.Instruction.SIZE    -> size()
 
-            ASMToken.Instruction.CALL    -> call()
+            Bytecode.Instruction.CALL    -> call()
 
-            ASMToken.Instruction.RET     -> ret()
+            Bytecode.Instruction.RET     -> ret()
 
-            ASMToken.Instruction.FRAME   -> frame()
+            Bytecode.Instruction.FRAME   -> frame()
 
-            ASMToken.Instruction.SYS     -> sys()
+            Bytecode.Instruction.SYS     -> sys()
         }
     }
 

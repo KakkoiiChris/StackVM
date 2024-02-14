@@ -1,11 +1,11 @@
 package kakkoiichris.stackvm.lang.compiler
 
-import kakkoiichris.stackvm.asm.ASMToken
-import kakkoiichris.stackvm.asm.ASMToken.Instruction.*
+import kakkoiichris.stackvm.lang.compiler.Bytecode.Instruction.*
 import kakkoiichris.stackvm.lang.parser.DataType
 import kakkoiichris.stackvm.lang.parser.Node
 
-class Compiler(private val program: Node.Program, private val optimize: Boolean) : Node.Visitor<List<IASMToken>> {
+class Compiler(private val program: Node.Program, private val optimize: Boolean) :
+    Node.Visitor<List<IntermediateToken>> {
     private var pos = 0
 
     private val functions = mutableMapOf<Int, Int>()
@@ -15,10 +15,10 @@ class Compiler(private val program: Node.Program, private val optimize: Boolean)
             .map { it.value }
             .toFloatArray()
 
-    fun convert(): List<ASMToken> {
+    fun convert(): List<Bytecode> {
         val iTokens = visit(program).toMutableList()
 
-        val subTokens = iTokens.filterIsInstance<IASMToken.Ok>()
+        val subTokens = iTokens.filterIsInstance<IntermediateToken.Ok>()
 
         if (iTokens.size > subTokens.size) error("Unresolved intermediate token.")
 
@@ -46,25 +46,25 @@ class Compiler(private val program: Node.Program, private val optimize: Boolean)
         return tokens
     }
 
-    private fun resolveStartAndEnd(iTokens: List<IASMToken>, start: Float, end: Float) =
+    private fun resolveStartAndEnd(iTokens: List<IntermediateToken>, start: Float, end: Float) =
         iTokens
             .map { it.resolveStartAndEnd(start, end) ?: it }
             .toMutableList()
 
-    private fun resolveLabelStartAndEnd(iTokens: List<IASMToken>, label: Node.Name, start: Float, end: Float) =
+    private fun resolveLabelStartAndEnd(iTokens: List<IntermediateToken>, label: Node.Name, start: Float, end: Float) =
         iTokens
             .map { it.resolveLabelStartAndEnd(label, start, end) ?: it }
             .toMutableList()
 
-    private fun resolveLast(iTokens: List<IASMToken>, last: Float) =
+    private fun resolveLast(iTokens: List<IntermediateToken>, last: Float) =
         iTokens
             .map { it.resolveLast(last) ?: it }
             .toMutableList()
 
-    private val Float.iasm get() = IASMToken.Ok(ASMToken.Value(this))
+    private val Float.iasm get() = IntermediateToken.Ok(Bytecode.Value(this))
 
-    override fun visitProgram(node: Node.Program): List<IASMToken> {
-        val iTokens = mutableListOf<IASMToken>()
+    override fun visitProgram(node: Node.Program): List<IntermediateToken> {
+        val iTokens = mutableListOf<IntermediateToken>()
 
         for (statement in node.statements) {
             iTokens += visit(statement)
@@ -73,12 +73,12 @@ class Compiler(private val program: Node.Program, private val optimize: Boolean)
         return iTokens
     }
 
-    override fun visitDeclareSingle(node: Node.DeclareSingle): List<IASMToken> {
-        val iTokens = mutableListOf<IASMToken>()
+    override fun visitDeclareSingle(node: Node.DeclareSingle): List<IntermediateToken> {
+        val iTokens = mutableListOf<IntermediateToken>()
 
         iTokens += visit(node.node)
 
-        iTokens += STORE.iasm
+        iTokens += STORE.intermediate
         iTokens += node.address.toFloat().iasm
 
         pos += 2
@@ -86,12 +86,12 @@ class Compiler(private val program: Node.Program, private val optimize: Boolean)
         return iTokens
     }
 
-    override fun visitDeclareArray(node: Node.DeclareArray): List<IASMToken> {
-        val iTokens = mutableListOf<IASMToken>()
+    override fun visitDeclareArray(node: Node.DeclareArray): List<IntermediateToken> {
+        val iTokens = mutableListOf<IntermediateToken>()
 
         iTokens += visit(node.node)
 
-        iTokens += ASTORE.iasm
+        iTokens += ASTORE.intermediate
         iTokens += node.address.toFloat().iasm
 
         pos += 2
@@ -99,8 +99,8 @@ class Compiler(private val program: Node.Program, private val optimize: Boolean)
         return iTokens
     }
 
-    override fun visitIf(node: Node.If): List<IASMToken> {
-        var iTokens = mutableListOf<IASMToken>()
+    override fun visitIf(node: Node.If): List<IntermediateToken> {
+        var iTokens = mutableListOf<IntermediateToken>()
 
         var last = -1F
 
@@ -112,9 +112,9 @@ class Compiler(private val program: Node.Program, private val optimize: Boolean)
             if (condition != null) {
                 iTokens += visit(condition)
 
-                iTokens += NOT.iasm
-                iTokens += JIF.iasm
-                iTokens += IASMToken.AwaitEnd()
+                iTokens += NOT.intermediate
+                iTokens += JIF.intermediate
+                iTokens += IntermediateToken.AwaitEnd()
 
                 pos += 3
             }
@@ -124,8 +124,8 @@ class Compiler(private val program: Node.Program, private val optimize: Boolean)
             }
 
             if (i != node.branches.lastIndex) {
-                iTokens += JMP.iasm
-                iTokens += IASMToken.AwaitLast()
+                iTokens += JMP.intermediate
+                iTokens += IntermediateToken.AwaitLast()
 
                 pos += 2
             }
@@ -141,16 +141,16 @@ class Compiler(private val program: Node.Program, private val optimize: Boolean)
         return iTokens
     }
 
-    override fun visitWhile(node: Node.While): List<IASMToken> {
-        var iTokens = mutableListOf<IASMToken>()
+    override fun visitWhile(node: Node.While): List<IntermediateToken> {
+        var iTokens = mutableListOf<IntermediateToken>()
 
         val start = pos.toFloat()
 
         iTokens += visit(node.condition)
 
-        iTokens += NOT.iasm
-        iTokens += JIF.iasm
-        iTokens += IASMToken.AwaitEnd()
+        iTokens += NOT.intermediate
+        iTokens += JIF.intermediate
+        iTokens += IntermediateToken.AwaitEnd()
 
         pos += 3
 
@@ -158,8 +158,8 @@ class Compiler(private val program: Node.Program, private val optimize: Boolean)
             iTokens += visit(stmt)
         }
 
-        iTokens += JMP.iasm
-        iTokens += IASMToken.AwaitStart()
+        iTokens += JMP.intermediate
+        iTokens += IntermediateToken.AwaitStart()
 
         pos += 2
 
@@ -176,8 +176,8 @@ class Compiler(private val program: Node.Program, private val optimize: Boolean)
         return iTokens
     }
 
-    override fun visitDo(node: Node.Do): List<IASMToken> {
-        var iTokens = mutableListOf<IASMToken>()
+    override fun visitDo(node: Node.Do): List<IntermediateToken> {
+        var iTokens = mutableListOf<IntermediateToken>()
 
         val start = pos.toFloat()
 
@@ -187,8 +187,8 @@ class Compiler(private val program: Node.Program, private val optimize: Boolean)
 
         iTokens += visit(node.condition)
 
-        iTokens += JIF.iasm
-        iTokens += IASMToken.AwaitStart()
+        iTokens += JIF.intermediate
+        iTokens += IntermediateToken.AwaitStart()
 
         pos += 2
 
@@ -205,8 +205,8 @@ class Compiler(private val program: Node.Program, private val optimize: Boolean)
         return iTokens
     }
 
-    override fun visitFor(node: Node.For): List<IASMToken> {
-        var iTokens = mutableListOf<IASMToken>()
+    override fun visitFor(node: Node.For): List<IntermediateToken> {
+        var iTokens = mutableListOf<IntermediateToken>()
 
         if (node.init != null) {
             iTokens += visit(node.init)
@@ -217,9 +217,9 @@ class Compiler(private val program: Node.Program, private val optimize: Boolean)
         if (node.condition != null) {
             iTokens += visit(node.condition)
 
-            iTokens += NOT.iasm
-            iTokens += JIF.iasm
-            iTokens += IASMToken.AwaitEnd()
+            iTokens += NOT.intermediate
+            iTokens += JIF.intermediate
+            iTokens += IntermediateToken.AwaitEnd()
 
             pos += 3
         }
@@ -231,13 +231,13 @@ class Compiler(private val program: Node.Program, private val optimize: Boolean)
         if (node.increment != null) {
             iTokens += visit(node.increment)
 
-            iTokens += POP.iasm
+            iTokens += POP.intermediate
 
             pos++
         }
 
-        iTokens += JMP.iasm
-        iTokens += IASMToken.AwaitStart()
+        iTokens += JMP.intermediate
+        iTokens += IntermediateToken.AwaitStart()
 
         pos += 2
 
@@ -252,39 +252,39 @@ class Compiler(private val program: Node.Program, private val optimize: Boolean)
         return iTokens
     }
 
-    override fun visitBreak(node: Node.Break): List<IASMToken> {
+    override fun visitBreak(node: Node.Break): List<IntermediateToken> {
         val label = node.label
 
-        val iTokens = mutableListOf<IASMToken>()
+        val iTokens = mutableListOf<IntermediateToken>()
 
-        iTokens += JMP.iasm
-        iTokens += if (label != null) IASMToken.AwaitLabelEnd(label) else IASMToken.AwaitEnd()
+        iTokens += JMP.intermediate
+        iTokens += if (label != null) IntermediateToken.AwaitLabelEnd(label) else IntermediateToken.AwaitEnd()
 
         pos += 2
 
         return iTokens
     }
 
-    override fun visitContinue(node: Node.Continue): List<IASMToken> {
+    override fun visitContinue(node: Node.Continue): List<IntermediateToken> {
         val label = node.label
 
-        val iTokens = mutableListOf<IASMToken>()
+        val iTokens = mutableListOf<IntermediateToken>()
 
-        iTokens += JMP.iasm
-        iTokens += if (label != null) IASMToken.AwaitLabelStart(label) else IASMToken.AwaitStart()
+        iTokens += JMP.intermediate
+        iTokens += if (label != null) IntermediateToken.AwaitLabelStart(label) else IntermediateToken.AwaitStart()
 
         pos += 2
 
         return iTokens
     }
 
-    override fun visitFunction(node: Node.Function): List<IASMToken> {
+    override fun visitFunction(node: Node.Function): List<IntermediateToken> {
         if (node.isNative) return emptyList()
 
-        var iTokens = mutableListOf<IASMToken>()
+        var iTokens = mutableListOf<IntermediateToken>()
 
-        iTokens += JMP.iasm
-        iTokens += IASMToken.AwaitEnd()
+        iTokens += JMP.intermediate
+        iTokens += IntermediateToken.AwaitEnd()
 
         pos += 2
 
@@ -292,16 +292,16 @@ class Compiler(private val program: Node.Program, private val optimize: Boolean)
 
         functions[node.id] = pos
 
-        iTokens += FRAME.iasm
+        iTokens += FRAME.intermediate
         iTokens += node.offset.toFloat().iasm
 
         pos += 2
 
         for (param in node.params) {
             iTokens += when (param.dataType) {
-                is DataType.Array -> ASTORE.iasm
+                is DataType.Array -> ASTORE.intermediate
 
-                else              -> STORE.iasm
+                else              -> STORE.intermediate
             }
             iTokens += param.address.toFloat().iasm
 
@@ -312,10 +312,10 @@ class Compiler(private val program: Node.Program, private val optimize: Boolean)
             iTokens += visit(stmt)
         }
 
-        if (iTokens.none { it is IASMToken.Ok && it.token == RET }) {
-            iTokens += PUSH.iasm
+        if (iTokens.none { it is IntermediateToken.Ok && it.token == RET }) {
+            iTokens += PUSH.intermediate
             iTokens += 0F.iasm
-            iTokens += RET.iasm
+            iTokens += RET.intermediate
 
             pos += 3
         }
@@ -327,8 +327,8 @@ class Compiler(private val program: Node.Program, private val optimize: Boolean)
         return iTokens
     }
 
-    override fun visitReturn(node: Node.Return): List<IASMToken> {
-        val iTokens = mutableListOf<IASMToken>()
+    override fun visitReturn(node: Node.Return): List<IntermediateToken> {
+        val iTokens = mutableListOf<IntermediateToken>()
 
         val subNode = node.node
 
@@ -336,29 +336,29 @@ class Compiler(private val program: Node.Program, private val optimize: Boolean)
             iTokens += visit(subNode)
         }
 
-        iTokens += RET.iasm
+        iTokens += RET.intermediate
 
         pos++
 
         return iTokens
     }
 
-    override fun visitExpression(node: Node.Expression): List<IASMToken> {
-        val iTokens = mutableListOf<IASMToken>()
+    override fun visitExpression(node: Node.Expression): List<IntermediateToken> {
+        val iTokens = mutableListOf<IntermediateToken>()
 
         iTokens += visit(node.node)
 
-        iTokens += POP.iasm
+        iTokens += POP.intermediate
 
         pos++
 
         return iTokens
     }
 
-    override fun visitValue(node: Node.Value): List<IASMToken> {
-        val iTokens = mutableListOf<IASMToken>()
+    override fun visitValue(node: Node.Value): List<IntermediateToken> {
+        val iTokens = mutableListOf<IntermediateToken>()
 
-        iTokens += PUSH.iasm
+        iTokens += PUSH.intermediate
         iTokens += node.value.value.iasm
 
         pos += 2
@@ -366,17 +366,17 @@ class Compiler(private val program: Node.Program, private val optimize: Boolean)
         return iTokens
     }
 
-    override fun visitString(node: Node.String): List<IASMToken> {
-        val iTokens = mutableListOf<IASMToken>()
+    override fun visitString(node: Node.String): List<IntermediateToken> {
+        val iTokens = mutableListOf<IntermediateToken>()
 
         for (c in node.value.value.reversed()) {
-            iTokens += PUSH.iasm
+            iTokens += PUSH.intermediate
             iTokens += c.code.toFloat().iasm
 
             pos += 2
         }
 
-        iTokens += PUSH.iasm
+        iTokens += PUSH.intermediate
         iTokens += node.value.value.length.toFloat().iasm
 
         pos += 2
@@ -384,20 +384,20 @@ class Compiler(private val program: Node.Program, private val optimize: Boolean)
         return iTokens
     }
 
-    override fun visitName(node: Node.Name): List<IASMToken> {
+    override fun visitName(node: Node.Name): List<IntermediateToken> {
         error("Should not visit Name!")
     }
 
-    override fun visitVariable(node: Node.Variable): List<IASMToken> {
-        val iTokens = mutableListOf<IASMToken>()
+    override fun visitVariable(node: Node.Variable): List<IntermediateToken> {
+        val iTokens = mutableListOf<IntermediateToken>()
 
         if (node.isGlobal) {
-            iTokens += GLOBAL.iasm
+            iTokens += GLOBAL.intermediate
 
             pos++
         }
 
-        iTokens += (if (node.dataType is DataType.Array) ALOAD else LOAD).iasm
+        iTokens += (if (node.dataType is DataType.Array) ALOAD else LOAD).intermediate
         iTokens += node.address.toFloat().iasm
 
         pos += 2
@@ -405,46 +405,46 @@ class Compiler(private val program: Node.Program, private val optimize: Boolean)
         return iTokens
     }
 
-    override fun visitType(node: Node.Type): List<IASMToken> {
+    override fun visitType(node: Node.Type): List<IntermediateToken> {
         error("Should not visit Type!")
     }
 
-    override fun visitArray(node: Node.Array): List<IASMToken> {
-        val iTokens = mutableListOf<IASMToken>()
+    override fun visitArray(node: Node.Array): List<IntermediateToken> {
+        val iTokens = mutableListOf<IntermediateToken>()
 
         for (element in node.elements.reversed()) {
             iTokens += visit(element)
         }
 
-        iTokens += PUSH.iasm
-        iTokens += ASMToken.Value(node.dataType.offset.toFloat() - 1).iasm
+        iTokens += PUSH.intermediate
+        iTokens += Bytecode.Value(node.dataType.offset.toFloat() - 1).intermediate
 
         pos += 2
 
         return iTokens
     }
 
-    override fun visitUnary(node: Node.Unary): List<IASMToken> {
-        val iTokens = mutableListOf<IASMToken>()
+    override fun visitUnary(node: Node.Unary): List<IntermediateToken> {
+        val iTokens = mutableListOf<IntermediateToken>()
 
         iTokens += visit(node.operand)
 
-        iTokens += node.operator.instruction.iasm
+        iTokens += node.operator.instruction.intermediate
 
         pos++
 
         return iTokens
     }
 
-    override fun visitSize(node: Node.Size): List<IASMToken> {
-        val iTokens = mutableListOf<IASMToken>()
+    override fun visitSize(node: Node.Size): List<IntermediateToken> {
+        val iTokens = mutableListOf<IntermediateToken>()
 
         if (node.variable.dataType is DataType.Array) {
-            iTokens += SIZE.iasm
+            iTokens += SIZE.intermediate
             iTokens += node.variable.address.toFloat().iasm
         }
         else {
-            iTokens += PUSH.iasm
+            iTokens += PUSH.intermediate
             iTokens += 1F.iasm
         }
 
@@ -453,13 +453,13 @@ class Compiler(private val program: Node.Program, private val optimize: Boolean)
         return iTokens
     }
 
-    override fun visitBinary(node: Node.Binary): List<IASMToken> {
-        val iTokens = mutableListOf<IASMToken>()
+    override fun visitBinary(node: Node.Binary): List<IntermediateToken> {
+        val iTokens = mutableListOf<IntermediateToken>()
 
         iTokens += visit(node.operandLeft)
         iTokens += visit(node.operandRight)
 
-        val additional = node.operator.instructions.map { it.iasm }
+        val additional = node.operator.instructions.map { it.intermediate }
         iTokens += additional
 
         pos += additional.size
@@ -467,13 +467,13 @@ class Compiler(private val program: Node.Program, private val optimize: Boolean)
         return iTokens
     }
 
-    override fun visitAssign(node: Node.Assign): List<IASMToken> {
-        val iTokens = mutableListOf<IASMToken>()
+    override fun visitAssign(node: Node.Assign): List<IntermediateToken> {
+        val iTokens = mutableListOf<IntermediateToken>()
 
         iTokens += visit(node.node)
 
-        iTokens += DUP.iasm
-        iTokens += STORE.iasm
+        iTokens += DUP.intermediate
+        iTokens += STORE.intermediate
         iTokens += node.variable.address.toFloat().iasm
 
         pos += 3
@@ -481,8 +481,8 @@ class Compiler(private val program: Node.Program, private val optimize: Boolean)
         return iTokens
     }
 
-    override fun visitInvoke(node: Node.Invoke): List<IASMToken> {
-        val iTokens = mutableListOf<IASMToken>()
+    override fun visitInvoke(node: Node.Invoke): List<IntermediateToken> {
+        val iTokens = mutableListOf<IntermediateToken>()
 
         for (arg in node.args.reversed()) {
             iTokens += visit(arg)
@@ -490,7 +490,7 @@ class Compiler(private val program: Node.Program, private val optimize: Boolean)
 
         val address = functions[node.id] ?: error("Function does not exist!")
 
-        iTokens += CALL.iasm
+        iTokens += CALL.intermediate
         iTokens += address.toFloat().iasm
 
         pos += 2
@@ -498,14 +498,14 @@ class Compiler(private val program: Node.Program, private val optimize: Boolean)
         return iTokens
     }
 
-    override fun visitSystemCall(node: Node.SystemCall): List<IASMToken> {
-        val iTokens = mutableListOf<IASMToken>()
+    override fun visitSystemCall(node: Node.SystemCall): List<IntermediateToken> {
+        val iTokens = mutableListOf<IntermediateToken>()
 
         for (arg in node.args.reversed()) {
             iTokens += visit(arg)
         }
 
-        iTokens += SYS.iasm
+        iTokens += SYS.intermediate
         iTokens += node.id.toFloat().iasm
 
         pos += 2
@@ -513,8 +513,8 @@ class Compiler(private val program: Node.Program, private val optimize: Boolean)
         return iTokens
     }
 
-    override fun visitGetIndex(node: Node.GetIndex): List<IASMToken> {
-        val iTokens = mutableListOf<IASMToken>()
+    override fun visitGetIndex(node: Node.GetIndex): List<IntermediateToken> {
+        val iTokens = mutableListOf<IntermediateToken>()
 
         val origin = node.variable.address
 
@@ -528,12 +528,12 @@ class Compiler(private val program: Node.Program, private val optimize: Boolean)
         }
 
         if (node.variable.isGlobal) {
-            iTokens += GLOBAL.iasm
+            iTokens += GLOBAL.intermediate
 
             pos++
         }
 
-        iTokens += (if (node.indices.size < node.arrayType.dimension) IALOAD else ILOAD).iasm
+        iTokens += (if (node.indices.size < node.arrayType.dimension) IALOAD else ILOAD).intermediate
         iTokens += origin.toFloat().iasm
         iTokens += indices.size.toFloat().iasm
         pos += 3
@@ -541,8 +541,8 @@ class Compiler(private val program: Node.Program, private val optimize: Boolean)
         return iTokens
     }
 
-    override fun visitSetIndex(node: Node.SetIndex): List<IASMToken> {
-        val iTokens = mutableListOf<IASMToken>()
+    override fun visitSetIndex(node: Node.SetIndex): List<IntermediateToken> {
+        val iTokens = mutableListOf<IntermediateToken>()
 
         val origin = node.variable.address
 
@@ -562,7 +562,7 @@ class Compiler(private val program: Node.Program, private val optimize: Boolean)
         }
         else {
             ISTORE
-        }.iasm
+        }.intermediate
         iTokens += origin.toFloat().iasm
         iTokens += indices.size.toFloat().iasm
         pos += 3

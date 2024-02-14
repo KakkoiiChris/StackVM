@@ -1,14 +1,13 @@
-package kakkoiichris.stackvm.asm
+package kakkoiichris.stackvm.lang.compiler
 
-import kakkoiichris.stackvm.lang.compiler.IASMToken
 import kakkoiichris.stackvm.util.truncate
 
-interface ASMToken {
+interface Bytecode {
     val value: Float
 
-    val iasm get() = IASMToken.Ok(this)
+    val intermediate get() = IntermediateToken.Ok(this)
 
-    enum class Instruction : ASMToken {
+    enum class Instruction : Bytecode {
         HALT,
         PUSH,
         POP,
@@ -47,12 +46,12 @@ interface ASMToken {
         override val value get() = ordinal.toFloat()
     }
 
-    data class Value(override val value: Float) : ASMToken {
+    data class Value(override val value: Float) : Bytecode {
         override fun toString() =
             value.truncate()
     }
 
-    data object End : ASMToken {
+    data object End : Bytecode {
         override val value = 0F
     }
 }

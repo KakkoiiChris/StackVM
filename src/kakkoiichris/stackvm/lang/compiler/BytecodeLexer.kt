@@ -1,11 +1,11 @@
-package kakkoiichris.stackvm.asm
+package kakkoiichris.stackvm.lang.compiler
 
-class ASMLexer(private val src: String) : Iterator<ASMToken> {
+class BytecodeLexer(private val src: String) : Iterator<Bytecode> {
     private var pos = 0
 
     override fun hasNext() = pos < src.length
 
-    override fun next(): ASMToken {
+    override fun next(): Bytecode {
         while (!match('\u0000')) {
             if (match(Char::isWhitespace)) {
                 skipWhitespace()
@@ -30,7 +30,7 @@ class ASMLexer(private val src: String) : Iterator<ASMToken> {
             error("Unknown char '${peek()}'!")
         }
 
-        return ASMToken.End
+        return Bytecode.End
     }
 
     private fun peek() = if (pos < src.length) src[pos] else '\u0000'
@@ -65,7 +65,7 @@ class ASMLexer(private val src: String) : Iterator<ASMToken> {
         while (!match('\n'))
     }
 
-    private fun keyword(): ASMToken {
+    private fun keyword(): Bytecode {
         val result = buildString {
             do {
                 take()
@@ -73,10 +73,10 @@ class ASMLexer(private val src: String) : Iterator<ASMToken> {
             while (match(Char::isLetter))
         }
 
-        return ASMToken.Instruction.entries.first { it.name.equals(result, ignoreCase = true) }
+        return Bytecode.Instruction.entries.first { it.name.equals(result, ignoreCase = true) }
     }
 
-    private fun value(): ASMToken {
+    private fun value(): Bytecode {
         val result = buildString {
             do {
                 take()
@@ -93,6 +93,6 @@ class ASMLexer(private val src: String) : Iterator<ASMToken> {
 
         val value = result.toFloatOrNull() ?: error("Number too big!")
 
-        return ASMToken.Value(value)
+        return Bytecode.Value(value)
     }
 }

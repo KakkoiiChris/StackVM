@@ -1,16 +1,15 @@
 package kakkoiichris.stackvm.lang.compiler
 
-import kakkoiichris.stackvm.asm.ASMToken
 import kakkoiichris.stackvm.lang.parser.Node
 
-interface IASMToken {
+interface IntermediateToken {
     fun resolveStartAndEnd(start: Float, end: Float): Ok? = null
 
     fun resolveLabelStartAndEnd(label: Node.Name, start: Float, end: Float): Ok? = null
 
     fun resolveLast(last: Float): Ok? = null
 
-    class Ok(val token: ASMToken) : IASMToken {
+    class Ok(val token: Bytecode) : IntermediateToken {
         override fun resolveStartAndEnd(start: Float, end: Float) = this
 
         override fun resolveLast(last: Float) = this
@@ -19,34 +18,34 @@ interface IASMToken {
             "Ok<$token>"
     }
 
-    class AwaitStart(private val offset: Int = 0) : IASMToken {
+    class AwaitStart(private val offset: Int = 0) : IntermediateToken {
         override fun resolveStartAndEnd(start: Float, end: Float) =
-            Ok(ASMToken.Value(start + offset))
+            Bytecode.Value(start + offset).intermediate
 
         override fun toString() =
             "AwaitStart<$offset>"
     }
 
-    class AwaitEnd(private val offset: Int = 0) : IASMToken {
+    class AwaitEnd(private val offset: Int = 0) : IntermediateToken {
         override fun resolveStartAndEnd(start: Float, end: Float) =
-            Ok(ASMToken.Value(end + offset))
+            Bytecode.Value(end + offset).intermediate
 
         override fun toString() =
             "AwaitEnd<$offset>"
     }
 
-    class AwaitLast(private val offset: Int = 0) : IASMToken {
+    class AwaitLast(private val offset: Int = 0) : IntermediateToken {
         override fun resolveLast(last: Float) =
-            Ok(ASMToken.Value(last + offset))
+            Bytecode.Value(last + offset).intermediate
 
         override fun toString() =
             "AwaitLast<$offset>"
     }
 
-    class AwaitLabelStart(private val label: Node.Name, private val offset: Int = 0) : IASMToken {
+    class AwaitLabelStart(private val label: Node.Name, private val offset: Int = 0) : IntermediateToken {
         override fun resolveLabelStartAndEnd(label: Node.Name, start: Float, end: Float) =
             if (this.label.name.value == label.name.value)
-                Ok(ASMToken.Value(start + offset))
+                Bytecode.Value(start + offset).intermediate
             else
                 null
 
@@ -54,10 +53,10 @@ interface IASMToken {
             "AwaitLabelStart<$offset, ${label.name.value}>"
     }
 
-    class AwaitLabelEnd(private val label: Node.Name, private val offset: Int = 0) : IASMToken {
+    class AwaitLabelEnd(private val label: Node.Name, private val offset: Int = 0) : IntermediateToken {
         override fun resolveLabelStartAndEnd(label: Node.Name, start: Float, end: Float) =
             if (this.label.name.value == label.name.value)
-                Ok(ASMToken.Value(end + offset))
+                Bytecode.Value(end + offset).intermediate
             else
                 null
 
