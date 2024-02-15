@@ -45,24 +45,32 @@ object DebugCPU : CPU() {
 
     override fun run(): Float {
         while (running) {
-            for (i in framePointerOrigin until framePointerOrigin + 20) {
-                print("${memory[i].truncate()} ")
-            }
-
-            println()
+            showMemory()
 
             decode()
 
-            print("\t\t\t\t\t\t\t\tSTACK:")
-
-            for (i in stackPointerOrigin..<stackPointer) {
-                print(" ${memory[i].truncate()}")
-            }
-
-            println()
+            showStack()
         }
 
         return result
+    }
+
+    private fun showMemory() {
+        for (i in framePointerOrigin until framePointerOrigin + 30) {
+            print("${memory[i].truncate()} ")
+        }
+
+        println()
+    }
+
+    private fun showStack() {
+        print("\t\t\t\t\t\t\t\tSTACK:")
+
+        for (i in stackPointerOrigin..<stackPointer) {
+            print(" ${memory[i].truncate()}")
+        }
+
+        println()
     }
 
     override fun halt() {
@@ -272,42 +280,36 @@ object DebugCPU : CPU() {
         val address = fetchInt() + getLoadOffset()
         val size = memory[address]
 
-        val elements = FloatArray(size.toInt()) { memory[address + 1 + it] }
+        val elements = MutableList(size.toInt()) { memory[address + 1 + it] }
+
+        elements.add(0, size)
 
         println("ALOAD @${address.toAddress()} [${elements.joinToString(separator = ",") { it.truncate() }}]")
 
         for (element in elements.reversed()) {
             pushStack(element)
         }
-
-        pushStack(size)
     }
 
     override fun iload() {
         var address = fetchInt() + getLoadOffset()
         val indexCount = fetchInt()
 
-        var indexOffset = 0
+        val indices = List(indexCount) { popStackInt() }
 
-        for (i in 0..<indexCount - 1) {
-            val subSize = memory[address + indexOffset + 1].toInt()
+        for (index in indices.dropLast(1)) {
+            address++
 
-            val index = popStackInt()
+            val subSize = memory[address].toInt()
 
-            indexOffset = (indexOffset + 1) + (index * subSize)
+            address += index * (subSize + 1)
         }
 
-        indexOffset++
-
-        val index = popStackInt()
-
-        indexOffset += index
-
-        address += indexOffset
+        address += indices.last() + 1
 
         val value = memory[address]
 
-        println("ILOAD @${address.toAddress()} #$indexCount <${value.truncate()}>")
+        println("ILOAD @${address.toAddress()} #$indexCount <[${indices.joinToString(separator = "][")}], ${value.truncate()}>")
 
         pushStack(value)
     }
@@ -316,31 +318,27 @@ object DebugCPU : CPU() {
         var address = fetchInt() + getLoadOffset()
         val indexCount = fetchInt()
 
-        var indexOffset = 0
+        val indices = List(indexCount) { popStackInt() }
 
-        for (i in 0..<indexCount - 1) {
-            val subSize = memory[address + indexOffset + 1].toInt()
+        for (index in indices.dropLast(1)) {
+            address++
 
-            val index = popStackInt()
+            val subSize = memory[address].toInt()
 
-            indexOffset = (indexOffset + 1) + (index * subSize)
+            address += index * (subSize + 1)
         }
 
-        indexOffset++
-
-        address += indexOffset
+        address += indices.last()
 
         val size = memory[address]
 
-        val elements = FloatArray(size.toInt()) { memory[address + 1 + it] }
+        val elements = FloatArray(size.toInt() + 1) { memory[address + it] }
 
         println("IALOAD @${address.toAddress()} [${elements.joinToString(separator = ",") { it.truncate() }}]")
 
         for (element in elements.reversed()) {
             pushStack(element)
         }
-
-        pushStack(size)
     }
 
     override fun store() {
@@ -356,16 +354,16 @@ object DebugCPU : CPU() {
         val address = fetchInt() + framePointer
         val size = popStack()
 
-        val elements = FloatArray(size.toInt()) {
+        val elements = MutableList(size.toInt()) {
             popStack()
         }
 
+        elements.add(0, size)
+
         println("ASTORE @${address.toAddress()} [${elements.joinToString(separator = ",") { it.truncate() }}]")
 
-        memory[address] = size
-
         for (offset in elements.indices) {
-            memory[address + offset + 1] = elements[offset]
+            memory[address + offset] = elements[offset]
         }
     }
 
@@ -373,21 +371,15 @@ object DebugCPU : CPU() {
         var address = fetchInt() + framePointer
         val indexCount = fetchInt()
 
-        var indexOffset = 0
+        for (i in 0 until indexCount - 1) {
+            address++
 
-        for (i in 0..<indexCount - 1) {
-            val subSize = memory[address + indexOffset + 1].toInt()
+            val subSize = memory[address].toInt()
 
-            val index = popStackInt()
-
-            indexOffset = (indexOffset + 1) + (index * subSize)
+            address += popStackInt() * (subSize + 1)
         }
 
-        val index = popStackInt()
-
-        indexOffset += index + 1
-
-        address += indexOffset
+        address += popStackInt() + 1
 
         val value = popStack()
 
@@ -400,34 +392,28 @@ object DebugCPU : CPU() {
         var address = fetchInt() + framePointer
         val indexCount = fetchInt()
 
-        var indexOffset = 0
+        for (i in 0 until indexCount - 1) {
+            address++
 
-        for (i in 0..<indexCount - 1) {
-            val subSize = memory[address + indexOffset + 1].toInt()
+            val subSize = memory[address].toInt()
 
-            val index = popStackInt()
-
-            indexOffset = (indexOffset + 1) + (index * subSize)
+            address += popStackInt() * (subSize + 1)
         }
 
-        val index = popStackInt()
-
-        indexOffset += index + 1
-
-        address += indexOffset
+        address += popStackInt() + 1
 
         val size = popStack()
 
-        val elements = FloatArray(size.toInt()) {
+        val elements = MutableList(size.toInt()) {
             popStack()
         }
 
+        elements.add(0, size)
+
         println("IASTORE @${address.toAddress()} #$indexCount [${elements.joinToString(separator = ",") { it.truncate() }}]")
 
-        memory[address] = size
-
         for (offset in elements.indices) {
-            memory[address + offset + 1] = elements[offset]
+            memory[address + offset] = elements[offset]
         }
     }
 

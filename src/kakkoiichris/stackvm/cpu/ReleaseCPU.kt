@@ -183,38 +183,26 @@ object ReleaseCPU : CPU() {
 
     override fun aload() {
         val address = fetchInt() + getLoadOffset()
-        val size = memory[address]
+        val size = memory[address].toInt()
 
-        val elements = FloatArray(size.toInt()) { memory[address + 1 + it] }
-
-        for (element in elements.reversed()) {
-            pushStack(element)
+        for (i in size downTo 0) {
+            pushStack(memory[address + i])
         }
-
-        pushStack(size)
     }
 
     override fun iload() {
         var address = fetchInt() + getLoadOffset()
         val indexCount = fetchInt()
 
-        var indexOffset = 0
+        for (i in 0 until indexCount - 1) {
+            address++
 
-        for (i in 0..<indexCount - 1) {
-            val subSize = memory[address + indexOffset + 1].toInt()
+            val subSize = memory[address].toInt()
 
-            val index = popStackInt()
-
-            indexOffset = (indexOffset + 1) + (index * subSize)
+            address += popStackInt() * (subSize + 1)
         }
 
-        indexOffset++
-
-        val index = popStackInt()
-
-        indexOffset += index
-
-        address += indexOffset
+        address += popStackInt() + 1
 
         pushStack(memory[address])
     }
@@ -223,29 +211,21 @@ object ReleaseCPU : CPU() {
         var address = fetchInt() + getLoadOffset()
         val indexCount = fetchInt()
 
-        var indexOffset = 0
+        for (i in 0 until indexCount - 1) {
+            address++
 
-        for (i in 0..<indexCount - 1) {
-            val subSize = memory[address + indexOffset + 1].toInt()
+            val subSize = memory[address].toInt()
 
-            val index = popStackInt()
-
-            indexOffset = (indexOffset + 1) + (index * subSize)
+            address += popStackInt() * (subSize + 1)
         }
 
-        indexOffset++
+        address += popStackInt()
 
-        address += indexOffset
+        val size = memory[address].toInt()
 
-        val size = memory[address]
-
-        val elements = FloatArray(size.toInt()) { memory[address + 1 + it] }
-
-        for (element in elements.reversed()) {
-            pushStack(element)
+        for (i in size downTo 0) {
+            pushStack(memory[address + i])
         }
-
-        pushStack(size)
     }
 
     override fun store() {
@@ -258,14 +238,10 @@ object ReleaseCPU : CPU() {
         val address = fetchInt() + framePointer
         val size = popStack()
 
-        val elements = FloatArray(size.toInt()) {
-            popStack()
-        }
-
         memory[address] = size
 
-        for (offset in elements.indices) {
-            memory[address + offset + 1] = elements[offset]
+        for (i in 1..size.toInt()) {
+            memory[address + i] = popStack()
         }
     }
 
@@ -273,21 +249,15 @@ object ReleaseCPU : CPU() {
         var address = fetchInt() + framePointer
         val indexCount = fetchInt()
 
-        var indexOffset = 0
+        for (i in 0 until indexCount - 1) {
+            address++
 
-        for (i in 0..<indexCount - 1) {
-            val subSize = memory[address + indexOffset + 1].toInt()
+            val subSize = memory[address].toInt()
 
-            val index = popStackInt()
-
-            indexOffset = (indexOffset + 1) + (index * subSize)
+            address += popStackInt() * (subSize + 1)
         }
 
-        val index = popStackInt()
-
-        indexOffset += index + 1
-
-        address += indexOffset
+        address += popStackInt() + 1
 
         memory[address] = popStack()
     }
@@ -296,32 +266,22 @@ object ReleaseCPU : CPU() {
         var address = fetchInt() + framePointer
         val indexCount = fetchInt()
 
-        var indexOffset = 0
+        for (i in 0 until indexCount - 1) {
+            address++
 
-        for (i in 0..<indexCount - 1) {
-            val subSize = memory[address + indexOffset + 1].toInt()
+            val subSize = memory[address].toInt()
 
-            val index = popStackInt()
-
-            indexOffset = (indexOffset + 1) + (index * subSize)
+            address += popStackInt() * (subSize + 1)
         }
 
-        val index = popStackInt()
-
-        indexOffset += index + 1
-
-        address += indexOffset
+        address += popStackInt() + 1
 
         val size = popStack()
 
-        val elements = FloatArray(size.toInt()) {
-            popStack()
-        }
-
         memory[address] = size
 
-        for (offset in elements.indices) {
-            memory[address + offset + 1] = elements[offset]
+        for (i in 1..size.toInt()) {
+            memory[address + i] = popStack()
         }
     }
 

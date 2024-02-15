@@ -5,6 +5,7 @@ import kakkoiichris.stackvm.cpu.DebugCPU
 import kakkoiichris.stackvm.cpu.ReleaseCPU
 import kakkoiichris.stackvm.lang.Allocator
 import kakkoiichris.stackvm.lang.Directory
+import kakkoiichris.stackvm.lang.Source
 import kakkoiichris.stackvm.lang.compiler.BytecodeFormatter
 import kakkoiichris.stackvm.lang.compiler.Compiler
 import kakkoiichris.stackvm.lang.lexer.Lexer
@@ -76,11 +77,9 @@ private enum class Mode {
 }
 
 private fun compile(srcFile: File): FloatArray {
-    val name = srcFile.name
+    val source = Source.of(srcFile)
 
-    val src = srcFile.readText()
-
-    val lexer = Lexer(name, src)
+    val lexer = Lexer(source)
 
     val parser = Parser(lexer, false)
 
@@ -101,7 +100,7 @@ private fun repl(cpu: CPU) {
 
         try {
             val (tokens, compileTime) = measureTimedValue {
-                val lexer = Lexer("<REPL>", src)
+                val lexer = Lexer(Source("<REPL>", src))
 
                 val parser = Parser(lexer, false)
 

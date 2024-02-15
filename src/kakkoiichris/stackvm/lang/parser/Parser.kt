@@ -2,6 +2,7 @@ package kakkoiichris.stackvm.lang.parser
 
 import kakkoiichris.stackvm.cpu.StandardLibrary
 import kakkoiichris.stackvm.lang.Directory
+import kakkoiichris.stackvm.lang.Source
 import kakkoiichris.stackvm.lang.lexer.Lexer
 import kakkoiichris.stackvm.lang.lexer.Location
 import kakkoiichris.stackvm.lang.lexer.Token
@@ -73,7 +74,7 @@ class Parser(lexer: Lexer, private val optimize: Boolean) {
     }
 
     private fun program(): Node.Program {
-        importFile(Node.Name(Location.none(), TokenType.Name("common")))
+        //TODO: importFile(Node.Name(Location.none(), TokenType.Name("common")))
 
         step()
 
@@ -111,14 +112,16 @@ class Parser(lexer: Lexer, private val optimize: Boolean) {
     }
 
     private fun importFile(name: Node.Name) {
-        val file = if (StandardLibrary.hasSource(name.name.value))
-            StandardLibrary.getSource(name.name.value)
+        val file = if (StandardLibrary.hasFile(name.name.value))
+            StandardLibrary.getFile(name.name.value)
         else
             Directory.getFile(name.name.value)
 
         if (!file.exists()) error("Cannot import file '${name.name.value}' @ ${name.location}!")
 
-        val lexer = Lexer(file.name, file.readText())
+        val source = Source.of(file)
+
+        val lexer = Lexer(source)
 
         lexers.push(lexer)
     }
@@ -669,7 +672,15 @@ class Parser(lexer: Lexer, private val optimize: Boolean) {
 
         val node = or()
 
-        if (dataType.subType != node.dataType) error("Cannot assign a value of type '${node.dataType}' to array of type '${dataType.subType}' @ $location!")
+        var indexType = dataType
+
+        repeat(expr.indices.size) {
+            val subArrayType = (indexType as? DataType.Array)?.subType ?: TODO("WRONG")
+
+            indexType = subArrayType
+        }
+
+        if (indexType != node.dataType) error("Cannot assign a value of type '${node.dataType}' to array of type '${dataType.subType}' @ $location!")
 
         return Node.SetIndex(location, expr.variable, expr.indices, node)
     }

@@ -39,10 +39,10 @@ object StandardLibrary {
         addMath()
     }
 
-    fun hasSource(name: String) =
+    fun hasFile(name: String) =
         name in sources
 
-    fun getSource(name: String) =
+    fun getFile(name: String) =
         sources[name]!!
 
     private fun addLang() {

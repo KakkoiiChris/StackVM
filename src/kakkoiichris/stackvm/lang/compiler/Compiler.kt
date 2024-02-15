@@ -61,7 +61,7 @@ class Compiler(private val program: Node.Program, private val optimize: Boolean)
             .map { it.resolveLast(last) ?: it }
             .toMutableList()
 
-    private val Float.iasm get() = IntermediateToken.Ok(Bytecode.Value(this))
+    private val Float.intermediate get() = IntermediateToken.Ok(Bytecode.Value(this))
 
     override fun visitProgram(node: Node.Program): List<IntermediateToken> {
         val iTokens = mutableListOf<IntermediateToken>()
@@ -79,7 +79,7 @@ class Compiler(private val program: Node.Program, private val optimize: Boolean)
         iTokens += visit(node.node)
 
         iTokens += STORE.intermediate
-        iTokens += node.address.toFloat().iasm
+        iTokens += node.address.toFloat().intermediate
 
         pos += 2
 
@@ -92,7 +92,7 @@ class Compiler(private val program: Node.Program, private val optimize: Boolean)
         iTokens += visit(node.node)
 
         iTokens += ASTORE.intermediate
-        iTokens += node.address.toFloat().iasm
+        iTokens += node.address.toFloat().intermediate
 
         pos += 2
 
@@ -293,7 +293,7 @@ class Compiler(private val program: Node.Program, private val optimize: Boolean)
         functions[node.id] = pos
 
         iTokens += FRAME.intermediate
-        iTokens += node.offset.toFloat().iasm
+        iTokens += node.offset.toFloat().intermediate
 
         pos += 2
 
@@ -303,7 +303,7 @@ class Compiler(private val program: Node.Program, private val optimize: Boolean)
 
                 else              -> STORE.intermediate
             }
-            iTokens += param.address.toFloat().iasm
+            iTokens += param.address.toFloat().intermediate
 
             pos += 2
         }
@@ -314,7 +314,7 @@ class Compiler(private val program: Node.Program, private val optimize: Boolean)
 
         if (iTokens.none { it is IntermediateToken.Ok && it.token == RET }) {
             iTokens += PUSH.intermediate
-            iTokens += 0F.iasm
+            iTokens += 0F.intermediate
             iTokens += RET.intermediate
 
             pos += 3
@@ -359,7 +359,7 @@ class Compiler(private val program: Node.Program, private val optimize: Boolean)
         val iTokens = mutableListOf<IntermediateToken>()
 
         iTokens += PUSH.intermediate
-        iTokens += node.value.value.iasm
+        iTokens += node.value.value.intermediate
 
         pos += 2
 
@@ -371,13 +371,13 @@ class Compiler(private val program: Node.Program, private val optimize: Boolean)
 
         for (c in node.value.value.reversed()) {
             iTokens += PUSH.intermediate
-            iTokens += c.code.toFloat().iasm
+            iTokens += c.code.toFloat().intermediate
 
             pos += 2
         }
 
         iTokens += PUSH.intermediate
-        iTokens += node.value.value.length.toFloat().iasm
+        iTokens += node.value.value.length.toFloat().intermediate
 
         pos += 2
 
@@ -398,7 +398,7 @@ class Compiler(private val program: Node.Program, private val optimize: Boolean)
         }
 
         iTokens += (if (node.dataType is DataType.Array) ALOAD else LOAD).intermediate
-        iTokens += node.address.toFloat().iasm
+        iTokens += node.address.toFloat().intermediate
 
         pos += 2
 
@@ -441,11 +441,11 @@ class Compiler(private val program: Node.Program, private val optimize: Boolean)
 
         if (node.variable.dataType is DataType.Array) {
             iTokens += SIZE.intermediate
-            iTokens += node.variable.address.toFloat().iasm
+            iTokens += node.variable.address.toFloat().intermediate
         }
         else {
             iTokens += PUSH.intermediate
-            iTokens += 1F.iasm
+            iTokens += 1F.intermediate
         }
 
         pos += 2
@@ -474,7 +474,7 @@ class Compiler(private val program: Node.Program, private val optimize: Boolean)
 
         iTokens += DUP.intermediate
         iTokens += STORE.intermediate
-        iTokens += node.variable.address.toFloat().iasm
+        iTokens += node.variable.address.toFloat().intermediate
 
         pos += 3
 
@@ -491,7 +491,7 @@ class Compiler(private val program: Node.Program, private val optimize: Boolean)
         val address = functions[node.id] ?: error("Function does not exist!")
 
         iTokens += CALL.intermediate
-        iTokens += address.toFloat().iasm
+        iTokens += address.toFloat().intermediate
 
         pos += 2
 
@@ -506,7 +506,7 @@ class Compiler(private val program: Node.Program, private val optimize: Boolean)
         }
 
         iTokens += SYS.intermediate
-        iTokens += node.id.toFloat().iasm
+        iTokens += node.id.toFloat().intermediate
 
         pos += 2
 
@@ -534,8 +534,8 @@ class Compiler(private val program: Node.Program, private val optimize: Boolean)
         }
 
         iTokens += (if (node.indices.size < node.arrayType.dimension) IALOAD else ILOAD).intermediate
-        iTokens += origin.toFloat().iasm
-        iTokens += indices.size.toFloat().iasm
+        iTokens += origin.toFloat().intermediate
+        iTokens += indices.size.toFloat().intermediate
         pos += 3
 
         return iTokens
@@ -563,9 +563,11 @@ class Compiler(private val program: Node.Program, private val optimize: Boolean)
         else {
             ISTORE
         }.intermediate
-        iTokens += origin.toFloat().iasm
-        iTokens += indices.size.toFloat().iasm
-        pos += 3
+        iTokens += origin.toFloat().intermediate
+        iTokens += indices.size.toFloat().intermediate
+        iTokens += PUSH.intermediate
+        iTokens += 0F.intermediate
+        pos += 5
 
         return iTokens
     }

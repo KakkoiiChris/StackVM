@@ -1,8 +1,9 @@
 package kakkoiichris.stackvm.lang.lexer
 
+import kakkoiichris.stackvm.lang.Source
 import kakkoiichris.stackvm.lang.parser.DataType
 
-class Lexer(private val file: String, private val src: String) : Iterator<Token> {
+class Lexer(private val source: Source) : Iterator<Token> {
     companion object {
         private const val NUL = '\u0000'
     }
@@ -11,7 +12,7 @@ class Lexer(private val file: String, private val src: String) : Iterator<Token>
     private var row = 1
     private var col = 1
 
-    override fun hasNext() = pos <= src.length
+    override fun hasNext() = pos <= source.text.length
 
     override fun next(): Token {
         while (!match('\u0000')) {
@@ -55,10 +56,10 @@ class Lexer(private val file: String, private val src: String) : Iterator<Token>
         return Token(here(), TokenType.End)
     }
 
-    private fun here() = Location(file, row, col)
+    private fun here() = Location(source.name, row, col)
 
-    private fun peek(offset: Int = 0) = if (pos + offset < src.length)
-        src[pos + offset]
+    private fun peek(offset: Int = 0) = if (pos + offset < source.text.length)
+        source.text[pos + offset]
     else
         NUL
 
