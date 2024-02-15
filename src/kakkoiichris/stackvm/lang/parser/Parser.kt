@@ -226,15 +226,17 @@ class Parser(lexer: Lexer, private val optimize: Boolean) {
 
         var type = if (skip(TokenType.Symbol.COLON)) type() else null
 
-        mustSkip(TokenType.Symbol.EQUAL)
+        val node = if (skip(TokenType.Symbol.EQUAL)) expr() else null
 
-        val node = expr()
+        if (type == null && node == null) error("Variable declaration must either be explicitly typed or assigned to @ $location!")
 
-        if (type == null) {
+        if (type == null && node != null) {
             type = Node.Type(Location.none(), TokenType.Type(node.dataType!!))
         }
 
-        if (type.dataType != node.dataType) error("Cannot declare a variable of type '${type.dataType}' with value of type '${node.dataType}' @ ${node.location}!")
+        type!!
+
+        if (node != null && type.dataType != node.dataType) error("Cannot declare a variable of type '${type.dataType}' with value of type '${node.dataType}' @ ${node.location}!")
 
         val variable = createVariable(constant, name, type.dataType)
 

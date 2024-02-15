@@ -76,7 +76,9 @@ class Compiler(private val program: Node.Program, private val optimize: Boolean)
     override fun visitDeclareSingle(node: Node.DeclareSingle): List<IntermediateToken> {
         val iTokens = mutableListOf<IntermediateToken>()
 
-        iTokens += visit(node.node)
+        if (node.node != null) {
+            iTokens += visit(node.node)
+        }
 
         iTokens += STORE.intermediate
         iTokens += node.address.toFloat().intermediate
@@ -89,7 +91,9 @@ class Compiler(private val program: Node.Program, private val optimize: Boolean)
     override fun visitDeclareArray(node: Node.DeclareArray): List<IntermediateToken> {
         val iTokens = mutableListOf<IntermediateToken>()
 
-        iTokens += visit(node.node)
+        if (node.node != null) {
+            iTokens += visit(node.node)
+        }
 
         iTokens += ASTORE.intermediate
         iTokens += node.address.toFloat().intermediate

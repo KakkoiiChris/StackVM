@@ -84,7 +84,7 @@ interface Node {
         override val location: Location,
         val variable: Variable,
         val id: Int,
-        val node: Node
+        val node: Node?
     ) : Node {
         var address = -1
 
@@ -96,7 +96,7 @@ interface Node {
         override val location: Location,
         val variable: Variable,
         val id: Int,
-        val node: Node
+        val node: Node?
     ) : Node {
         var address = -1
 

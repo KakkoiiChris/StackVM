@@ -70,13 +70,17 @@ object Allocator : Node.Visitor<Unit> {
     override fun visitDeclareSingle(node: Node.DeclareSingle) {
         visit(node.variable)
 
-        visit(node.node)
+        if (node.node != null) {
+            visit(node.node)
+        }
     }
 
     override fun visitDeclareArray(node: Node.DeclareArray) {
         visit(node.variable)
 
-        visit(node.node)
+        if (node.node != null) {
+            visit(node.node)
+        }
     }
 
     override fun visitIf(node: Node.If) {
