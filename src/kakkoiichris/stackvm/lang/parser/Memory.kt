@@ -46,7 +46,7 @@ object Memory {
         return null
     }
 
-    fun peek(): Scope {
+    private fun peek(): Scope {
         return scopes.peek()
     }
 

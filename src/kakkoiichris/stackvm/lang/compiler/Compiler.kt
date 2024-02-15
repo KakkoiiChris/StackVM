@@ -4,8 +4,10 @@ import kakkoiichris.stackvm.lang.compiler.Bytecode.Instruction.*
 import kakkoiichris.stackvm.lang.parser.DataType
 import kakkoiichris.stackvm.lang.parser.Node
 
-class Compiler(private val program: Node.Program, private val optimize: Boolean) :
-    Node.Visitor<List<IntermediateToken>> {
+class Compiler(
+    private val program: Node.Program,
+    private val optimize: Boolean
+) : Node.Visitor<List<Token>> {
     private var pos = 0
 
     private val functions = mutableMapOf<Int, Int>()
@@ -16,13 +18,13 @@ class Compiler(private val program: Node.Program, private val optimize: Boolean)
             .toFloatArray()
 
     fun convert(): List<Bytecode> {
-        val iTokens = visit(program).toMutableList()
+        val tokens = visit(program).toMutableList()
 
-        val subTokens = iTokens.filterIsInstance<IntermediateToken.Ok>()
+        val subTokens = tokens.filterIsInstance<Token.Ok>()
 
-        if (iTokens.size > subTokens.size) error("Unresolved intermediate token!")
+        if (tokens.size > subTokens.size) error("Unresolved intermediate token!")
 
-        val tokens = subTokens
+        val bytecodes = subTokens
             .map { it.token }
             .toMutableList()
             .apply { add(HALT) }
@@ -30,12 +32,12 @@ class Compiler(private val program: Node.Program, private val optimize: Boolean)
         if (optimize) {
             var i = 0
 
-            while (i < tokens.lastIndex) {
-                val a = tokens[i]
-                val b = tokens[i + 1]
+            while (i < bytecodes.lastIndex) {
+                val a = bytecodes[i]
+                val b = bytecodes[i + 1]
 
                 if (a === b && a in listOf(NOT, NEG)) {
-                    repeat(2) { tokens.removeAt(i) }
+                    repeat(2) { bytecodes.removeAt(i) }
                 }
                 else {
                     i++
@@ -43,91 +45,99 @@ class Compiler(private val program: Node.Program, private val optimize: Boolean)
             }
         }
 
-        return tokens
+        return bytecodes
     }
 
-    private fun resolveStartAndEnd(iTokens: List<IntermediateToken>, start: Float, end: Float) =
-        iTokens
+    private operator fun MutableList<Token>.plusAssign(x: Bytecode) {
+        add(x.intermediate)
+
+        pos++
+    }
+
+    private operator fun MutableList<Token>.plusAssign(x: Float) {
+        add(x.intermediate)
+
+        pos++
+    }
+
+    private operator fun MutableList<Token>.plusAssign(x: Int) {
+        add(x.toFloat().intermediate)
+
+        pos++
+    }
+
+    private fun resolveStartAndEnd(tokens: List<Token>, start: Float, end: Float) =
+        tokens
             .map { it.resolveStartAndEnd(start, end) ?: it }
             .toMutableList()
 
-    private fun resolveLabelStartAndEnd(iTokens: List<IntermediateToken>, label: Node.Name, start: Float, end: Float) =
-        iTokens
+    private fun resolveLabelStartAndEnd(tokens: List<Token>, label: Node.Name, start: Float, end: Float) =
+        tokens
             .map { it.resolveLabelStartAndEnd(label, start, end) ?: it }
             .toMutableList()
 
-    private fun resolveLast(iTokens: List<IntermediateToken>, last: Float) =
-        iTokens
+    private fun resolveLast(tokens: List<Token>, last: Float) =
+        tokens
             .map { it.resolveLast(last) ?: it }
             .toMutableList()
 
-    private val Float.intermediate get() = IntermediateToken.Ok(Bytecode.Value(this))
+    private val Float.intermediate get() = Token.Ok(Bytecode.Value(this))
 
-    override fun visitProgram(node: Node.Program): List<IntermediateToken> {
-        val iTokens = mutableListOf<IntermediateToken>()
+    override fun visitProgram(node: Node.Program): List<Token> {
+        val tokens = mutableListOf<Token>()
 
         for (statement in node.statements) {
-            iTokens += visit(statement)
+            tokens += visit(statement)
         }
 
-        return iTokens
+        return tokens
     }
 
-    override fun visitDeclareSingle(node: Node.DeclareSingle): List<IntermediateToken> {
-        val iTokens = mutableListOf<IntermediateToken>()
+    override fun visitDeclareSingle(node: Node.DeclareSingle): List<Token> {
+        val tokens = mutableListOf<Token>()
 
         if (node.node != null) {
-            iTokens += visit(node.node)
+            tokens += visit(node.node)
         }
 
-        iTokens += STORE.intermediate
-        iTokens += node.address.toFloat().intermediate
+        tokens += STORE
+        tokens += node.address.toFloat()
 
-        pos += 2
-
-        return iTokens
+        return tokens
     }
 
-    override fun visitDeclareArray(node: Node.DeclareArray): List<IntermediateToken> {
-        val iTokens = mutableListOf<IntermediateToken>()
+    override fun visitDeclareArray(node: Node.DeclareArray): List<Token> {
+        val tokens = mutableListOf<Token>()
 
         if (node.node != null) {
-            iTokens += visit(node.node)
+            tokens += visit(node.node)
         }
         else {
             val sizes = (node.variable.dataType as DataType.Array).sizes
 
-            val da = getDefaultArray(sizes)
-
-            iTokens += da
+            tokens += getDefaultArray(sizes)
         }
 
-        iTokens += ASTORE.intermediate
-        iTokens += node.address.toFloat().intermediate
+        tokens += ASTORE
+        tokens += node.address.toFloat()
 
-        pos += 2
-
-        return iTokens
+        return tokens
     }
 
     private fun getDefaultArray(sizes: IntArray) =
         getSubArray(sizes[0], sizes.drop(1).toIntArray())
 
-    private fun getSubArray(size: Int, rest: IntArray): List<IntermediateToken> {
-        val iTokens = mutableListOf<IntermediateToken>()
+    private fun getSubArray(size: Int, rest: IntArray): List<Token> {
+        val tokens = mutableListOf<Token>()
 
         if (rest.isEmpty()) {
             repeat(size) {
-                iTokens += PUSH.intermediate
-                iTokens += 0F.intermediate
-
-                pos += 2
+                tokens += PUSH
+                tokens += 0F
             }
 
-            iTokens += PUSH.intermediate
-            iTokens += size.toFloat().intermediate
-
-            pos += 2
+            tokens += PUSH
+            tokens += size
         }
         else {
             var totalSize = 0
@@ -137,20 +147,18 @@ class Compiler(private val program: Node.Program, private val optimize: Boolean)
 
                 totalSize += subArray.size / 2
 
-                iTokens += subArray
+                tokens += subArray
             }
 
-            iTokens += PUSH.intermediate
-            iTokens += totalSize.toFloat().intermediate
-
-            pos += 2
+            tokens += PUSH
+            tokens += totalSize
         }
 
-        return iTokens
+        return tokens
     }
 
-    override fun visitIf(node: Node.If): List<IntermediateToken> {
-        var iTokens = mutableListOf<IntermediateToken>()
+    override fun visitIf(node: Node.If): List<Token> {
+        var tokens = mutableListOf<Token>()
 
         var last = -1F
 
@@ -160,411 +168,351 @@ class Compiler(private val program: Node.Program, private val optimize: Boolean)
             val start = pos.toFloat()
 
             if (condition != null) {
-                iTokens += visit(condition)
+                tokens += visit(condition)
 
-                iTokens += NOT.intermediate
-                iTokens += JIF.intermediate
-                iTokens += IntermediateToken.AwaitEnd()
-
-                pos += 3
+                tokens += NOT
+                tokens += JIF
+                tokens += Token.AwaitEnd()
             }
 
             for (stmt in body) {
-                iTokens += visit(stmt)
+                tokens += visit(stmt)
             }
 
             if (i != node.branches.lastIndex) {
-                iTokens += JMP.intermediate
-                iTokens += IntermediateToken.AwaitLast()
-
-                pos += 2
+                tokens += JMP
+                tokens += Token.AwaitLast()
             }
 
             val end = pos.toFloat()
             last = end
 
-            iTokens = resolveStartAndEnd(iTokens, start, end)
+            tokens = resolveStartAndEnd(tokens, start, end)
         }
 
-        iTokens = resolveLast(iTokens, last)
+        tokens = resolveLast(tokens, last)
 
-        return iTokens
+        return tokens
     }
 
-    override fun visitWhile(node: Node.While): List<IntermediateToken> {
-        var iTokens = mutableListOf<IntermediateToken>()
+    override fun visitWhile(node: Node.While): List<Token> {
+        var tokens = mutableListOf<Token>()
 
         val start = pos.toFloat()
 
-        iTokens += visit(node.condition)
+        tokens += visit(node.condition)
 
-        iTokens += NOT.intermediate
-        iTokens += JIF.intermediate
-        iTokens += IntermediateToken.AwaitEnd()
-
-        pos += 3
+        tokens += NOT
+        tokens += JIF
+        tokens += Token.AwaitEnd()
 
         for (stmt in node.body) {
-            iTokens += visit(stmt)
+            tokens += visit(stmt)
         }
 
-        iTokens += JMP.intermediate
-        iTokens += IntermediateToken.AwaitStart()
-
-        pos += 2
+        tokens += JMP
+        tokens += Token.AwaitStart()
 
         val end = pos.toFloat()
 
-        iTokens = resolveStartAndEnd(iTokens, start, end)
+        tokens = resolveStartAndEnd(tokens, start, end)
 
         val label = node.label
 
         if (label != null) {
-            iTokens = resolveLabelStartAndEnd(iTokens, label, start, end)
+            tokens = resolveLabelStartAndEnd(tokens, label, start, end)
         }
 
-        return iTokens
+        return tokens
     }
 
-    override fun visitDo(node: Node.Do): List<IntermediateToken> {
-        var iTokens = mutableListOf<IntermediateToken>()
+    override fun visitDo(node: Node.Do): List<Token> {
+        var tokens = mutableListOf<Token>()
 
         val start = pos.toFloat()
 
         for (stmt in node.body) {
-            iTokens += visit(stmt)
+            tokens += visit(stmt)
         }
 
-        iTokens += visit(node.condition)
+        tokens += visit(node.condition)
 
-        iTokens += JIF.intermediate
-        iTokens += IntermediateToken.AwaitStart()
-
-        pos += 2
+        tokens += JIF
+        tokens += Token.AwaitStart()
 
         val end = pos.toFloat()
 
-        iTokens = resolveStartAndEnd(iTokens, start, end)
+        tokens = resolveStartAndEnd(tokens, start, end)
 
         val label = node.label
 
         if (label != null) {
-            iTokens = resolveLabelStartAndEnd(iTokens, label, start, end)
+            tokens = resolveLabelStartAndEnd(tokens, label, start, end)
         }
 
-        return iTokens
+        return tokens
     }
 
-    override fun visitFor(node: Node.For): List<IntermediateToken> {
-        var iTokens = mutableListOf<IntermediateToken>()
+    override fun visitFor(node: Node.For): List<Token> {
+        var tokens = mutableListOf<Token>()
 
         if (node.init != null) {
-            iTokens += visit(node.init)
+            tokens += visit(node.init)
         }
 
         val start = pos.toFloat()
 
         if (node.condition != null) {
-            iTokens += visit(node.condition)
+            tokens += visit(node.condition)
 
-            iTokens += NOT.intermediate
-            iTokens += JIF.intermediate
-            iTokens += IntermediateToken.AwaitEnd()
-
-            pos += 3
+            tokens += NOT
+            tokens += JIF
+            tokens += Token.AwaitEnd()
         }
 
         for (stmt in node.body) {
-            iTokens += visit(stmt)
+            tokens += visit(stmt)
         }
 
         if (node.increment != null) {
-            iTokens += visit(node.increment)
+            tokens += visit(node.increment)
 
-            iTokens += POP.intermediate
-
-            pos++
+            tokens += POP
         }
 
-        iTokens += JMP.intermediate
-        iTokens += IntermediateToken.AwaitStart()
-
-        pos += 2
+        tokens += JMP
+        tokens += Token.AwaitStart()
 
         val end = pos.toFloat()
 
-        iTokens = resolveStartAndEnd(iTokens, start, end)
+        tokens = resolveStartAndEnd(tokens, start, end)
 
         if (node.label != null) {
-            iTokens = resolveLabelStartAndEnd(iTokens, node.label, start, end)
+            tokens = resolveLabelStartAndEnd(tokens, node.label, start, end)
         }
 
-        return iTokens
+        return tokens
     }
 
-    override fun visitBreak(node: Node.Break): List<IntermediateToken> {
+    override fun visitBreak(node: Node.Break): List<Token> {
         val label = node.label
 
-        val iTokens = mutableListOf<IntermediateToken>()
+        val tokens = mutableListOf<Token>()
 
-        iTokens += JMP.intermediate
-        iTokens += if (label != null) IntermediateToken.AwaitLabelEnd(label) else IntermediateToken.AwaitEnd()
+        tokens += JMP
+        tokens += if (label != null) Token.AwaitLabelEnd(label) else Token.AwaitEnd()
 
-        pos += 2
-
-        return iTokens
+        return tokens
     }
 
-    override fun visitContinue(node: Node.Continue): List<IntermediateToken> {
+    override fun visitContinue(node: Node.Continue): List<Token> {
         val label = node.label
 
-        val iTokens = mutableListOf<IntermediateToken>()
+        val tokens = mutableListOf<Token>()
 
-        iTokens += JMP.intermediate
-        iTokens += if (label != null) IntermediateToken.AwaitLabelStart(label) else IntermediateToken.AwaitStart()
+        tokens += JMP
+        tokens += if (label != null) Token.AwaitLabelStart(label) else Token.AwaitStart()
 
-        pos += 2
-
-        return iTokens
+        return tokens
     }
 
-    override fun visitFunction(node: Node.Function): List<IntermediateToken> {
+    override fun visitFunction(node: Node.Function): List<Token> {
         if (node.isNative) return emptyList()
 
-        var iTokens = mutableListOf<IntermediateToken>()
+        var tokens = mutableListOf<Token>()
 
-        iTokens += JMP.intermediate
-        iTokens += IntermediateToken.AwaitEnd()
-
-        pos += 2
+        tokens += JMP
+        tokens += Token.AwaitEnd()
 
         val start = pos.toFloat()
 
         functions[node.id] = pos
 
-        iTokens += FRAME.intermediate
-        iTokens += node.offset.toFloat().intermediate
-
-        pos += 2
+        tokens += FRAME
+        tokens += node.offset
 
         for (param in node.params) {
-            iTokens += when (param.dataType) {
-                is DataType.Array -> ASTORE.intermediate
-
-                else              -> STORE.intermediate
-            }
-            iTokens += param.address.toFloat().intermediate
-
-            pos += 2
+            tokens += if (param.dataType is DataType.Array) ASTORE else STORE
+            tokens += param.address
         }
 
         for (stmt in node.body) {
-            iTokens += visit(stmt)
+            tokens += visit(stmt)
         }
 
-        if (iTokens.none { it is IntermediateToken.Ok && it.token == RET }) {
-            iTokens += PUSH.intermediate
-            iTokens += 0F.intermediate
-            iTokens += RET.intermediate
-
-            pos += 3
+        if (tokens.none { it is Token.Ok && it.token == RET }) {
+            tokens += PUSH
+            tokens += 0F
+            tokens += RET
         }
 
         val end = pos.toFloat()
 
-        iTokens = resolveStartAndEnd(iTokens, start, end)
+        tokens = resolveStartAndEnd(tokens, start, end)
 
-        return iTokens
+        return tokens
     }
 
-    override fun visitReturn(node: Node.Return): List<IntermediateToken> {
-        val iTokens = mutableListOf<IntermediateToken>()
+    override fun visitReturn(node: Node.Return): List<Token> {
+        val tokens = mutableListOf<Token>()
 
         val subNode = node.node
 
         if (subNode != null) {
-            iTokens += visit(subNode)
+            tokens += visit(subNode)
         }
 
-        iTokens += RET.intermediate
+        tokens += RET
 
-        pos++
-
-        return iTokens
+        return tokens
     }
 
-    override fun visitExpression(node: Node.Expression): List<IntermediateToken> {
-        val iTokens = mutableListOf<IntermediateToken>()
+    override fun visitExpression(node: Node.Expression): List<Token> {
+        val tokens = mutableListOf<Token>()
 
-        iTokens += visit(node.node)
+        tokens += visit(node.node)
 
-        iTokens += POP.intermediate
+        tokens += POP
 
-        pos++
-
-        return iTokens
+        return tokens
     }
 
-    override fun visitValue(node: Node.Value): List<IntermediateToken> {
-        val iTokens = mutableListOf<IntermediateToken>()
+    override fun visitValue(node: Node.Value): List<Token> {
+        val tokens = mutableListOf<Token>()
 
-        iTokens += PUSH.intermediate
-        iTokens += node.value.value.intermediate
+        tokens += PUSH
+        tokens += node.value.value
 
-        pos += 2
-
-        return iTokens
+        return tokens
     }
 
-    override fun visitString(node: Node.String): List<IntermediateToken> {
-        val iTokens = mutableListOf<IntermediateToken>()
+    override fun visitString(node: Node.String): List<Token> {
+        val tokens = mutableListOf<Token>()
 
         for (c in node.value.value.reversed()) {
-            iTokens += PUSH.intermediate
-            iTokens += c.code.toFloat().intermediate
-
-            pos += 2
+            tokens += PUSH
+            tokens += c.code
         }
 
-        iTokens += PUSH.intermediate
-        iTokens += node.value.value.length.toFloat().intermediate
+        tokens += PUSH
+        tokens += node.value.value.length
 
-        pos += 2
-
-        return iTokens
+        return tokens
     }
 
-    override fun visitName(node: Node.Name): List<IntermediateToken> {
+    override fun visitName(node: Node.Name): List<Token> {
         error("Should not visit Name!")
     }
 
-    override fun visitVariable(node: Node.Variable): List<IntermediateToken> {
-        val iTokens = mutableListOf<IntermediateToken>()
+    override fun visitVariable(node: Node.Variable): List<Token> {
+        val tokens = mutableListOf<Token>()
 
         if (node.isGlobal) {
-            iTokens += GLOBAL.intermediate
-
-            pos++
+            tokens += GLOBAL
         }
 
-        iTokens += (if (node.dataType is DataType.Array) ALOAD else LOAD).intermediate
-        iTokens += node.address.toFloat().intermediate
+        tokens += if (node.dataType is DataType.Array) ALOAD else LOAD
+        tokens += node.address
 
-        pos += 2
-
-        return iTokens
+        return tokens
     }
 
-    override fun visitType(node: Node.Type): List<IntermediateToken> {
+    override fun visitType(node: Node.Type): List<Token> {
         error("Should not visit Type!")
     }
 
-    override fun visitArray(node: Node.Array): List<IntermediateToken> {
-        val iTokens = mutableListOf<IntermediateToken>()
+    override fun visitArray(node: Node.Array): List<Token> {
+        val tokens = mutableListOf<Token>()
 
         for (element in node.elements.reversed()) {
-            iTokens += visit(element)
+            tokens += visit(element)
         }
 
-        iTokens += PUSH.intermediate
-        iTokens += Bytecode.Value(node.dataType.offset.toFloat() - 1).intermediate
+        tokens += PUSH
+        tokens += node.dataType.offset - 1
 
-        pos += 2
-
-        return iTokens
+        return tokens
     }
 
-    override fun visitUnary(node: Node.Unary): List<IntermediateToken> {
-        val iTokens = mutableListOf<IntermediateToken>()
+    override fun visitUnary(node: Node.Unary): List<Token> {
+        val tokens = mutableListOf<Token>()
 
-        iTokens += visit(node.operand)
+        tokens += visit(node.operand)
 
-        iTokens += node.operator.instruction.intermediate
+        tokens += node.operator.instruction
 
-        pos++
-
-        return iTokens
+        return tokens
     }
 
-    override fun visitSize(node: Node.Size): List<IntermediateToken> {
-        val iTokens = mutableListOf<IntermediateToken>()
+    override fun visitSize(node: Node.Size): List<Token> {
+        val tokens = mutableListOf<Token>()
 
         if (node.variable.dataType is DataType.Array) {
-            iTokens += SIZE.intermediate
-            iTokens += node.variable.address.toFloat().intermediate
+            tokens += SIZE
+            tokens += node.variable.address
         }
         else {
-            iTokens += PUSH.intermediate
-            iTokens += 1F.intermediate
+            tokens += PUSH
+            tokens += 1F
         }
 
-        pos += 2
-
-        return iTokens
+        return tokens
     }
 
-    override fun visitBinary(node: Node.Binary): List<IntermediateToken> {
-        val iTokens = mutableListOf<IntermediateToken>()
+    override fun visitBinary(node: Node.Binary): List<Token> {
+        val tokens = mutableListOf<Token>()
 
-        iTokens += visit(node.operandLeft)
-        iTokens += visit(node.operandRight)
+        tokens += visit(node.operandLeft)
+        tokens += visit(node.operandRight)
 
-        val additional = node.operator.instructions.map { it.intermediate }
-        iTokens += additional
+        node.operator.instructions
+            .forEach { tokens += it }
 
-        pos += additional.size
-
-        return iTokens
+        return tokens
     }
 
-    override fun visitAssign(node: Node.Assign): List<IntermediateToken> {
-        val iTokens = mutableListOf<IntermediateToken>()
+    override fun visitAssign(node: Node.Assign): List<Token> {
+        val tokens = mutableListOf<Token>()
 
-        iTokens += visit(node.node)
+        tokens += visit(node.node)
 
-        iTokens += DUP.intermediate
-        iTokens += STORE.intermediate
-        iTokens += node.variable.address.toFloat().intermediate
+        tokens += DUP
+        tokens += STORE
+        tokens += node.variable.address
 
-        pos += 3
-
-        return iTokens
+        return tokens
     }
 
-    override fun visitInvoke(node: Node.Invoke): List<IntermediateToken> {
-        val iTokens = mutableListOf<IntermediateToken>()
+    override fun visitInvoke(node: Node.Invoke): List<Token> {
+        val tokens = mutableListOf<Token>()
 
         for (arg in node.args.reversed()) {
-            iTokens += visit(arg)
+            tokens += visit(arg)
         }
 
         val address = functions[node.id]!!
 
-        iTokens += CALL.intermediate
-        iTokens += address.toFloat().intermediate
+        tokens += CALL
+        tokens += address
 
-        pos += 2
-
-        return iTokens
+        return tokens
     }
 
-    override fun visitSystemCall(node: Node.SystemCall): List<IntermediateToken> {
-        val iTokens = mutableListOf<IntermediateToken>()
+    override fun visitSystemCall(node: Node.SystemCall): List<Token> {
+        val tokens = mutableListOf<Token>()
 
         for (arg in node.args.reversed()) {
-            iTokens += visit(arg)
+            tokens += visit(arg)
         }
 
-        iTokens += SYS.intermediate
-        iTokens += node.id.toFloat().intermediate
+        tokens += SYS
+        tokens += node.id
 
-        pos += 2
-
-        return iTokens
+        return tokens
     }
 
-    override fun visitGetIndex(node: Node.GetIndex): List<IntermediateToken> {
-        val iTokens = mutableListOf<IntermediateToken>()
+    override fun visitGetIndex(node: Node.GetIndex): List<Token> {
+        val tokens = mutableListOf<Token>()
 
         val origin = node.variable.address
 
@@ -574,25 +522,22 @@ class Compiler(private val program: Node.Program, private val optimize: Boolean)
             .map { visit(it) }
 
         for (index in indices) {
-            iTokens += index
+            tokens += index
         }
 
         if (node.variable.isGlobal) {
-            iTokens += GLOBAL.intermediate
-
-            pos++
+            tokens += GLOBAL
         }
 
-        iTokens += (if (node.indices.size < node.arrayType.dimension) IALOAD else ILOAD).intermediate
-        iTokens += origin.toFloat().intermediate
-        iTokens += indices.size.toFloat().intermediate
-        pos += 3
+        tokens += if (node.indices.size < node.arrayType.dimension) IALOAD else ILOAD
+        tokens += origin
+        tokens += indices.size
 
-        return iTokens
+        return tokens
     }
 
-    override fun visitSetIndex(node: Node.SetIndex): List<IntermediateToken> {
-        val iTokens = mutableListOf<IntermediateToken>()
+    override fun visitSetIndex(node: Node.SetIndex): List<Token> {
+        val tokens = mutableListOf<Token>()
 
         val origin = node.variable.address
 
@@ -601,24 +546,18 @@ class Compiler(private val program: Node.Program, private val optimize: Boolean)
             .reversed()
             .map { visit(it) }
 
-        iTokens += visit(node.value)
+        tokens += visit(node.value)
 
         for (index in indices) {
-            iTokens += index
+            tokens += index
         }
 
-        iTokens += if (node.indices.size < node.arrayType.dimension) {
-            IASTORE
-        }
-        else {
-            ISTORE
-        }.intermediate
-        iTokens += origin.toFloat().intermediate
-        iTokens += indices.size.toFloat().intermediate
-        iTokens += PUSH.intermediate
-        iTokens += 0F.intermediate
-        pos += 5
+        tokens += if (node.indices.size < node.arrayType.dimension) IASTORE else ISTORE
+        tokens += origin
+        tokens += indices.size
+        tokens += PUSH
+        tokens += 0F
 
-        return iTokens
+        return tokens
     }
 }

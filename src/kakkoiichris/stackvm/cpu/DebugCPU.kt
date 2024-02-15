@@ -4,7 +4,6 @@ import kakkoiichris.stackvm.util.bool
 import kakkoiichris.stackvm.util.float
 import kakkoiichris.stackvm.util.toAddress
 import kakkoiichris.stackvm.util.truncate
-import kotlin.math.absoluteValue
 
 object DebugCPU : CPU() {
     override fun initialize(instructions: FloatArray) {

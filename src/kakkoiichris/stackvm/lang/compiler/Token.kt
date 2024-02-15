@@ -2,14 +2,14 @@ package kakkoiichris.stackvm.lang.compiler
 
 import kakkoiichris.stackvm.lang.parser.Node
 
-interface IntermediateToken {
+interface Token {
     fun resolveStartAndEnd(start: Float, end: Float): Ok? = null
 
     fun resolveLabelStartAndEnd(label: Node.Name, start: Float, end: Float): Ok? = null
 
     fun resolveLast(last: Float): Ok? = null
 
-    class Ok(val token: Bytecode) : IntermediateToken {
+    class Ok(val token: Bytecode) : Token {
         override fun resolveStartAndEnd(start: Float, end: Float) = this
 
         override fun resolveLast(last: Float) = this
@@ -18,7 +18,7 @@ interface IntermediateToken {
             "Ok<$token>"
     }
 
-    class AwaitStart(private val offset: Int = 0) : IntermediateToken {
+    class AwaitStart(private val offset: Int = 0) : Token {
         override fun resolveStartAndEnd(start: Float, end: Float) =
             Bytecode.Value(start + offset).intermediate
 
@@ -26,7 +26,7 @@ interface IntermediateToken {
             "AwaitStart<$offset>"
     }
 
-    class AwaitEnd(private val offset: Int = 0) : IntermediateToken {
+    class AwaitEnd(private val offset: Int = 0) : Token {
         override fun resolveStartAndEnd(start: Float, end: Float) =
             Bytecode.Value(end + offset).intermediate
 
@@ -34,7 +34,7 @@ interface IntermediateToken {
             "AwaitEnd<$offset>"
     }
 
-    class AwaitLast(private val offset: Int = 0) : IntermediateToken {
+    class AwaitLast(private val offset: Int = 0) : Token {
         override fun resolveLast(last: Float) =
             Bytecode.Value(last + offset).intermediate
 
@@ -42,7 +42,7 @@ interface IntermediateToken {
             "AwaitLast<$offset>"
     }
 
-    class AwaitLabelStart(private val label: Node.Name, private val offset: Int = 0) : IntermediateToken {
+    class AwaitLabelStart(private val label: Node.Name, private val offset: Int = 0) : Token {
         override fun resolveLabelStartAndEnd(label: Node.Name, start: Float, end: Float) =
             if (this.label.name.value == label.name.value)
                 Bytecode.Value(start + offset).intermediate
@@ -53,7 +53,7 @@ interface IntermediateToken {
             "AwaitLabelStart<$offset, ${label.name.value}>"
     }
 
-    class AwaitLabelEnd(private val label: Node.Name, private val offset: Int = 0) : IntermediateToken {
+    class AwaitLabelEnd(private val label: Node.Name, private val offset: Int = 0) : Token {
         override fun resolveLabelStartAndEnd(label: Node.Name, start: Float, end: Float) =
             if (this.label.name.value == label.name.value)
                 Bytecode.Value(end + offset).intermediate
