@@ -2,6 +2,7 @@ package kakkoiichris.stackvm.cpu
 
 import kakkoiichris.stackvm.util.bool
 import kakkoiichris.stackvm.util.float
+import kakkoiichris.stackvm.util.toAddress
 import kakkoiichris.stackvm.util.truncate
 import kotlin.math.absoluteValue
 
@@ -36,12 +37,6 @@ object DebugCPU : CPU() {
 
         pushStack(0F)
     }
-
-    private fun Int.toAddress() =
-        if (this < 0)
-            "-0x${absoluteValue.toString(16)}"
-        else
-            "0x${toString(16)}"
 
     override fun run(): Float {
         while (running) {

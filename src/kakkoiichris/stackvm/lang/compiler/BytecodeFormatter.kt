@@ -1,6 +1,7 @@
 package kakkoiichris.stackvm.lang.compiler
 
 import kakkoiichris.stackvm.lang.compiler.Bytecode.Instruction.*
+import kakkoiichris.stackvm.util.toAddress
 import kakkoiichris.stackvm.util.truncate
 
 object BytecodeFormatter {
@@ -42,7 +43,7 @@ object BytecodeFormatter {
                 }
             )
 
-            appendLine("; %03d".format(pos))
+            appendLine("; ${pos.toAddress()}")
         }
     }
 }

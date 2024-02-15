@@ -23,6 +23,15 @@ sealed interface DataType {
                 return 1
             }
 
+        val sizes: IntArray
+            get() {
+                if (subType is Array) {
+                    return intArrayOf(*subType.sizes, size)
+                }
+
+                return intArrayOf(size)
+            }
+
         override fun toString() =
             "$subType[$size]"
     }

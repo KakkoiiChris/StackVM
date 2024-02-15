@@ -94,11 +94,57 @@ class Compiler(private val program: Node.Program, private val optimize: Boolean)
         if (node.node != null) {
             iTokens += visit(node.node)
         }
+        else {
+            val sizes = (node.variable.dataType as DataType.Array).sizes
+
+            val da = getDefaultArray(sizes)
+
+            iTokens += da
+        }
 
         iTokens += ASTORE.intermediate
         iTokens += node.address.toFloat().intermediate
 
         pos += 2
+
+        return iTokens
+    }
+
+    private fun getDefaultArray(sizes: IntArray) =
+        getSubArray(sizes[0], sizes.drop(1).toIntArray())
+
+    private fun getSubArray(size: Int, rest: IntArray): List<IntermediateToken> {
+        val iTokens = mutableListOf<IntermediateToken>()
+
+        if (rest.isEmpty()) {
+            repeat(size) {
+                iTokens += PUSH.intermediate
+                iTokens += 0F.intermediate
+
+                pos += 2
+            }
+
+            iTokens += PUSH.intermediate
+            iTokens += size.toFloat().intermediate
+
+            pos += 2
+        }
+        else {
+            var totalSize = 0
+
+            repeat(size) {
+                val subArray = getSubArray(rest[0], rest.drop(1).toIntArray())
+
+                totalSize += subArray.size / 2
+
+                iTokens += subArray
+            }
+
+            iTokens += PUSH.intermediate
+            iTokens += totalSize.toFloat().intermediate
+
+            pos += 2
+        }
 
         return iTokens
     }
