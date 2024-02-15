@@ -183,16 +183,21 @@ private fun formatFile(srcName: String, dstName: String) {
 
     if (!srcFile.exists()) error("Cannot load source file!")
 
-    val values = compile(srcFile)
+    val formatter = BytecodeFormatter(srcFile)
+
+    val format = formatter.format()
 
     val dstFile = File(dstName)
 
-    dstFile.delete()
-    if (!dstFile.createNewFile()) error("Cannot create destination file!")
+    if (!dstFile.exists()) {
+        if (!dstFile.createNewFile()) {
+            error("Cannot create destination file!")
+        }
+    }
 
-    val out = BufferedWriter(FileWriter(dstFile))
+    val out = BufferedWriter(FileWriter(dstFile, false))
 
-    out.write(BytecodeFormatter.format(values))
+    out.write(format)
 
     out.close()
 }
