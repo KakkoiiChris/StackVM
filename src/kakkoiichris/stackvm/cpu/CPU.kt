@@ -20,11 +20,11 @@ abstract class CPU(protected val config: Config = Config()) {
 
     internal lateinit var memory: FloatArray
 
-    protected var running by Register.Bool(RUN_ADR)
+    internal var running by Register.Bool(RUN_ADR)
 
     protected var global by Register.Bool(GLO_ADR)
 
-    protected var result by Register.Float(RES_ADR)
+    internal var result by Register.Float(RES_ADR)
 
     protected var instructionPointerOrigin by Register.Int(IPO_ADR)
     protected var instructionPointer by Register.Int(IPA_ADR)

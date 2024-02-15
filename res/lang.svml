@@ -30,16 +30,18 @@ function toBool(f: float): bool =
 
 function toFloat(i: int): float;
 
-function toInt(b: bool): int =
+function toInt(b: bool): int {
 	if b {
-		1;
+		return 1;
 	}
-	else {
-		0;
-	};
+	
+	return 0;
+}
 
 function toInt(f: float): int;
 
 function toInt(c: char): int;
 
 function toChar(i: int): char;
+
+function exit(code: int): void;

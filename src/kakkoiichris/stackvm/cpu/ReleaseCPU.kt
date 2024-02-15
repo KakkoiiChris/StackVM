@@ -328,7 +328,7 @@ object ReleaseCPU : CPU() {
             args.add(popStack())
         }
 
-        val result = function(args)
+        val result = function(this, args)
 
         for (value in result.reversed()) {
             pushStack(value)

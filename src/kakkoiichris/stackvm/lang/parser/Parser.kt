@@ -467,9 +467,13 @@ class Parser(lexer: Lexer, private val optimize: Boolean) {
         val body = mutableListOf<Node>()
 
         fun registerFunction(type: Node.Type, isNative: Boolean) {
+            val signature = Signature(name, params.map { it.dataType })
+
+            if (isNative && !StandardLibrary.hasFunction(signature)) error("No system function for '$signature' @ ${name.location}!")
+
             val here = Memory.pop()!!
 
-            Memory.addFunction(type.dataType, id, Signature(name, params.map { it.dataType }), isNative)
+            Memory.addFunction(type.dataType, id, signature, isNative)
 
             Memory.push(here)
         }
@@ -524,7 +528,7 @@ class Parser(lexer: Lexer, private val optimize: Boolean) {
                 )
             }
 
-            resolveBranches(body)
+            resolveBranches(location, body)
 
             checkUnreachable(body)
 
@@ -540,25 +544,25 @@ class Parser(lexer: Lexer, private val optimize: Boolean) {
         return Node.Function(location, name, id, params, type.type.value, isNative, body)
     }
 
-    private fun resolveBranches(nodes: Nodes) {
-        val last = nodes.lastOrNull() ?: error("No returns!")
-
-        when (last) {
+    private fun resolveBranches(parentLocation: Location, nodes: Nodes) {
+        when (val last = nodes.lastOrNull()) {
             is Node.Return -> return
 
             is Node.If     -> {
                 for (branch in last.branches) {
-                    resolveBranches(branch.body)
+                    resolveBranches(branch.location, branch.body)
                 }
             }
 
-            is Node.While  -> resolveBranches(last.body)
+            is Node.While  -> resolveBranches(last.location, last.body)
 
-            is Node.Do     -> resolveBranches(last.body)
+            is Node.Do     -> resolveBranches(last.location, last.body)
 
-            is Node.For    -> resolveBranches(last.body)
+            is Node.For    -> resolveBranches(last.location, last.body)
 
-            else           -> error("Not all branches!")
+            null           -> error("Function does not return a value @ ${parentLocation}!")
+
+            else           -> error("Function does not return a value @ ${last.location}!")
         }
     }
 
@@ -938,8 +942,7 @@ class Parser(lexer: Lexer, private val optimize: Boolean) {
         val (isNative, dataType, id) = Memory.getFunction(signature)
 
         return if (isNative) {
-            val systemID = StandardLibrary[signature].takeIf { it != -1 }
-                ?: error("No system function for '$signature' @ ${name.location}!")
+            val systemID = StandardLibrary[signature]
 
             Node.SystemCall(location, name, dataType, systemID, args)
         }

@@ -473,7 +473,7 @@ object DebugCPU : CPU() {
 
         println("SYS #$id <${args.joinToString()}>")
 
-        val result = function(args)
+        val result = function(this, args)
 
         for (value in result.reversed()) {
             pushStack(value)

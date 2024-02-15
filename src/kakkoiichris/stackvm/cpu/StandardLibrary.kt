@@ -12,7 +12,7 @@ import kakkoiichris.stackvm.util.truncate
 import java.io.File
 import kotlin.math.*
 
-typealias Method = (values: List<Float>) -> List<Float>
+typealias Method = (cpu: CPU, values: List<Float>) -> List<Float>
 
 object StandardLibrary {
     private val functionTable = mutableMapOf<String, Int>()
@@ -45,34 +45,54 @@ object StandardLibrary {
     fun getFile(name: String) =
         sources[name]!!
 
+    fun hasFunction(signature: Signature): Boolean =
+        signature.toString() in functionTable
+
+    operator fun get(signature: Signature) =
+        functionTable[signature.toString()]!!
+
+    operator fun get(id: Int) =
+        functions[id]
+
     private fun addLang() {
-        addFunction("toFloat", INT) { values ->
+        addFunction("toFloat", INT) { _, values ->
             val (i) = values
 
             listOf(i)
         }
 
-        addFunction("toInt", FLOAT) { values ->
+        addFunction("toInt", FLOAT) { _, values ->
             val (i) = values
 
             listOf(i.toInt().toFloat())
         }
 
-        addFunction("toInt", CHAR) { values ->
+        addFunction("toInt", CHAR) { _, values ->
             val (i) = values
 
             listOf(i)
         }
 
-        addFunction("toChar", INT) { values ->
+        addFunction("toChar", INT) { _, values ->
             val (i) = values
 
             listOf(i)
+        }
+
+        addFunction("exit", INT) { cpu, values ->
+            val (code) = values
+
+            cpu.result = code
+            cpu.running = false
+
+            println("Exited application with code '${code.truncate()}'.")
+
+            void
         }
     }
 
     private fun addConsole() {
-        addFunction("readBool") {
+        addFunction("readBool") { _, _ ->
             listOf(
                 readln()
                     .toBooleanStrictOrNull()
@@ -81,7 +101,7 @@ object StandardLibrary {
             )
         }
 
-        addFunction("readFloat") {
+        addFunction("readFloat") { _, _ ->
             listOf(
                 readln()
                     .toFloatOrNull()
@@ -89,7 +109,7 @@ object StandardLibrary {
             )
         }
 
-        addFunction("readInt") {
+        addFunction("readInt") { _, _ ->
             listOf(
                 readln()
                     .toIntOrNull()
@@ -98,7 +118,7 @@ object StandardLibrary {
             )
         }
 
-        addFunction("readChar") {
+        addFunction("readChar") { _, _ ->
             listOf(
                 readln()
                     .getOrNull(0)
@@ -108,7 +128,7 @@ object StandardLibrary {
             )
         }
 
-        addFunction("write", BOOL) { values ->
+        addFunction("write", BOOL) { _, values ->
             val (n) = values
 
             print(n.bool)
@@ -116,7 +136,7 @@ object StandardLibrary {
             void
         }
 
-        addFunction("write", INT) { values ->
+        addFunction("write", INT) { _, values ->
             val (n) = values
 
             print(n.toInt())
@@ -124,7 +144,7 @@ object StandardLibrary {
             void
         }
 
-        addFunction("write", FLOAT) { values ->
+        addFunction("write", FLOAT) { _, values ->
             val (n) = values
 
             print(n.truncate())
@@ -132,7 +152,7 @@ object StandardLibrary {
             void
         }
 
-        addFunction("write", CHAR) { values ->
+        addFunction("write", CHAR) { _, values ->
             val (n) = values
 
             print(n.toInt().toChar())
@@ -142,175 +162,175 @@ object StandardLibrary {
     }
 
     private fun addMath() {
-        addFunction("sin", FLOAT) { values ->
+        addFunction("sin", FLOAT) { _, values ->
             val (n) = values
 
             listOf(sin(n))
         }
 
-        addFunction("cos", FLOAT) { values ->
+        addFunction("cos", FLOAT) { _, values ->
             val (n) = values
 
             listOf(cos(n))
         }
 
-        addFunction("tan", FLOAT) { values ->
+        addFunction("tan", FLOAT) { _, values ->
             val (n) = values
 
             listOf(tan(n))
         }
 
-        addFunction("asin", FLOAT) { values ->
+        addFunction("asin", FLOAT) { _, values ->
             val (n) = values
 
             listOf(asin(n))
         }
 
-        addFunction("acos", FLOAT) { values ->
+        addFunction("acos", FLOAT) { _, values ->
             val (n) = values
 
             listOf(acos(n))
         }
 
-        addFunction("atan", FLOAT) { values ->
+        addFunction("atan", FLOAT) { _, values ->
             val (n) = values
 
             listOf(atan(n))
         }
 
-        addFunction("atan2", FLOAT, FLOAT) { values ->
+        addFunction("atan2", FLOAT, FLOAT) { _, values ->
             val (y, x) = values
 
             listOf(atan2(y, x))
         }
 
-        addFunction("sinh", FLOAT) { values ->
+        addFunction("sinh", FLOAT) { _, values ->
             val (n) = values
 
             listOf(sinh(n))
         }
 
-        addFunction("cosh", FLOAT) { values ->
+        addFunction("cosh", FLOAT) { _, values ->
             val (n) = values
 
             listOf(cosh(n))
         }
 
-        addFunction("tanh", FLOAT) { values ->
+        addFunction("tanh", FLOAT) { _, values ->
             val (n) = values
 
             listOf(tanh(n))
         }
 
-        addFunction("asinh", FLOAT) { values ->
+        addFunction("asinh", FLOAT) { _, values ->
             val (n) = values
 
             listOf(asinh(n))
         }
 
-        addFunction("acosh", FLOAT) { values ->
+        addFunction("acosh", FLOAT) { _, values ->
             val (n) = values
 
             listOf(acosh(n))
         }
 
-        addFunction("atanh", FLOAT) { values ->
+        addFunction("atanh", FLOAT) { _, values ->
             val (n) = values
 
             listOf(atanh(n))
         }
 
-        addFunction("hypot", FLOAT, FLOAT) { values ->
+        addFunction("hypot", FLOAT, FLOAT) { _, values ->
             val (x, y) = values
 
             listOf(hypot(x, y))
         }
 
-        addFunction("sqrt", FLOAT) { values ->
+        addFunction("sqrt", FLOAT) { _, values ->
             val (n) = values
 
             listOf(sqrt(n))
         }
 
-        addFunction("cbrt", FLOAT) { values ->
+        addFunction("cbrt", FLOAT) { _, values ->
             val (n) = values
 
             listOf(cbrt(n))
         }
 
-        addFunction("exp", FLOAT) { values ->
+        addFunction("exp", FLOAT) { _, values ->
             val (n) = values
 
             listOf(exp(n))
         }
 
-        addFunction("expm1", FLOAT) { values ->
+        addFunction("expm1", FLOAT) { _, values ->
             val (n) = values
 
             listOf(expm1(n))
         }
 
-        addFunction("log", FLOAT, FLOAT) { values ->
+        addFunction("log", FLOAT, FLOAT) { _, values ->
             val (n, base) = values
 
             listOf(log(n, base))
         }
 
-        addFunction("ln", FLOAT) { values ->
+        addFunction("ln", FLOAT) { _, values ->
             val (n) = values
 
             listOf(ln(n))
         }
 
-        addFunction("log10", FLOAT) { values ->
+        addFunction("log10", FLOAT) { _, values ->
             val (n) = values
 
             listOf(log10(n))
         }
 
-        addFunction("log2", FLOAT) { values ->
+        addFunction("log2", FLOAT) { _, values ->
             val (n) = values
 
             listOf(log2(n))
         }
 
-        addFunction("ln1p", FLOAT) { values ->
+        addFunction("ln1p", FLOAT) { _, values ->
             val (n) = values
 
             listOf(ln1p(n))
         }
 
-        addFunction("ceil", FLOAT) { values ->
+        addFunction("ceil", FLOAT) { _, values ->
             val (n) = values
 
             listOf(ceil(n))
         }
 
-        addFunction("floor", FLOAT) { values ->
+        addFunction("floor", FLOAT) { _, values ->
             val (n) = values
 
             listOf(floor(n))
         }
 
-        addFunction("truncate", FLOAT) { values ->
+        addFunction("truncate", FLOAT) { _, values ->
             val (n) = values
 
             listOf(truncate(n))
         }
 
-        addFunction("round", FLOAT) { values ->
+        addFunction("round", FLOAT) { _, values ->
             val (n) = values
 
             listOf(round(n))
         }
 
-        addFunction("pow", FLOAT, FLOAT) { values ->
+        addFunction("pow", FLOAT, FLOAT) { _, values ->
             val (b, e) = values
 
             listOf(b.pow(e))
         }
 
-        addFunction("pow", FLOAT, INT) { values ->
+        addFunction("pow", FLOAT, INT) { _, values ->
             val (b, e) = values
 
             listOf(b.pow(e.toInt()))
@@ -329,14 +349,8 @@ object StandardLibrary {
         functionTable[signature.toString()] = functions.size - 1
     }
 
-    operator fun get(signature: Signature) =
-        functionTable[signature.toString()] ?: -1
-
-    operator fun get(id: Int) =
-        functions[id]
-
     class Function(val signature: Signature, private val method: Method) {
-        operator fun invoke(values: List<Float>) =
-            method.invoke(values)
+        operator fun invoke(cpu: CPU, values: List<Float>) =
+            method.invoke(cpu, values)
     }
 }
