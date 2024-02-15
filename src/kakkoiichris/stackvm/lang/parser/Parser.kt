@@ -74,7 +74,7 @@ class Parser(lexer: Lexer, private val optimize: Boolean) {
     }
 
     private fun program(): Node.Program {
-        //TODO: importFile(Node.Name(Location.none(), TokenType.Name("common")))
+        importFile(Node.Name(Location.none(), TokenType.Name("common")))
 
         step()
 
@@ -90,7 +90,13 @@ class Parser(lexer: Lexer, private val optimize: Boolean) {
                     continue
                 }
 
-                statements += statement()
+                statements += when {
+                    matchAny(TokenType.Keyword.LET, TokenType.Keyword.VAR) -> declare()
+
+                    match(TokenType.Keyword.FUNCTION)                      -> function()
+
+                    else                                                   -> TODO("Invalid file statement!")
+                }
             }
 
             lexers.pop()
@@ -98,7 +104,27 @@ class Parser(lexer: Lexer, private val optimize: Boolean) {
             step()
         }
 
+        if (statements.none { it is Node.Function && it.name.name.value == "main" && it.dataType == DataType.Primitive.INT }) error(
+            "No main function!"
+        )
+
+        statements += implicitMainReturn()
+
         return Node.Program(location, statements)
+    }
+
+    private fun implicitMainReturn(): Node.Return {
+        val location = here()
+
+        val name = Node.Name(location, TokenType.Name("main"))
+
+        val mainSignature = Signature(name, emptyList())
+
+        val (_, dataType, id) = Memory.getFunction(mainSignature)
+
+        val invokeMain = Node.Invoke(here(), name, dataType, id, emptyList())
+
+        return Node.Return(here(), invokeMain)
     }
 
     private fun import() {
