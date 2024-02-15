@@ -95,7 +95,7 @@ class Parser(lexer: Lexer, private val optimize: Boolean) {
 
                     match(TokenType.Keyword.FUNCTION)                      -> function()
 
-                    else                                                   -> TODO("Invalid file statement!")
+                    else                                                   -> error("Only imports and declarations allowed at the file level @ ${here()}!")
                 }
             }
 
@@ -105,7 +105,7 @@ class Parser(lexer: Lexer, private val optimize: Boolean) {
         }
 
         if (statements.none { it is Node.Function && it.name.name.value == "main" && it.dataType == DataType.Primitive.INT }) error(
-            "No main function!"
+            "No main function @ ${here()}!"
         )
 
         statements += implicitMainReturn()
@@ -188,7 +188,7 @@ class Parser(lexer: Lexer, private val optimize: Boolean) {
 
             skip(TokenType.Keyword.CHAR)  -> DataType.Primitive.CHAR
 
-            else                          -> error("Invalid type!")
+            else                          -> error("Invalid base type beginning with '${token.type}' @ ${token.location}!")
         }
 
         var type: DataType = baseType
@@ -231,7 +231,7 @@ class Parser(lexer: Lexer, private val optimize: Boolean) {
         val node = expr()
 
         if (type == null) {
-            type = Node.Type(Location.none(), TokenType.Type(node.dataType))
+            type = Node.Type(Location.none(), TokenType.Type(node.dataType!!))
         }
 
         if (type.dataType != node.dataType) error("Cannot declare a variable of type '${type.dataType}' with value of type '${node.dataType}' @ ${node.location}!")
@@ -363,7 +363,7 @@ class Parser(lexer: Lexer, private val optimize: Boolean) {
             val node = expr()
 
             if (type == null) {
-                type = Node.Type(Location.none(), TokenType.Type(node.dataType))
+                type = Node.Type(Location.none(), TokenType.Type(node.dataType!!))
             }
 
             val variable = createVariable(false, name, type.dataType)
@@ -494,7 +494,7 @@ class Parser(lexer: Lexer, private val optimize: Boolean) {
             skip(TokenType.Symbol.EQUAL)     -> {
                 val expr = expr()
 
-                type = Node.Type(expr.location, TokenType.Type(expr.dataType))
+                type = Node.Type(expr.location, TokenType.Type(expr.dataType!!))
 
                 registerFunction(type, false)
 
@@ -582,10 +582,8 @@ class Parser(lexer: Lexer, private val optimize: Boolean) {
         }
     }
 
-    private fun getPrimaryReturn(nodes: Nodes): Node.Return {
-        val last = nodes.lastOrNull() ?: error("No last return!")
-
-        return when (last) {
+    private fun getPrimaryReturn(nodes: Nodes): Node.Return =
+        when (val last = nodes.last()) {
             is Node.Return -> last
 
             is Node.If     -> getPrimaryReturn(last.branches.first().body)
@@ -596,9 +594,8 @@ class Parser(lexer: Lexer, private val optimize: Boolean) {
 
             is Node.For    -> getPrimaryReturn(last.body)
 
-            else           -> error("No primary return!")
+            else           -> error("Function does not have a primary return @ ${last.location}!")
         }
-    }
 
     private fun resolveBranchReturns(dataType: DataType, nodes: Nodes) {
         for (node in nodes) {
@@ -705,7 +702,7 @@ class Parser(lexer: Lexer, private val optimize: Boolean) {
         var indexType = dataType
 
         repeat(expr.indices.size) {
-            val subArrayType = (indexType as? DataType.Array)?.subType ?: TODO("WRONG")
+            val subArrayType = (indexType as DataType.Array).subType
 
             indexType = subArrayType
         }
@@ -937,7 +934,7 @@ class Parser(lexer: Lexer, private val optimize: Boolean) {
             mustSkip(TokenType.Symbol.RIGHT_PAREN)
         }
 
-        val signature = Signature(name, args.map { it.dataType })
+        val signature = Signature(name, args.map { it.dataType!! })
 
         val (isNative, dataType, id) = Memory.getFunction(signature)
 
@@ -964,7 +961,12 @@ class Parser(lexer: Lexer, private val optimize: Boolean) {
             mustSkip(TokenType.Symbol.RIGHT_SQUARE)
         }
 
-        return Node.GetIndex(location, target, indices)
+        val node = Node.GetIndex(location, target, indices)
+
+        node.dataType
+            ?: error("Indexed value of dimension '${target.dataType.dimension}' cannot be indexed with '${indices.size}' indices @ $location")
+
+        return node
     }
 
     private fun terminal() = when {
@@ -986,7 +988,7 @@ class Parser(lexer: Lexer, private val optimize: Boolean) {
     private fun value(): Node.Value {
         val location = here()
 
-        val value = get<TokenType.Value>() ?: error("Not a value.")
+        val value = get<TokenType.Value>()!!
 
         return Node.Value(location, value)
     }
@@ -994,7 +996,7 @@ class Parser(lexer: Lexer, private val optimize: Boolean) {
     private fun string(): Node.String {
         val location = here()
 
-        val value = get<TokenType.String>() ?: error("Not a value.")
+        val value = get<TokenType.String>()!!
 
         return Node.String(location, value)
     }
@@ -1002,7 +1004,7 @@ class Parser(lexer: Lexer, private val optimize: Boolean) {
     private fun name(): Node.Name {
         val location = here()
 
-        val name = get<TokenType.Name>() ?: error("Not a name!")
+        val name = get<TokenType.Name>()!!
 
         return Node.Name(location, name)
     }

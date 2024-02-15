@@ -54,7 +54,7 @@ object Allocator : Node.Visitor<Unit> {
 
         addresses[node.id] = startAddress
 
-        return startAddress + node.dataType.offset
+        return startAddress + node.dataType!!.offset
     }
 
     override fun visitProgram(node: Node.Program) {

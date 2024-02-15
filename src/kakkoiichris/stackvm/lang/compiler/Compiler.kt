@@ -20,7 +20,7 @@ class Compiler(private val program: Node.Program, private val optimize: Boolean)
 
         val subTokens = iTokens.filterIsInstance<IntermediateToken.Ok>()
 
-        if (iTokens.size > subTokens.size) error("Unresolved intermediate token.")
+        if (iTokens.size > subTokens.size) error("Unresolved intermediate token!")
 
         val tokens = subTokens
             .map { it.token }
@@ -488,7 +488,7 @@ class Compiler(private val program: Node.Program, private val optimize: Boolean)
             iTokens += visit(arg)
         }
 
-        val address = functions[node.id] ?: error("Function does not exist!")
+        val address = functions[node.id]!!
 
         iTokens += CALL.intermediate
         iTokens += address.toFloat().intermediate

@@ -10,7 +10,7 @@ typealias Nodes = List<Node>
 interface Node {
     val location: Location
 
-    val dataType: DataType get() = VOID
+    val dataType: DataType? get() = VOID
 
     val subNodes: List<Node> get() = emptyList()
 
@@ -120,7 +120,7 @@ interface Node {
 
                 val last = newBody.removeLast()
 
-                if (last !is Expression) error("Last statement of if expression must be an expression!")
+                if (last !is Expression) error("Last statement of if expression must be an expression @ ${last.location}!")
 
                 newBody += last.node
 
@@ -585,7 +585,7 @@ interface Node {
     }
 
     class GetIndex(override val location: Location, val variable: Variable, val indices: List<Node>) : Node {
-        override val dataType: DataType
+        override val dataType: DataType?
             get() {
                 var type = variable.dataType
 
@@ -599,7 +599,7 @@ interface Node {
                     i++
                 }
 
-                if (i < indices.size) error("MISMATCHED INDEXES")
+                if (i < indices.size) return null
 
                 return type
             }
