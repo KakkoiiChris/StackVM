@@ -9,6 +9,7 @@ import kakkoiichris.stackvm.util.toAddress
 import kakkoiichris.stackvm.util.truncate
 import java.io.File
 import java.time.LocalDateTime
+import java.time.format.DateTimeFormatter
 
 class BytecodeFormatter(private val file: File) {
     private val values: FloatArray
@@ -52,9 +53,13 @@ class BytecodeFormatter(private val file: File) {
 
         val maxLength = lines.maxBy { it.text.length }.text.length
 
+        val dateTime = LocalDateTime.now()
+        
+        val format = DateTimeFormatter.ofPattern("EEE, MMM dd, YYYY, hh:mm:ss a")
+
         return buildString {
             appendLine("; Bytecode for ${file.name}")
-            appendLine("; Created on ${LocalDateTime.now()}")
+            appendLine("; Created on ${dateTime.format(format)}")
 
             for ((text, pos) in lines) {
                 append(text)
