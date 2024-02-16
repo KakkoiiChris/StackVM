@@ -31,7 +31,7 @@ object Allocator : Node.Visitor<Unit> {
         for (decl in arrays) {
             val address = addressCounter
 
-            addressCounter += decl.variable.dataType.offset
+            addressCounter += decl.variable.dataType.getOffset()
 
             addresses[decl.id] = address
 
@@ -54,7 +54,7 @@ object Allocator : Node.Visitor<Unit> {
 
         addresses[node.id] = startAddress
 
-        return startAddress + node.dataType!!.offset
+        return startAddress + node.dataType!!.getOffset()
     }
 
     override fun visitProgram(node: Node.Program) {
@@ -167,7 +167,7 @@ object Allocator : Node.Visitor<Unit> {
 
             addresses[param.id] = addressCounter
 
-            addressCounter += param.dataType.offset
+            addressCounter += param.dataType.getOffset()
         }
 
         allocateDecls(node.body, addressCounter)

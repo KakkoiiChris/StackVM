@@ -429,7 +429,7 @@ class Compiler(
         }
 
         tokens += PUSH
-        tokens += node.dataType.offset - 1
+        tokens += node.dataType.getOffset() - 1
 
         return tokens
     }

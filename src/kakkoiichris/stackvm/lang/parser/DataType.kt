@@ -1,18 +1,28 @@
 package kakkoiichris.stackvm.lang.parser
 
 sealed interface DataType {
-    val offset get() = 1
+    fun getOffset() = 1
 
     enum class Primitive : DataType {
         VOID,
         BOOL,
         INT,
         FLOAT,
-        CHAR
+        CHAR;
+
+        override fun toString() = name.lowercase()
     }
 
+    data class Alias(val name: Node.Name) : DataType {
+        override fun getOffset() = getAlias(name).getOffset()
+
+        override fun toString() = "${name.name.value}=${getAlias(name)}"
+    }
+
+    data class User(val name: Node.Name) : DataType
+
     data class Array(val subType: DataType, val size: Int) : DataType {
-        override val offset get() = (size * subType.offset) + 1
+        override fun getOffset() = (size * subType.getOffset()) + 1
 
         val dimension: Int
             get() {
@@ -34,5 +44,51 @@ sealed interface DataType {
 
         override fun toString() =
             "$subType[$size]"
+    }
+
+    companion object {
+        private val aliases = mutableMapOf<String, DataType>()
+
+        fun hasAlias(name: Node.Name) =
+            name.name.value in aliases
+
+        fun getAlias(name: Node.Name) =
+            aliases[name.name.value] ?: error("No type alias called '${name.name.value}' @ ${name.location}!")
+
+        fun addAlias(name: Node.Name, type: Node.Type) {
+            if (name.name.value in aliases) {
+                error("Redefined type alias '${name.name.value}' @ ${name.location}!")
+            }
+
+            aliases[name.name.value] = type.type.value
+        }
+
+        fun isEqual(a: DataType, b: DataType): Boolean = when (a) {
+            is Primitive -> when (b) {
+                is Primitive -> a == b
+
+                is Alias-> isEqual(a, getAlias(b.name))
+
+                else         -> false
+            }
+
+            is Alias     -> when (b) {
+                is Alias -> a.name.name.value == b.name.name.value
+
+                else     -> isEqual(getAlias(a.name), b)
+            }
+
+            is Array     -> when (b) {
+                is Array -> a.size == b.size && isEqual(a.subType, b.subType)
+
+                else     -> false
+            }
+
+            else         -> when (b) {
+                is Alias -> isEqual(a, getAlias(b.name))
+
+                else     -> false
+            }
+        }
     }
 }

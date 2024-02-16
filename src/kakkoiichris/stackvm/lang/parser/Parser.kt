@@ -12,6 +12,7 @@ import java.util.*
 class Parser(lexer: Lexer, private val optimize: Boolean) {
     private val lexers = Stack<Lexer>()
 
+
     private lateinit var token: Token
 
     init {
@@ -90,6 +91,12 @@ class Parser(lexer: Lexer, private val optimize: Boolean) {
                     continue
                 }
 
+                if (match(TokenType.Keyword.ALIAS)) {
+                    typeAlias()
+
+                    continue
+                }
+
                 statements += when {
                     matchAny(TokenType.Keyword.LET, TokenType.Keyword.VAR) -> declare()
 
@@ -104,7 +111,7 @@ class Parser(lexer: Lexer, private val optimize: Boolean) {
             step()
         }
 
-        if (statements.none { it is Node.Function && it.name.name.value == "main" && it.dataType == DataType.Primitive.INT }) error(
+        if (statements.none { it is Node.Function && it.name.name.value == "main" && DataType.isEqual(it.dataType, DataType.Primitive.INT) }) error(
             "No main function @ ${here()}!"
         )
 
@@ -152,6 +159,20 @@ class Parser(lexer: Lexer, private val optimize: Boolean) {
         lexers.push(lexer)
     }
 
+    private fun typeAlias() {
+        mustSkip(TokenType.Keyword.ALIAS)
+
+        val name = name()
+
+        mustSkip(TokenType.Symbol.EQUAL)
+
+        val type = type()
+
+        mustSkip(TokenType.Symbol.SEMICOLON)
+
+        DataType.addAlias(name, type)
+    }
+
     private fun statement() = when {
         matchAny(TokenType.Keyword.LET, TokenType.Keyword.VAR) -> declare()
 
@@ -187,6 +208,17 @@ class Parser(lexer: Lexer, private val optimize: Boolean) {
             skip(TokenType.Keyword.FLOAT) -> DataType.Primitive.FLOAT
 
             skip(TokenType.Keyword.CHAR)  -> DataType.Primitive.CHAR
+
+            match<TokenType.Name>()       -> {
+                val name = name()
+
+                if (DataType.hasAlias(name)) {
+                    DataType.Alias(name)
+                }
+                else {
+                    DataType.User(name)
+                }
+            }
 
             else                          -> error("Invalid base type beginning with '${token.type}' @ ${token.location}!")
         }
@@ -236,7 +268,7 @@ class Parser(lexer: Lexer, private val optimize: Boolean) {
 
         type!!
 
-        if (node != null && type.dataType != node.dataType) error("Cannot declare a variable of type '${type.dataType}' with value of type '${node.dataType}' @ ${node.location}!")
+        if (node != null && !DataType.isEqual(type.dataType, node.dataType!!)) error("Cannot declare a variable of type '${type.dataType}' with value of type '${node.dataType}' @ ${node.location}!")
 
         val variable = createVariable(constant, name, type.dataType)
 
@@ -538,7 +570,7 @@ class Parser(lexer: Lexer, private val optimize: Boolean) {
 
             val returnType = primaryReturn.dataType
 
-            if (returnType != type.type.value) error("Function must return value of type '${type.type.value}' @ ${primaryReturn.location}!")
+            if (!DataType.isEqual(returnType, type.type.value)) error("Function must return value of type '${type.type.value}' @ ${primaryReturn.location}!")
 
             resolveBranchReturns(returnType, body)
         }

@@ -20,7 +20,8 @@ interface TokenType {
         BOOL,
         INT,
         FLOAT,
-        CHAR;
+        CHAR,
+        ALIAS;
 
         override fun toString() = name.lowercase()
     }
