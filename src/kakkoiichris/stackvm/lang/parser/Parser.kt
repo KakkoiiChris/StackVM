@@ -551,6 +551,8 @@ class Parser(lexer: Lexer, private val optimize: Boolean) {
             is Node.Return -> return
 
             is Node.If     -> {
+                if (last.branches.last().condition != null) error("If statement does not return a value on else branch @ ${last.location}!")
+
                 for (branch in last.branches) {
                     resolveBranches(branch.location, branch.body)
                 }
