@@ -3,6 +3,7 @@ package kakkoiichris.stackvm.lang.compiler
 import kakkoiichris.stackvm.lang.compiler.Bytecode.Instruction.*
 import kakkoiichris.stackvm.lang.parser.DataType
 import kakkoiichris.stackvm.lang.parser.Node
+import javax.xml.crypto.Data
 
 class Compiler(
     private val program: Node.Program,
@@ -49,22 +50,30 @@ class Compiler(
     }
 
     private operator fun MutableList<Token>.plusAssign(x: Bytecode) {
-        add(x.intermediate)
+        add(x.ok)
+
+        pos++
+    }
+
+    private operator fun MutableList<Token>.plusAssign(x: Token) {
+        add(x)
 
         pos++
     }
 
     private operator fun MutableList<Token>.plusAssign(x: Float) {
-        add(x.intermediate)
+        add(x.ok)
 
         pos++
     }
 
     private operator fun MutableList<Token>.plusAssign(x: Int) {
-        add(x.toFloat().intermediate)
+        add(x.toFloat().ok)
 
         pos++
     }
+
+    private val Float.ok get() = Token.Ok(Bytecode.Value(this))
 
     private fun resolveStartAndEnd(tokens: List<Token>, start: Float, end: Float) =
         tokens
@@ -81,7 +90,7 @@ class Compiler(
             .map { it.resolveLast(last) ?: it }
             .toMutableList()
 
-    private val Float.intermediate get() = Token.Ok(Bytecode.Value(this))
+
 
     override fun visitProgram(node: Node.Program): List<Token> {
         val tokens = mutableListOf<Token>()
@@ -447,7 +456,7 @@ class Compiler(
     override fun visitSize(node: Node.Size): List<Token> {
         val tokens = mutableListOf<Token>()
 
-        if (node.variable.dataType is DataType.Array) {
+        if (DataType.isArray(node.variable.dataType)) {
             tokens += SIZE
             tokens += node.variable.address
         }

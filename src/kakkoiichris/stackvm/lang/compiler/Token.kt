@@ -20,7 +20,7 @@ interface Token {
 
     class AwaitStart(private val offset: Int = 0) : Token {
         override fun resolveStartAndEnd(start: Float, end: Float) =
-            Bytecode.Value(start + offset).intermediate
+            Bytecode.Value(start + offset).ok
 
         override fun toString() =
             "AwaitStart<$offset>"
@@ -28,7 +28,7 @@ interface Token {
 
     class AwaitEnd(private val offset: Int = 0) : Token {
         override fun resolveStartAndEnd(start: Float, end: Float) =
-            Bytecode.Value(end + offset).intermediate
+            Bytecode.Value(end + offset).ok
 
         override fun toString() =
             "AwaitEnd<$offset>"
@@ -36,7 +36,7 @@ interface Token {
 
     class AwaitLast(private val offset: Int = 0) : Token {
         override fun resolveLast(last: Float) =
-            Bytecode.Value(last + offset).intermediate
+            Bytecode.Value(last + offset).ok
 
         override fun toString() =
             "AwaitLast<$offset>"
@@ -45,7 +45,7 @@ interface Token {
     class AwaitLabelStart(private val label: Node.Name, private val offset: Int = 0) : Token {
         override fun resolveLabelStartAndEnd(label: Node.Name, start: Float, end: Float) =
             if (this.label.name.value == label.name.value)
-                Bytecode.Value(start + offset).intermediate
+                Bytecode.Value(start + offset).ok
             else
                 null
 
@@ -56,7 +56,7 @@ interface Token {
     class AwaitLabelEnd(private val label: Node.Name, private val offset: Int = 0) : Token {
         override fun resolveLabelStartAndEnd(label: Node.Name, start: Float, end: Float) =
             if (this.label.name.value == label.name.value)
-                Bytecode.Value(end + offset).intermediate
+                Bytecode.Value(end + offset).ok
             else
                 null
 

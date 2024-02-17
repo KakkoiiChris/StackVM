@@ -589,6 +589,8 @@ interface Node {
             get() {
                 var type = variable.dataType
 
+                if (type is DataType.Alias) type = DataType.getAlias(type.name)
+
                 var i = 0
 
                 while (i < indices.size) {
@@ -604,7 +606,14 @@ interface Node {
                 return type
             }
 
-        val arrayType get() = variable.dataType as DataType.Array
+        val arrayType: DataType.Array
+            get() {
+                if (variable.dataType is DataType.Alias) {
+                    return DataType.getAlias(variable.dataType.name) as DataType.Array
+                }
+
+                return variable.dataType as DataType.Array
+            }
 
         override fun <X> accept(visitor: Visitor<X>): X =
             visitor.visitGetIndex(this)

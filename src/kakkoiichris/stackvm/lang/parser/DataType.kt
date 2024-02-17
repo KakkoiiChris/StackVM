@@ -67,7 +67,7 @@ sealed interface DataType {
             is Primitive -> when (b) {
                 is Primitive -> a == b
 
-                is Alias-> isEqual(a, getAlias(b.name))
+                is Alias     -> isEqual(a, getAlias(b.name))
 
                 else         -> false
             }
@@ -78,17 +78,31 @@ sealed interface DataType {
                 else     -> isEqual(getAlias(a.name), b)
             }
 
+            is User      -> when (b) {
+                is User -> a.name.name.value == b.name.name.value
+
+                else    -> isEqual(getAlias(a.name), b)
+            }
+
             is Array     -> when (b) {
                 is Array -> a.size == b.size && isEqual(a.subType, b.subType)
 
-                else     -> false
-            }
-
-            else         -> when (b) {
                 is Alias -> isEqual(a, getAlias(b.name))
 
                 else     -> false
             }
+        }
+
+        fun isArray(t: DataType): Boolean {
+            if (t is Alias) return getAlias(t.name) is Array
+
+            return t is Array
+        }
+
+        fun asArray(t: DataType): Array {
+            if (t is Alias) return getAlias(t.name) as Array
+
+            return t as Array
         }
     }
 }

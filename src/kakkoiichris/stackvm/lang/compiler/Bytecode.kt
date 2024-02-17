@@ -5,7 +5,7 @@ import kakkoiichris.stackvm.util.truncate
 interface Bytecode {
     val value: Float
 
-    val intermediate get() = Token.Ok(this)
+    val ok get() = Token.Ok(this)
 
     enum class Instruction : Bytecode {
         HALT,

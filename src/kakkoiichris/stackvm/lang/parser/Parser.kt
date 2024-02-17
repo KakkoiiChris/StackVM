@@ -12,7 +12,6 @@ import java.util.*
 class Parser(lexer: Lexer, private val optimize: Boolean) {
     private val lexers = Stack<Lexer>()
 
-
     private lateinit var token: Token
 
     init {
@@ -75,7 +74,7 @@ class Parser(lexer: Lexer, private val optimize: Boolean) {
     }
 
     private fun program(): Node.Program {
-        importFile(Node.Name(Location.none(), TokenType.Name("common")))
+        //importFile(Node.Name(Location.none(), TokenType.Name("common")))
 
         step()
 
@@ -111,9 +110,10 @@ class Parser(lexer: Lexer, private val optimize: Boolean) {
             step()
         }
 
-        if (statements.none { it is Node.Function && it.name.name.value == "main" && DataType.isEqual(it.dataType, DataType.Primitive.INT) }) error(
-            "No main function @ ${here()}!"
-        )
+        if (statements.none {
+                it is Node.Function
+                    && it.name.name.value == "main" && DataType.isEqual(it.dataType, DataType.Primitive.INT)
+            }) error("No main function @ ${here()}!")
 
         statements += implicitMainReturn()
 
@@ -268,7 +268,11 @@ class Parser(lexer: Lexer, private val optimize: Boolean) {
 
         type!!
 
-        if (node != null && !DataType.isEqual(type.dataType, node.dataType!!)) error("Cannot declare a variable of type '${type.dataType}' with value of type '${node.dataType}' @ ${node.location}!")
+        if (node != null && !DataType.isEqual(
+                type.dataType,
+                node.dataType!!
+            )
+        ) error("Cannot declare a variable of type '${type.dataType}' with value of type '${node.dataType}' @ ${node.location}!")
 
         val variable = createVariable(constant, name, type.dataType)
 
@@ -278,7 +282,7 @@ class Parser(lexer: Lexer, private val optimize: Boolean) {
 
         mustSkip(TokenType.Symbol.SEMICOLON)
 
-        if (type.type.value is DataType.Array) {
+        if (DataType.isArray(type.type.value)) {
             return Node.DeclareArray(location, variable, address, node)
         }
 
@@ -570,7 +574,8 @@ class Parser(lexer: Lexer, private val optimize: Boolean) {
 
             val returnType = primaryReturn.dataType
 
-            if (!DataType.isEqual(returnType, type.type.value)) error("Function must return value of type '${type.type.value}' @ ${primaryReturn.location}!")
+            if (!DataType.isEqual(returnType, type.type.value))
+                error("Function must return value of type '${type.type.value}' @ ${primaryReturn.location}!")
 
             resolveBranchReturns(returnType, body)
         }
@@ -987,7 +992,11 @@ class Parser(lexer: Lexer, private val optimize: Boolean) {
     private fun getIndex(target: Node.Variable): Node.GetIndex {
         val location = here()
 
-        if (target.dataType !is DataType.Array) error("Value of type '${target.dataType}' cannot be indexed @ $location!")
+        val type = target.dataType
+
+        val actualType = if (type is DataType.Alias) DataType.getAlias(type.name) else type
+
+        if (actualType !is DataType.Array) error("Value of type '$type' cannot be indexed @ $location!")
 
         val indices = mutableListOf<Node>()
 
@@ -1000,7 +1009,7 @@ class Parser(lexer: Lexer, private val optimize: Boolean) {
         val node = Node.GetIndex(location, target, indices)
 
         node.dataType
-            ?: error("Indexed value of dimension '${target.dataType.dimension}' cannot be indexed with '${indices.size}' indices @ $location")
+            ?: error("Indexed value of dimension '${actualType.dimension}' cannot be indexed with '${indices.size}' indices @ $location")
 
         return node
     }
