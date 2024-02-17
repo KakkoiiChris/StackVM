@@ -1,7 +1,9 @@
 package kakkoiichris.stackvm.lang.parser
 
 sealed interface DataType {
-    fun getOffset() = 1
+    val offset get() = 1
+
+    val isHeapAllocated get() = false
 
     enum class Primitive : DataType {
         VOID,
@@ -14,7 +16,9 @@ sealed interface DataType {
     }
 
     data class Alias(val name: Node.Name) : DataType {
-        override fun getOffset() = getAlias(name).getOffset()
+        override val offset get() = getAlias(name).offset
+
+        override val isHeapAllocated get() = getAlias(name).isHeapAllocated
 
         override fun toString() = "${name.name.value}=${getAlias(name)}"
     }
@@ -22,7 +26,9 @@ sealed interface DataType {
     data class User(val name: Node.Name) : DataType
 
     data class Array(val subType: DataType, val size: Int) : DataType {
-        override fun getOffset() = (size * subType.getOffset()) + 1
+        override val offset get() = (size * subType.offset) + 1
+
+        override val isHeapAllocated get() = size == -1 || subType.isHeapAllocated
 
         val dimension: Int
             get() {
@@ -43,7 +49,7 @@ sealed interface DataType {
             }
 
         override fun toString() =
-            "$subType[$size]"
+            "$subType[${if (size >= 1) size else ""}]"
     }
 
     companion object {
@@ -85,7 +91,7 @@ sealed interface DataType {
             }
 
             is Array     -> when (b) {
-                is Array -> a.size == b.size && isEqual(a.subType, b.subType)
+                is Array -> (a.size == b.size || a.isHeapAllocated || b.isHeapAllocated) && isEqual(a.subType, b.subType)
 
                 is Alias -> isEqual(a, getAlias(b.name))
 

@@ -32,6 +32,13 @@ object ReleaseCPU : CPU() {
         framePointer = address
         framePointerOrigin = framePointer
 
+        val halfWay = ((memory.size - framePointerOrigin) / 2) + framePointerOrigin
+
+        address += halfWay
+
+        heapPointerOrigin = address
+        heapPointer = heapPointerOrigin
+
         pushStack(0F)
     }
 

@@ -229,13 +229,13 @@ class Parser(lexer: Lexer, private val optimize: Boolean) {
             do {
                 mustSkip(TokenType.Symbol.LEFT_SQUARE)
 
-                val sizeNode = value()
-
-                if (sizeNode.dataType != DataType.Primitive.INT) error("Array size must be an int @ ${sizeNode.location}!")
-
-                val size = sizeNode.value.value.toInt()
+                val sizeNode = if (!match(TokenType.Symbol.RIGHT_SQUARE)) value() else null
 
                 mustSkip(TokenType.Symbol.RIGHT_SQUARE)
+
+                if (sizeNode != null && sizeNode.dataType != DataType.Primitive.INT) error("Array size must be an int @ ${sizeNode.location}!")
+
+                val size = sizeNode?.value?.value?.toInt() ?: -1
 
                 type = DataType.Array(type, size)
             }

@@ -16,6 +16,8 @@ abstract class CPU(protected val config: Config = Config()) {
         private const val FPA_ADR = 8
         private const val CPO_ADR = 9
         private const val CPA_ADR = 10
+        private const val HPO_ADR = 11
+        private const val HPA_ADR = 12
     }
 
     internal lateinit var memory: FloatArray
@@ -38,6 +40,9 @@ abstract class CPU(protected val config: Config = Config()) {
     protected var callPointerOrigin by Register.Int(CPO_ADR)
     protected var callPointer by Register.Int(CPA_ADR)
 
+    protected var heapPointerOrigin by Register.Int(HPO_ADR)
+    protected var heapPointer by Register.Int(HPA_ADR)
+
     abstract fun initialize(instructions: FloatArray)
 
     fun initialize(tokenizer: Iterator<Bytecode>) {
@@ -54,6 +59,8 @@ abstract class CPU(protected val config: Config = Config()) {
 
     protected fun decode() {
         val index = fetchInt()
+
+        if (index !in Bytecode.Instruction.entries.indices) error("Value '$index' is not an instruction!")
 
         when (Bytecode.Instruction.entries[index]) {
             Bytecode.Instruction.HALT    -> halt()
@@ -254,8 +261,8 @@ abstract class CPU(protected val config: Config = Config()) {
     abstract fun sys()
 
     data class Config(
-        val memorySize: Int = 0x10000,
+        val memorySize: Int = 100_000_000,
         val maxCalls: Int = 10_000,
-        val maxStack: Int = 10_000
+        val maxStack: Int = 1_000_000
     )
 }
