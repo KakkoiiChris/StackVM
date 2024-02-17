@@ -102,9 +102,9 @@ object Allocator : Node.Visitor<Unit> {
     }
 
     override fun visitWhile(node: Node.While) {
-        val startAddress = offsets.pop()
+        var offset = offsets.pop()
 
-        val offset = allocateDecls(node.body, startAddress)
+        offset = allocateDecls(node.body, offset)
 
         visit(node.condition)
 
@@ -116,9 +116,9 @@ object Allocator : Node.Visitor<Unit> {
     }
 
     override fun visitDo(node: Node.Do) {
-        val startAddress = offsets.pop()
+        var offset = offsets.pop()
 
-        val offset = allocateDecls(node.body, startAddress)
+        offset = allocateDecls(node.body, offset)
 
         visit(node.condition)
 
@@ -156,24 +156,24 @@ object Allocator : Node.Visitor<Unit> {
     override fun visitContinue(node: Node.Continue) = Unit
 
     override fun visitFunction(node: Node.Function) {
-        val initialOffset = offsets.pop()
+        var offset = offsets.pop()
 
-        node.offset = initialOffset
+        node.offset = offset
 
-        var addressCounter = 0
+        offset = 0
 
         for (param in node.params) {
-            param.address = addressCounter
+            param.address = offset
 
-            addresses[param.id] = addressCounter
+            addresses[param.id] = offset
 
-            addressCounter += param.dataType.getOffset()
+            offset += param.dataType.getOffset()
         }
 
-        allocateDecls(node.body, addressCounter)
+        offset = allocateDecls(node.body, offset)
 
         for (statement in node.body) {
-            offsets.push(addressCounter)
+            offsets.push(offset)
 
             visit(statement)
         }
