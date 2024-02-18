@@ -11,7 +11,7 @@ import java.time.LocalDateTime
 import java.time.format.DateTimeFormatter
 
 class BytecodeFormatter(private val file: File) {
-    private val values: FloatArray
+    private val values: DoubleArray
 
     private var pos = 0
 

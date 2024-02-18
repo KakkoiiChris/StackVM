@@ -166,11 +166,11 @@ class Lexer(private val source: Source) : Iterator<Token> {
         }
 
         if (result.equals("true", ignoreCase = true)) {
-            return Token(location, TokenType.Value(1F, DataType.Primitive.BOOL))
+            return Token(location, TokenType.Value(1.0, DataType.Primitive.BOOL))
         }
 
         if (result.equals("false", ignoreCase = true)) {
-            return Token(location, TokenType.Value(0F, DataType.Primitive.BOOL))
+            return Token(location, TokenType.Value(0.0, DataType.Primitive.BOOL))
         }
 
         val keyword = TokenType.Keyword.entries.firstOrNull { it.name.equals(result, ignoreCase = true) }
@@ -209,14 +209,14 @@ class Lexer(private val source: Source) : Iterator<Token> {
         }
 
         if (result.contains("[Ee.]".toRegex())) {
-            val value = result.toFloatOrNull() ?: error("Floating point number '$result' is out of bounds @ $location!")
+            val value = result.toDoubleOrNull() ?: error("Floating point number '$result' is out of bounds @ $location!")
 
             return Token(location, TokenType.Value(value, DataType.Primitive.FLOAT))
         }
 
         val value = result.toIntOrNull() ?: error("Integer number '$result' is out of bounds @ $location!")
 
-        return Token(location, TokenType.Value(value.toFloat(), DataType.Primitive.INT))
+        return Token(location, TokenType.Value(value.toDouble(), DataType.Primitive.INT))
     }
 
     private fun hex(length: Int) =
@@ -264,7 +264,7 @@ class Lexer(private val source: Source) : Iterator<Token> {
 
         mustSkip('\'')
 
-        val value = result.code.toFloat()
+        val value = result.code.toDouble()
 
         return Token(location, TokenType.Value(value, DataType.Primitive.CHAR))
     }

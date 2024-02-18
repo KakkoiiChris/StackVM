@@ -4,7 +4,7 @@ import kakkoiichris.stackvm.util.bool
 import kakkoiichris.stackvm.util.float
 
 object ReleaseCPU : CPU() {
-    override fun run(): Float {
+    override fun run(): Double {
         while (running) {
             decode()
         }
@@ -62,7 +62,7 @@ object ReleaseCPU : CPU() {
         val b = popStack()
         val a = popStack()
 
-        pushStack((a.toInt() / b.toInt()).toFloat())
+        pushStack((a.toInt() / b.toInt()).toDouble())
     }
 
     override fun mod() {
@@ -76,7 +76,7 @@ object ReleaseCPU : CPU() {
         val b = popStack()
         val a = popStack()
 
-        pushStack((a.toInt() % b.toInt()).toFloat())
+        pushStack((a.toInt() % b.toInt()).toDouble())
     }
 
     override fun neg() {
@@ -275,11 +275,11 @@ object ReleaseCPU : CPU() {
 
         val totalSize = memory[address].toInt()
 
-        pushStack(totalSize.toFloat())
+        pushStack(totalSize.toDouble())
     }
 
     override fun call() {
-        pushCall(instructionPointer + 1F)
+        pushCall(instructionPointer + 1.0)
 
         instructionPointer = instructionPointerOrigin + fetchInt()
     }
@@ -307,7 +307,7 @@ object ReleaseCPU : CPU() {
     override fun sys() {
         val function = StandardLibrary[fetchInt()]
 
-        val args = mutableListOf<Float>()
+        val args = mutableListOf<Double>()
 
         repeat(function.signature.arity) {
             args.add(popStack())

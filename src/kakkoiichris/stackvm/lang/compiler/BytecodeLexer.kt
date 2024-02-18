@@ -91,7 +91,7 @@ class BytecodeLexer(private val src: String) : Iterator<Bytecode> {
             }
         }
 
-        val value = result.toFloatOrNull() ?: error("Number too big!")
+        val value = result.toDoubleOrNull() ?: error("Number too big!")
 
         return Bytecode.Value(value)
     }

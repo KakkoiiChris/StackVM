@@ -24,7 +24,7 @@ abstract class CPU(protected val config: Config = Config()) {
         private val HPA_ADR = initAddress++
     }
 
-    internal lateinit var memory: FloatArray
+    internal lateinit var memory: DoubleArray
 
     internal var running by Register.Bool(RUN_ADR)
 
@@ -50,11 +50,11 @@ abstract class CPU(protected val config: Config = Config()) {
     protected var heapPointerOrigin by Register.Int(HPO_ADR)
     protected var heapPointer by Register.Int(HPA_ADR)
 
-    fun initialize(instructions: FloatArray) {
-        memory = FloatArray(config.memorySize)
+    fun initialize(instructions: DoubleArray) {
+        memory = DoubleArray(config.memorySize)
 
         running = true
-        result = Float.NaN
+        result = Double.NaN
 
         instructionPointer = initAddress
         instructionPointerOrigin = instructionPointer
@@ -88,7 +88,7 @@ abstract class CPU(protected val config: Config = Config()) {
         heapPointerOrigin = initAddress
         heapPointer = heapPointerOrigin
 
-        pushStack(0F)
+        pushStack(0.0)
     }
 
     fun initialize(tokenizer: Iterator<Bytecode>) {
@@ -96,12 +96,12 @@ abstract class CPU(protected val config: Config = Config()) {
             .asSequence()
             .toList()
             .map { it.value }
-            .toFloatArray()
+            .toDoubleArray()
 
         initialize(instructions)
     }
 
-    abstract fun run(): Float
+    abstract fun run(): Double
 
     protected fun decode() {
         val index = fetchInt()
@@ -199,11 +199,11 @@ abstract class CPU(protected val config: Config = Config()) {
 
     protected fun fetchInt() = fetch().toInt()
 
-    protected fun pushStack(value: Float) {
+    protected fun pushStack(value: Double) {
         memory[stackPointer++] = value
     }
 
-    protected fun popStack(): Float {
+    protected fun popStack(): Double {
         val address = --stackPointer
 
         if (address < stackPointerOrigin) error("Stack underflow!")
@@ -223,7 +223,7 @@ abstract class CPU(protected val config: Config = Config()) {
     protected fun pushFrame(offset: Int) {
         framePointer += offset
 
-        memory[framePointer++] = offset.toFloat()
+        memory[framePointer++] = offset.toDouble()
     }
 
     protected fun popFrame() {
@@ -234,7 +234,7 @@ abstract class CPU(protected val config: Config = Config()) {
         if (framePointer < framePointerOrigin) error("Frame stack underflow!")
     }
 
-    protected fun pushCall(value: Float) {
+    protected fun pushCall(value: Double) {
         memory[++callPointer] = value
     }
 
@@ -258,27 +258,27 @@ abstract class CPU(protected val config: Config = Config()) {
 
     protected fun allocateMemory(id: Int, size: Int): Int {
         var address = heapPointerOrigin
-        println("$address, ${memory[tablePointerOrigin + id]}")
+
         var scanning = true
-        println("$address, ${memory[tablePointerOrigin + id]}")
+
         while (scanning) {
             while (memory[address] > 0) {
                 address += 1 + memory[address].toInt()
             }
-            println("$address, ${memory[tablePointerOrigin + id]}")
+
             for (i in 0..size) {
-                if (memory[address + i] != 0F) {
+                if (memory[address + i] != 0.0) {
                     continue
                 }
             }
-            println("$address, ${memory[tablePointerOrigin + id]}")
+
             scanning = false
         }
-        println("$address, ${memory[tablePointerOrigin + id]}")
+
         val tableAddress = tablePointerOrigin + id
-        println("$address, ${memory[tablePointerOrigin + id]}")
-        memory[tableAddress] = address.toFloat()
-        println("$address, ${memory[tablePointerOrigin + id]}")
+
+        memory[tableAddress] = address.toDouble()
+
         return address
     }
 
@@ -290,7 +290,7 @@ abstract class CPU(protected val config: Config = Config()) {
         val size = memory[heapAddress].toInt()
 
         repeat(size + 1) { i ->
-            memory[heapAddress + i] = 0F
+            memory[heapAddress + i] = 0.0
         }
     }
 

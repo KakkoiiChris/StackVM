@@ -12,7 +12,7 @@ import kakkoiichris.stackvm.util.truncate
 import java.io.File
 import kotlin.math.*
 
-typealias Method = (cpu: CPU, values: List<Float>) -> List<Float>
+typealias Method = (cpu: CPU, values: List<Double>) -> List<Double>
 
 object StandardLibrary {
     private val functionTable = mutableMapOf<String, Int>()
@@ -21,7 +21,7 @@ object StandardLibrary {
 
     private val sources = mutableMapOf<String, File>()
 
-    private val void = listOf(0F)
+    private val void = listOf(0.0)
 
     init {
         val folder = File(javaClass.getResource("/")!!.toURI())
@@ -64,7 +64,7 @@ object StandardLibrary {
         addFunction("toInt", FLOAT) { _, values ->
             val (i) = values
 
-            listOf(i.toInt().toFloat())
+            listOf(i.toInt().toDouble())
         }
 
         addFunction("toInt", CHAR) { _, values ->
@@ -104,7 +104,7 @@ object StandardLibrary {
         addFunction("readFloat") { _, _ ->
             listOf(
                 readln()
-                    .toFloatOrNull()
+                    .toDoubleOrNull()
                     ?: error("Number format error!")
             )
         }
@@ -113,7 +113,7 @@ object StandardLibrary {
             listOf(
                 readln()
                     .toIntOrNull()
-                    ?.toFloat()
+                    ?.toDouble()
                     ?: error("Number format error!")
             )
         }
@@ -123,7 +123,7 @@ object StandardLibrary {
                 readln()
                     .getOrNull(0)
                     ?.code
-                    ?.toFloat()
+                    ?.toDouble()
                     ?: error("Char format error!")
             )
         }
@@ -350,7 +350,7 @@ object StandardLibrary {
     }
 
     class Function(val signature: Signature, private val method: Method) {
-        operator fun invoke(cpu: CPU, values: List<Float>) =
+        operator fun invoke(cpu: CPU, values: List<Double>) =
             method.invoke(cpu, values)
     }
 }

@@ -94,7 +94,7 @@ interface TokenType {
         override fun toString() = rep
     }
 
-    data class Value(val value: Float, val dataType: DataType) : TokenType {
+    data class Value(val value: Double, val dataType: DataType) : TokenType {
         override fun toString() = value.toString()
     }
 

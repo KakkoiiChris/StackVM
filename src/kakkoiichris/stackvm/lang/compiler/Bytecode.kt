@@ -3,7 +3,7 @@ package kakkoiichris.stackvm.lang.compiler
 import kakkoiichris.stackvm.util.truncate
 
 interface Bytecode {
-    val value get() = 0F
+    val value get() = 0.0
 
     val ok get() = Token.Ok(this)
 
@@ -51,10 +51,10 @@ interface Bytecode {
         FRAME(1),
         SYS(1);
 
-        override val value get() = ordinal.toFloat()
+        override val value get() = ordinal.toDouble()
     }
 
-    data class Value(override val value: Float) : Bytecode {
+    data class Value(override val value: Double) : Bytecode {
         override fun toString() =
             value.truncate()
     }

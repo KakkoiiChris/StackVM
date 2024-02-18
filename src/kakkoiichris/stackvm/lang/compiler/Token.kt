@@ -3,23 +3,23 @@ package kakkoiichris.stackvm.lang.compiler
 import kakkoiichris.stackvm.lang.parser.Node
 
 interface Token {
-    fun resolveStartAndEnd(start: Float, end: Float): Ok? = null
+    fun resolveStartAndEnd(start: Double, end: Double): Ok? = null
 
-    fun resolveLabelStartAndEnd(label: Node.Name, start: Float, end: Float): Ok? = null
+    fun resolveLabelStartAndEnd(label: Node.Name, start: Double, end: Double): Ok? = null
 
-    fun resolveLast(last: Float): Ok? = null
+    fun resolveLast(last: Double): Ok? = null
 
     class Ok(val bytecode: Bytecode) : Token {
-        override fun resolveStartAndEnd(start: Float, end: Float) = this
+        override fun resolveStartAndEnd(start: Double, end: Double) = this
 
-        override fun resolveLast(last: Float) = this
+        override fun resolveLast(last: Double) = this
 
         override fun toString() =
             "Ok<$bytecode>"
     }
 
     class AwaitStart(private val offset: Int = 0) : Token {
-        override fun resolveStartAndEnd(start: Float, end: Float) =
+        override fun resolveStartAndEnd(start: Double, end: Double) =
             Bytecode.Value(start + offset).ok
 
         override fun toString() =
@@ -27,7 +27,7 @@ interface Token {
     }
 
     class AwaitEnd(private val offset: Int = 0) : Token {
-        override fun resolveStartAndEnd(start: Float, end: Float) =
+        override fun resolveStartAndEnd(start: Double, end: Double) =
             Bytecode.Value(end + offset).ok
 
         override fun toString() =
@@ -35,7 +35,7 @@ interface Token {
     }
 
     class AwaitLast(private val offset: Int = 0) : Token {
-        override fun resolveLast(last: Float) =
+        override fun resolveLast(last: Double) =
             Bytecode.Value(last + offset).ok
 
         override fun toString() =
@@ -43,7 +43,7 @@ interface Token {
     }
 
     class AwaitLabelStart(private val label: Node.Name, private val offset: Int = 0) : Token {
-        override fun resolveLabelStartAndEnd(label: Node.Name, start: Float, end: Float) =
+        override fun resolveLabelStartAndEnd(label: Node.Name, start: Double, end: Double) =
             if (this.label.name.value == label.name.value)
                 Bytecode.Value(start + offset).ok
             else
@@ -54,7 +54,7 @@ interface Token {
     }
 
     class AwaitLabelEnd(private val label: Node.Name, private val offset: Int = 0) : Token {
-        override fun resolveLabelStartAndEnd(label: Node.Name, start: Float, end: Float) =
+        override fun resolveLabelStartAndEnd(label: Node.Name, start: Double, end: Double) =
             if (this.label.name.value == label.name.value)
                 Bytecode.Value(end + offset).ok
             else

@@ -18,7 +18,7 @@ class Compiler(
     fun compile() =
         convert()
             .map { it.value }
-            .toFloatArray()
+            .toDoubleArray()
 
     fun convert(): List<Bytecode> {
         val tokens = visit(program).toMutableList()
@@ -63,19 +63,19 @@ class Compiler(
         pos++
     }
 
-    private operator fun MutableList<Token>.plusAssign(x: Float) {
+    private operator fun MutableList<Token>.plusAssign(x: Double) {
         add(x.ok)
 
         pos++
     }
 
     private operator fun MutableList<Token>.plusAssign(x: Int) {
-        add(x.toFloat().ok)
+        add(x.toDouble().ok)
 
         pos++
     }
 
-    private val Float.ok get() = Token.Ok(Bytecode.Value(this))
+    private val Double.ok get() = Token.Ok(Bytecode.Value(this))
 
     private fun push() {
         memoryToFree.push(mutableListOf())
@@ -102,21 +102,20 @@ class Compiler(
         return tokens
     }
 
-    private fun resolveStartAndEnd(tokens: List<Token>, start: Float, end: Float) =
+    private fun resolveStartAndEnd(tokens: List<Token>, start: Double, end: Double) =
         tokens
             .map { it.resolveStartAndEnd(start, end) ?: it }
             .toMutableList()
 
-    private fun resolveLabelStartAndEnd(tokens: List<Token>, label: Node.Name, start: Float, end: Float) =
+    private fun resolveLabelStartAndEnd(tokens: List<Token>, label: Node.Name, start: Double, end: Double) =
         tokens
             .map { it.resolveLabelStartAndEnd(label, start, end) ?: it }
             .toMutableList()
 
-    private fun resolveLast(tokens: List<Token>, last: Float) =
+    private fun resolveLast(tokens: List<Token>, last: Double) =
         tokens
             .map { it.resolveLast(last) ?: it }
             .toMutableList()
-
 
     override fun visitProgram(node: Node.Program): List<Token> {
         val tokens = mutableListOf<Token>()
@@ -142,7 +141,7 @@ class Compiler(
         }
 
         tokens += STO
-        tokens += node.address.toFloat()
+        tokens += node.address
 
         return tokens
     }
@@ -187,7 +186,7 @@ class Compiler(
         if (rest.isEmpty()) {
             repeat(size) {
                 tokens += PUSH
-                tokens += 0F
+                tokens += 0.0
             }
 
             tokens += PUSH
@@ -214,12 +213,12 @@ class Compiler(
     override fun visitIf(node: Node.If): List<Token> {
         var tokens = mutableListOf<Token>()
 
-        var last = -1F
+        var last = -1.0
 
         for ((i, branch) in node.branches.withIndex()) {
             val (_, condition, body) = branch
 
-            val start = pos.toFloat()
+            val start = pos.toDouble()
 
             if (condition != null) {
                 tokens += visit(condition)
@@ -244,7 +243,7 @@ class Compiler(
                 tokens += Token.AwaitLast()
             }
 
-            val end = pos.toFloat()
+            val end = pos.toDouble()
             last = end
 
             tokens = resolveStartAndEnd(tokens, start, end)
@@ -258,7 +257,7 @@ class Compiler(
     override fun visitWhile(node: Node.While): List<Token> {
         var tokens = mutableListOf<Token>()
 
-        val start = pos.toFloat()
+        val start = pos.toDouble()
 
         tokens += visit(node.condition)
 
@@ -279,7 +278,7 @@ class Compiler(
         tokens += JMP
         tokens += Token.AwaitStart()
 
-        val end = pos.toFloat()
+        val end = pos.toDouble()
 
         tokens = resolveStartAndEnd(tokens, start, end)
 
@@ -295,7 +294,7 @@ class Compiler(
     override fun visitDo(node: Node.Do): List<Token> {
         var tokens = mutableListOf<Token>()
 
-        val start = pos.toFloat()
+        val start = pos.toDouble()
 
         push()
 
@@ -312,7 +311,7 @@ class Compiler(
         tokens += JIF
         tokens += Token.AwaitStart()
 
-        val end = pos.toFloat()
+        val end = pos.toDouble()
 
         tokens = resolveStartAndEnd(tokens, start, end)
 
@@ -332,7 +331,7 @@ class Compiler(
             tokens += visit(node.init)
         }
 
-        val start = pos.toFloat()
+        val start = pos.toDouble()
 
         if (node.condition != null) {
             tokens += visit(node.condition)
@@ -361,7 +360,7 @@ class Compiler(
         tokens += JMP
         tokens += Token.AwaitStart()
 
-        val end = pos.toFloat()
+        val end = pos.toDouble()
 
         tokens = resolveStartAndEnd(tokens, start, end)
 
@@ -402,7 +401,7 @@ class Compiler(
         tokens += JMP
         tokens += Token.AwaitEnd()
 
-        val start = pos.toFloat()
+        val start = pos.toDouble()
 
         functions[node.id] = pos
 
@@ -423,13 +422,13 @@ class Compiler(
         if (tokens.none { it is Token.Ok && it.bytecode == RET }) {
             tokens += freeMemory()
             tokens += PUSH
-            tokens += 0F
+            tokens += 0.0
             tokens += RET
         }
 
         pop()
 
-        val end = pos.toFloat()
+        val end = pos.toDouble()
 
         tokens = resolveStartAndEnd(tokens, start, end)
 
@@ -538,7 +537,7 @@ class Compiler(
         }
         else {
             tokens += PUSH
-            tokens += 1F
+            tokens += 1.0
         }
 
         return tokens
@@ -641,7 +640,7 @@ class Compiler(
         tokens += origin
         tokens += indices.size
         tokens += PUSH
-        tokens += 0F
+        tokens += 0.0
 
         return tokens
     }

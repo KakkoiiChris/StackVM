@@ -6,13 +6,13 @@ import kakkoiichris.stackvm.util.toAddress
 import kakkoiichris.stackvm.util.truncate
 
 object DebugCPU : CPU() {
-    override fun run(): Float {
+    override fun run(): Double {
         showMemory()
 
         while (running) {
             decode()
 
-            //showMemory()
+            showMemory()
         }
 
         return result
@@ -124,7 +124,7 @@ object DebugCPU : CPU() {
         val b = popStack()
         val a = popStack()
 
-        val value = (a.toInt() / b.toInt()).toFloat()
+        val value = (a.toInt() / b.toInt()).toDouble()
 
         println("IDIV #${a.truncate()} #${b.truncate()} <$value>")
 
@@ -146,7 +146,7 @@ object DebugCPU : CPU() {
         val b = popStack()
         val a = popStack()
 
-        val value = (a.toInt() % b.toInt()).toFloat()
+        val value = (a.toInt() % b.toInt()).toDouble()
 
         println("IMOD #${a.truncate()} #${b.truncate()} <$value>")
 
@@ -309,7 +309,7 @@ object DebugCPU : CPU() {
 
         val size = memory[address]
 
-        val elements = FloatArray(size.toInt() + 1) { memory[address + it] }
+        val elements = DoubleArray(size.toInt() + 1) { memory[address + it] }
 
         println("IALOAD @${address.toAddress()} [${elements.joinToString(separator = ",") { it.truncate() }}]")
 
@@ -449,7 +449,7 @@ object DebugCPU : CPU() {
 
         println("SIZE @${address.toAddress()} <$totalSize>")
 
-        pushStack(totalSize.toFloat())
+        pushStack(totalSize.toDouble())
     }
 
     override fun call() {
@@ -462,7 +462,7 @@ object DebugCPU : CPU() {
         println("CALL @${index.toAddress()}")
 
         instructionPointer = address
-        pushCall(last.toFloat())
+        pushCall(last.toDouble())
     }
 
     override fun ret() {
@@ -496,7 +496,7 @@ object DebugCPU : CPU() {
 
         val function = StandardLibrary[id]
 
-        val args = mutableListOf<Float>()
+        val args = mutableListOf<Double>()
 
         repeat(function.signature.arity) {
             args.add(popStack())

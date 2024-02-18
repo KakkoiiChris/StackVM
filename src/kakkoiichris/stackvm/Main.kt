@@ -76,7 +76,7 @@ private enum class Mode {
     FORMAT
 }
 
-private fun compile(srcFile: File): FloatArray {
+private fun compile(srcFile: File): DoubleArray {
     val source = Source.of(srcFile)
 
     val lexer = Lexer(source)
@@ -149,7 +149,7 @@ private fun compileFile(srcName: String, dstName: String) {
     out.writeInt(values.size)
 
     for (value in values) {
-        out.writeFloat(value)
+        out.writeDouble(value)
     }
 
     out.close()
@@ -163,10 +163,10 @@ private fun runFile(cpu: CPU, srcName: String) {
 
     val length = `in`.readInt()
 
-    val values = FloatArray(length)
+    val values = DoubleArray(length)
 
     for (i in 0 until length) {
-        values[i] = `in`.readFloat()
+        values[i] = `in`.readDouble()
     }
 
     cpu.initialize(values)
