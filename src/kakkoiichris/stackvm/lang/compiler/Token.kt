@@ -9,13 +9,13 @@ interface Token {
 
     fun resolveLast(last: Float): Ok? = null
 
-    class Ok(val token: Bytecode) : Token {
+    class Ok(val bytecode: Bytecode) : Token {
         override fun resolveStartAndEnd(start: Float, end: Float) = this
 
         override fun resolveLast(last: Float) = this
 
         override fun toString() =
-            "Ok<$token>"
+            "Ok<$bytecode>"
     }
 
     class AwaitStart(private val offset: Int = 0) : Token {

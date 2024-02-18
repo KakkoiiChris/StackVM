@@ -3,7 +3,7 @@ package kakkoiichris.stackvm.lang.compiler
 import kakkoiichris.stackvm.lang.compiler.Bytecode.Instruction.*
 import kakkoiichris.stackvm.lang.parser.DataType
 import kakkoiichris.stackvm.lang.parser.Node
-import javax.xml.crypto.Data
+import java.util.*
 
 class Compiler(
     private val program: Node.Program,
@@ -12,6 +12,8 @@ class Compiler(
     private var pos = 0
 
     private val functions = mutableMapOf<Int, Int>()
+
+    private val memoryToFree = Stack<MutableList<Int>>()
 
     fun compile() =
         convert()
@@ -26,7 +28,7 @@ class Compiler(
         if (tokens.size > subTokens.size) error("Unresolved intermediate token!")
 
         val bytecodes = subTokens
-            .map { it.token }
+            .map { it.bytecode }
             .toMutableList()
             .apply { add(HALT) }
 
@@ -75,6 +77,31 @@ class Compiler(
 
     private val Float.ok get() = Token.Ok(Bytecode.Value(this))
 
+    private fun push() {
+        memoryToFree.push(mutableListOf())
+    }
+
+    private fun pop() {
+        memoryToFree.pop()
+    }
+
+    private fun addMemory(id: Int) {
+        memoryToFree.peek().add(id)
+    }
+
+    private fun freeMemory(): List<Token> {
+        val tokens = mutableListOf<Token>()
+
+        val free = memoryToFree.peek()
+
+        for (id in free) {
+            tokens += FREE
+            tokens += id
+        }
+
+        return tokens
+    }
+
     private fun resolveStartAndEnd(tokens: List<Token>, start: Float, end: Float) =
         tokens
             .map { it.resolveStartAndEnd(start, end) ?: it }
@@ -91,13 +118,18 @@ class Compiler(
             .toMutableList()
 
 
-
     override fun visitProgram(node: Node.Program): List<Token> {
         val tokens = mutableListOf<Token>()
+
+        push()
 
         for (statement in node.statements) {
             tokens += visit(statement)
         }
+
+        tokens += freeMemory()
+
+        pop()
 
         return tokens
     }
@@ -109,7 +141,7 @@ class Compiler(
             tokens += visit(node.node)
         }
 
-        tokens += STORE
+        tokens += STO
         tokens += node.address.toFloat()
 
         return tokens
@@ -121,19 +153,32 @@ class Compiler(
         if (node.node != null) {
             tokens += visit(node.node)
         }
-        else {
+        else if (!node.variable.dataType.isHeapAllocated) {
             val sizes = (node.variable.dataType as DataType.Array).sizes
 
-            tokens += getDefaultArray(sizes)
+            tokens += getDefaultArray(*sizes)
+        }
+        else {
+            tokens += getDefaultArray(1)
         }
 
-        tokens += ASTORE
-        tokens += node.address.toFloat()
+        if (node.variable.dataType.isHeapAllocated) {
+            tokens += ALLOC
+            tokens += node.id
+            tokens += HASTO
+            tokens += node.id
+
+            addMemory(node.id)
+        }
+        else {
+            tokens += ASTO
+            tokens += node.address
+        }
 
         return tokens
     }
 
-    private fun getDefaultArray(sizes: IntArray) =
+    private fun getDefaultArray(vararg sizes: Int) =
         getSubArray(sizes[0], sizes.drop(1).toIntArray())
 
     private fun getSubArray(size: Int, rest: IntArray): List<Token> {
@@ -184,9 +229,15 @@ class Compiler(
                 tokens += Token.AwaitEnd()
             }
 
+            push()
+
             for (stmt in body) {
                 tokens += visit(stmt)
             }
+
+            tokens += freeMemory()
+
+            pop()
 
             if (i != node.branches.lastIndex) {
                 tokens += JMP
@@ -215,9 +266,15 @@ class Compiler(
         tokens += JIF
         tokens += Token.AwaitEnd()
 
+        push()
+
         for (stmt in node.body) {
             tokens += visit(stmt)
         }
+
+        tokens += freeMemory()
+
+        pop()
 
         tokens += JMP
         tokens += Token.AwaitStart()
@@ -240,9 +297,15 @@ class Compiler(
 
         val start = pos.toFloat()
 
+        push()
+
         for (stmt in node.body) {
             tokens += visit(stmt)
         }
+
+        tokens += freeMemory()
+
+        pop()
 
         tokens += visit(node.condition)
 
@@ -279,9 +342,15 @@ class Compiler(
             tokens += Token.AwaitEnd()
         }
 
+        push()
+
         for (stmt in node.body) {
             tokens += visit(stmt)
         }
+
+        tokens += freeMemory()
+
+        pop()
 
         if (node.increment != null) {
             tokens += visit(node.increment)
@@ -341,19 +410,24 @@ class Compiler(
         tokens += node.offset
 
         for (param in node.params) {
-            tokens += if (param.dataType is DataType.Array) ASTORE else STORE
+            tokens += if (param.dataType is DataType.Array) ASTO else STO
             tokens += param.address
         }
+
+        push()
 
         for (stmt in node.body) {
             tokens += visit(stmt)
         }
 
-        if (tokens.none { it is Token.Ok && it.token == RET }) {
+        if (tokens.none { it is Token.Ok && it.bytecode == RET }) {
+            tokens += freeMemory()
             tokens += PUSH
             tokens += 0F
             tokens += RET
         }
+
+        pop()
 
         val end = pos.toFloat()
 
@@ -370,6 +444,8 @@ class Compiler(
         if (subNode != null) {
             tokens += visit(subNode)
         }
+
+        tokens += freeMemory()
 
         tokens += RET
 
@@ -417,10 +493,10 @@ class Compiler(
         val tokens = mutableListOf<Token>()
 
         if (node.isGlobal) {
-            tokens += GLOBAL
+            tokens += GLOB
         }
 
-        tokens += if (node.dataType is DataType.Array) ALOAD else LOAD
+        tokens += if (node.dataType is DataType.Array) ALOD else LOD
         tokens += node.address
 
         return tokens
@@ -486,7 +562,7 @@ class Compiler(
         tokens += visit(node.node)
 
         tokens += DUP
-        tokens += STORE
+        tokens += STO
         tokens += node.variable.address
 
         return tokens
@@ -535,10 +611,10 @@ class Compiler(
         }
 
         if (node.variable.isGlobal) {
-            tokens += GLOBAL
+            tokens += GLOB
         }
 
-        tokens += if (node.indices.size < node.arrayType.dimension) IALOAD else ILOAD
+        tokens += if (node.indices.size < node.arrayType.dimension) IALOD else ILOD
         tokens += origin
         tokens += indices.size
 
@@ -561,7 +637,7 @@ class Compiler(
             tokens += index
         }
 
-        tokens += if (node.indices.size < node.arrayType.dimension) IASTORE else ISTORE
+        tokens += if (node.indices.size < node.arrayType.dimension) IASTO else ISTO
         tokens += origin
         tokens += indices.size
         tokens += PUSH

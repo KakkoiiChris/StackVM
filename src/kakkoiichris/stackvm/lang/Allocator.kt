@@ -29,6 +29,8 @@ object Allocator : Node.Visitor<Unit> {
         val arrays = nodes.filterIsInstance<Node.DeclareArray>()
 
         for (decl in arrays) {
+            if (decl.variable.dataType.isHeapAllocated) continue
+
             val address = addressCounter
 
             addressCounter += decl.variable.dataType.offset
@@ -192,6 +194,8 @@ object Allocator : Node.Visitor<Unit> {
     override fun visitString(node: Node.String) = Unit
 
     override fun visitVariable(node: Node.Variable) {
+        if (node.dataType.isHeapAllocated) return
+
         node.address = addresses[node.id]!!
     }
 

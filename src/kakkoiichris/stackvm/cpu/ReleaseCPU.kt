@@ -4,44 +4,6 @@ import kakkoiichris.stackvm.util.bool
 import kakkoiichris.stackvm.util.float
 
 object ReleaseCPU : CPU() {
-    override fun initialize(instructions: FloatArray) {
-        memory = FloatArray(config.memorySize)
-
-        running = true
-        result = Float.NaN
-
-        instructionPointer = 11
-        instructionPointerOrigin = instructionPointer
-
-        var address = instructionPointer
-
-        for (value in instructions) {
-            memory[address++] = value
-        }
-
-        callPointer = address
-        callPointerOrigin = callPointer
-
-        address += config.maxCalls
-
-        stackPointer = address
-        stackPointerOrigin = stackPointer
-
-        address += config.maxStack
-
-        framePointer = address
-        framePointerOrigin = framePointer
-
-        val halfWay = ((memory.size - framePointerOrigin) / 2) + framePointerOrigin
-
-        address += halfWay
-
-        heapPointerOrigin = address
-        heapPointer = heapPointerOrigin
-
-        pushStack(0F)
-    }
-
     override fun run(): Float {
         while (running) {
             decode()
@@ -178,17 +140,17 @@ object ReleaseCPU : CPU() {
         }
     }
 
-    override fun global() {
+    override fun glob() {
         global = true
     }
 
-    override fun load() {
+    override fun lod() {
         val address = fetchInt() + getLoadOffset()
 
         pushStack(memory[address])
     }
 
-    override fun aload() {
+    override fun alod() {
         val address = fetchInt() + getLoadOffset()
         val size = memory[address].toInt()
 
@@ -197,7 +159,7 @@ object ReleaseCPU : CPU() {
         }
     }
 
-    override fun iload() {
+    override fun ilod() {
         var address = fetchInt() + getLoadOffset()
         val indexCount = fetchInt()
 
@@ -214,7 +176,7 @@ object ReleaseCPU : CPU() {
         pushStack(memory[address])
     }
 
-    override fun iaload() {
+    override fun ialod() {
         var address = fetchInt() + getLoadOffset()
         val indexCount = fetchInt()
 
@@ -235,13 +197,13 @@ object ReleaseCPU : CPU() {
         }
     }
 
-    override fun store() {
+    override fun sto() {
         val address = fetchInt() + framePointer
 
         memory[address] = popStack()
     }
 
-    override fun astore() {
+    override fun asto() {
         val address = fetchInt() + framePointer
         val size = popStack()
 
@@ -252,7 +214,7 @@ object ReleaseCPU : CPU() {
         }
     }
 
-    override fun istore() {
+    override fun isto() {
         var address = fetchInt() + framePointer
         val indexCount = fetchInt()
 
@@ -269,7 +231,7 @@ object ReleaseCPU : CPU() {
         memory[address] = popStack()
     }
 
-    override fun iastore() {
+    override fun iasto() {
         var address = fetchInt() + framePointer
         val indexCount = fetchInt()
 
@@ -291,6 +253,22 @@ object ReleaseCPU : CPU() {
             memory[address + i] = popStack()
         }
     }
+
+    override fun alloc() {}
+
+    override fun free() {}
+
+    override fun halod() {}
+
+    override fun hilod() {}
+
+    override fun hialod() {}
+
+    override fun hasto() {}
+
+    override fun histo() {}
+
+    override fun hiasto() {}
 
     override fun size() {
         val address = fetchInt() + getLoadOffset()

@@ -5,19 +5,23 @@ import kakkoiichris.stackvm.util.bool
 
 abstract class CPU(protected val config: Config = Config()) {
     companion object {
-        private const val RUN_ADR = 0
-        private const val GLO_ADR = 1
-        private const val RES_ADR = 2
-        private const val IPO_ADR = 3
-        private const val IPA_ADR = 4
-        private const val SPO_ADR = 5
-        private const val SPA_ADR = 6
-        private const val FPO_ADR = 7
-        private const val FPA_ADR = 8
-        private const val CPO_ADR = 9
-        private const val CPA_ADR = 10
-        private const val HPO_ADR = 11
-        private const val HPA_ADR = 12
+        private var initAddress = 0
+
+        private val RUN_ADR = initAddress++
+        private val GLO_ADR = initAddress++
+        private val RES_ADR = initAddress++
+        private val IPO_ADR = initAddress++
+        private val IPA_ADR = initAddress++
+        private val SPO_ADR = initAddress++
+        private val SPA_ADR = initAddress++
+        private val FPO_ADR = initAddress++
+        private val FPA_ADR = initAddress++
+        private val CPO_ADR = initAddress++
+        private val CPA_ADR = initAddress++
+        private val TPO_ADR = initAddress++
+        private val TPA_ADR = initAddress++
+        private val HPO_ADR = initAddress++
+        private val HPA_ADR = initAddress++
     }
 
     internal lateinit var memory: FloatArray
@@ -40,10 +44,52 @@ abstract class CPU(protected val config: Config = Config()) {
     protected var callPointerOrigin by Register.Int(CPO_ADR)
     protected var callPointer by Register.Int(CPA_ADR)
 
+    protected var tablePointerOrigin by Register.Int(TPO_ADR)
+    protected var tablePointer by Register.Int(TPA_ADR)
+
     protected var heapPointerOrigin by Register.Int(HPO_ADR)
     protected var heapPointer by Register.Int(HPA_ADR)
 
-    abstract fun initialize(instructions: FloatArray)
+    fun initialize(instructions: FloatArray) {
+        memory = FloatArray(config.memorySize)
+
+        running = true
+        result = Float.NaN
+
+        instructionPointer = initAddress
+        instructionPointerOrigin = instructionPointer
+
+        for (value in instructions) {
+            memory[initAddress++] = value
+        }
+
+        callPointer = initAddress
+        callPointerOrigin = callPointer
+
+        initAddress += config.maxCalls
+
+        stackPointer = initAddress
+        stackPointerOrigin = stackPointer
+
+        initAddress += config.maxStack
+
+        framePointer = initAddress
+        framePointerOrigin = framePointer
+
+        val halfWay = ((memory.size - framePointerOrigin) / 2) + framePointerOrigin
+
+        initAddress += halfWay
+
+        tablePointerOrigin = initAddress
+        tablePointer = tablePointerOrigin
+
+        initAddress += config.maxAllocations
+
+        heapPointerOrigin = initAddress
+        heapPointer = heapPointerOrigin
+
+        pushStack(0F)
+    }
 
     fun initialize(tokenizer: Iterator<Bytecode>) {
         val instructions = tokenizer
@@ -60,76 +106,92 @@ abstract class CPU(protected val config: Config = Config()) {
     protected fun decode() {
         val index = fetchInt()
 
-        if (index !in Bytecode.Instruction.entries.indices) error("Value '$index' is not an instruction!")
+        if (index !in Bytecode.Instruction.entries.indices) error("Value '$index' is not an instruction @ $instructionPointer!")
 
         when (Bytecode.Instruction.entries[index]) {
-            Bytecode.Instruction.HALT    -> halt()
+            Bytecode.Instruction.HALT   -> halt()
 
-            Bytecode.Instruction.PUSH    -> push()
+            Bytecode.Instruction.PUSH   -> push()
 
-            Bytecode.Instruction.POP     -> pop()
+            Bytecode.Instruction.POP    -> pop()
 
-            Bytecode.Instruction.DUP     -> dup()
+            Bytecode.Instruction.DUP    -> dup()
 
-            Bytecode.Instruction.ADD     -> add()
+            Bytecode.Instruction.ADD    -> add()
 
-            Bytecode.Instruction.SUB     -> sub()
+            Bytecode.Instruction.SUB    -> sub()
 
-            Bytecode.Instruction.MUL     -> mul()
+            Bytecode.Instruction.MUL    -> mul()
 
-            Bytecode.Instruction.DIV     -> div()
+            Bytecode.Instruction.DIV    -> div()
 
-            Bytecode.Instruction.IDIV    -> idiv()
+            Bytecode.Instruction.IDIV   -> idiv()
 
-            Bytecode.Instruction.MOD     -> mod()
+            Bytecode.Instruction.MOD    -> mod()
 
-            Bytecode.Instruction.IMOD    -> imod()
+            Bytecode.Instruction.IMOD   -> imod()
 
-            Bytecode.Instruction.NEG     -> neg()
+            Bytecode.Instruction.NEG    -> neg()
 
-            Bytecode.Instruction.AND     -> and()
+            Bytecode.Instruction.AND    -> and()
 
-            Bytecode.Instruction.OR      -> or()
+            Bytecode.Instruction.OR     -> or()
 
-            Bytecode.Instruction.NOT     -> not()
+            Bytecode.Instruction.NOT    -> not()
 
-            Bytecode.Instruction.EQU     -> equ()
+            Bytecode.Instruction.EQU    -> equ()
 
-            Bytecode.Instruction.GRT     -> grt()
+            Bytecode.Instruction.GRT    -> grt()
 
-            Bytecode.Instruction.GEQ     -> geq()
+            Bytecode.Instruction.GEQ    -> geq()
 
-            Bytecode.Instruction.JMP     -> jmp()
+            Bytecode.Instruction.JMP    -> jmp()
 
-            Bytecode.Instruction.JIF     -> jif()
+            Bytecode.Instruction.JIF    -> jif()
 
-            Bytecode.Instruction.GLOBAL  -> global()
+            Bytecode.Instruction.GLOB   -> glob()
 
-            Bytecode.Instruction.LOAD    -> load()
+            Bytecode.Instruction.LOD    -> lod()
 
-            Bytecode.Instruction.ALOAD   -> aload()
+            Bytecode.Instruction.ALOD   -> alod()
 
-            Bytecode.Instruction.ILOAD   -> iload()
+            Bytecode.Instruction.ILOD   -> ilod()
 
-            Bytecode.Instruction.IALOAD  -> iaload()
+            Bytecode.Instruction.IALOD  -> ialod()
 
-            Bytecode.Instruction.STORE   -> store()
+            Bytecode.Instruction.STO    -> sto()
 
-            Bytecode.Instruction.ASTORE  -> astore()
+            Bytecode.Instruction.ASTO   -> asto()
 
-            Bytecode.Instruction.ISTORE  -> istore()
+            Bytecode.Instruction.ISTO   -> isto()
 
-            Bytecode.Instruction.IASTORE -> iastore()
+            Bytecode.Instruction.IASTO  -> iasto()
 
-            Bytecode.Instruction.SIZE    -> size()
+            Bytecode.Instruction.ALLOC  -> alloc()
 
-            Bytecode.Instruction.CALL    -> call()
+            Bytecode.Instruction.FREE   -> free()
 
-            Bytecode.Instruction.RET     -> ret()
+            Bytecode.Instruction.HALOD  -> halod()
 
-            Bytecode.Instruction.FRAME   -> frame()
+            Bytecode.Instruction.HILOD  -> hilod()
 
-            Bytecode.Instruction.SYS     -> sys()
+            Bytecode.Instruction.HIALOD -> hialod()
+
+            Bytecode.Instruction.HASTO  -> hasto()
+
+            Bytecode.Instruction.HISTO  -> histo()
+
+            Bytecode.Instruction.HIASTO -> hiasto()
+
+            Bytecode.Instruction.SIZE   -> size()
+
+            Bytecode.Instruction.CALL   -> call()
+
+            Bytecode.Instruction.RET    -> ret()
+
+            Bytecode.Instruction.FRAME  -> frame()
+
+            Bytecode.Instruction.SYS    -> sys()
         }
     }
 
@@ -155,6 +217,8 @@ abstract class CPU(protected val config: Config = Config()) {
 
 
     protected fun peekStack() = memory[stackPointer - 1]
+
+    protected fun peekStackInt() = peekStack().toInt()
 
     protected fun pushFrame(offset: Int) {
         framePointer += offset
@@ -190,6 +254,44 @@ abstract class CPU(protected val config: Config = Config()) {
         }
 
         return framePointer
+    }
+
+    protected fun allocateMemory(id: Int, size: Int): Int {
+        var address = heapPointerOrigin
+        println("$address, ${memory[tablePointerOrigin + id]}")
+        var scanning = true
+        println("$address, ${memory[tablePointerOrigin + id]}")
+        while (scanning) {
+            while (memory[address] > 0) {
+                address += 1 + memory[address].toInt()
+            }
+            println("$address, ${memory[tablePointerOrigin + id]}")
+            for (i in 0..size) {
+                if (memory[address + i] != 0F) {
+                    continue
+                }
+            }
+            println("$address, ${memory[tablePointerOrigin + id]}")
+            scanning = false
+        }
+        println("$address, ${memory[tablePointerOrigin + id]}")
+        val tableAddress = tablePointerOrigin + id
+        println("$address, ${memory[tablePointerOrigin + id]}")
+        memory[tableAddress] = address.toFloat()
+        println("$address, ${memory[tablePointerOrigin + id]}")
+        return address
+    }
+
+    protected fun freeMemory(id: Int) {
+        val tableAddress = tablePointerOrigin + id
+
+        val heapAddress = memory[tableAddress].toInt()
+
+        val size = memory[heapAddress].toInt()
+
+        repeat(size + 1) { i ->
+            memory[heapAddress + i] = 0F
+        }
     }
 
     abstract fun halt()
@@ -232,23 +334,39 @@ abstract class CPU(protected val config: Config = Config()) {
 
     abstract fun jif()
 
-    abstract fun global()
+    abstract fun glob()
 
-    abstract fun load()
+    abstract fun lod()
 
-    abstract fun aload()
+    abstract fun alod()
 
-    abstract fun iload()
+    abstract fun ilod()
 
-    abstract fun iaload()
+    abstract fun ialod()
 
-    abstract fun store()
+    abstract fun sto()
 
-    abstract fun astore()
+    abstract fun asto()
 
-    abstract fun istore()
+    abstract fun isto()
 
-    abstract fun iastore()
+    abstract fun iasto()
+
+    abstract fun alloc()
+
+    abstract fun free()
+
+    abstract fun halod()
+
+    abstract fun hilod()
+
+    abstract fun hialod()
+
+    abstract fun hasto()
+
+    abstract fun histo()
+
+    abstract fun hiasto()
 
     abstract fun size()
 
@@ -263,6 +381,7 @@ abstract class CPU(protected val config: Config = Config()) {
     data class Config(
         val memorySize: Int = 100_000_000,
         val maxCalls: Int = 10_000,
-        val maxStack: Int = 1_000_000
+        val maxStack: Int = 1_000_000,
+        val maxAllocations: Int = 10_000
     )
 }

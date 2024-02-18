@@ -2,7 +2,6 @@ package kakkoiichris.stackvm.lang.compiler
 
 import kakkoiichris.stackvm.lang.Allocator
 import kakkoiichris.stackvm.lang.Source
-import kakkoiichris.stackvm.lang.compiler.Bytecode.Instruction.*
 import kakkoiichris.stackvm.lang.lexer.Lexer
 import kakkoiichris.stackvm.lang.parser.Parser
 import kakkoiichris.stackvm.util.toAddress
@@ -54,7 +53,7 @@ class BytecodeFormatter(private val file: File) {
         val maxLength = lines.maxBy { it.text.length }.text.length
 
         val dateTime = LocalDateTime.now()
-        
+
         val format = DateTimeFormatter.ofPattern("EEE, MMM dd, YYYY, hh:mm:ss a")
 
         return buildString {
@@ -71,27 +70,14 @@ class BytecodeFormatter(private val file: File) {
         }
     }
 
-    private fun getLine(pos: Int, instruction: Bytecode.Instruction): Line {
-        return when (instruction) {
-            PUSH,
-            JMP,
-            JIF,
-            LOAD,
-            ALOAD,
-            STORE,
-            ASTORE,
-            SIZE,
-            CALL,
-            FRAME,
-            SYS     -> oneArgLine(pos, instruction)
+    private fun getLine(pos: Int, instruction: Bytecode.Instruction) = when (instruction.arity) {
+        0    -> noArgLine(pos, instruction)
 
-            ILOAD,
-            IALOAD,
-            ISTORE,
-            IASTORE -> twoArgLine(pos, instruction)
+        1    -> oneArgLine(pos, instruction)
 
-            else    -> noArgLine(pos, instruction)
-        }
+        2    -> twoArgLine(pos, instruction)
+
+        else -> error("Invalid instruction arity!")
     }
 
     private fun noArgLine(pos: Int, instruction: Bytecode.Instruction) =

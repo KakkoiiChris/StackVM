@@ -6,65 +6,44 @@ import kakkoiichris.stackvm.util.toAddress
 import kakkoiichris.stackvm.util.truncate
 
 object DebugCPU : CPU() {
-    override fun initialize(instructions: FloatArray) {
-        memory = FloatArray(config.memorySize)
-
-        running = true
-        result = Float.NaN
-
-        instructionPointer = 11
-        instructionPointerOrigin = instructionPointer
-
-        var address = instructionPointer
-
-        for (value in instructions) {
-            memory[address++] = value
-        }
-
-        callPointer = address
-        callPointerOrigin = callPointer
-
-        address += config.maxCalls
-
-        stackPointer = address
-        stackPointerOrigin = stackPointer
-
-        address += config.maxStack
-
-        framePointer = address
-        framePointerOrigin = framePointer
-
-        pushStack(0F)
-    }
-
     override fun run(): Float {
-        while (running) {
-            showMemory()
+        showMemory()
 
+        while (running) {
             decode()
 
-            showStack()
+            //showMemory()
         }
 
         return result
     }
 
     private fun showMemory() {
-        for (i in framePointerOrigin until framePointerOrigin + 30) {
-            print("${memory[i].truncate()} ")
+        print("\n${memory[51525134]}\n\nMEMORY:")
+
+        for (i in 0..<30) {
+            print(" ${memory[framePointerOrigin + i].truncate()}")
         }
 
-        println()
-    }
+        print("\nTABLE:")
 
-    private fun showStack() {
-        print("\t\t\t\t\t\t\t\tSTACK:")
+        for (i in 0..<30) {
+            print(" ${memory[tablePointerOrigin + i].truncate()}")
+        }
+
+        print("\nHEAP:")
+
+        for (i in 0..<30) {
+            print(" ${memory[heapPointerOrigin + i].truncate()}")
+        }
+
+        print("\nSTACK: ")
 
         for (i in stackPointerOrigin..<stackPointer) {
             print(" ${memory[i].truncate()}")
         }
 
-        println()
+        println("\n")
     }
 
     override fun halt() {
@@ -238,30 +217,34 @@ object DebugCPU : CPU() {
     }
 
     override fun jmp() {
-        val address = instructionPointerOrigin + fetchInt()
+        val index = fetchInt()
 
-        println("JMP @${address.toAddress()}")
+        val address = instructionPointerOrigin + index
+
+        println("JMP @${index.toAddress()}")
 
         instructionPointer = address
     }
 
     override fun jif() {
-        val address = instructionPointerOrigin + fetchInt()
+        val index = fetchInt()
 
-        println("JIF @${address.toAddress()}")
+        val address = instructionPointerOrigin + index
+
+        println("JIF @${index.toAddress()}")
 
         if (popStackBool()) {
             instructionPointer = address
         }
     }
 
-    override fun global() {
+    override fun glob() {
         global = true
 
         println("GLOBAL")
     }
 
-    override fun load() {
+    override fun lod() {
         val address = fetchInt() + getLoadOffset()
         val value = memory[address]
 
@@ -270,7 +253,7 @@ object DebugCPU : CPU() {
         pushStack(value)
     }
 
-    override fun aload() {
+    override fun alod() {
         val address = fetchInt() + getLoadOffset()
         val size = memory[address]
 
@@ -285,7 +268,7 @@ object DebugCPU : CPU() {
         }
     }
 
-    override fun iload() {
+    override fun ilod() {
         var address = fetchInt() + getLoadOffset()
         val indexCount = fetchInt()
 
@@ -308,7 +291,7 @@ object DebugCPU : CPU() {
         pushStack(value)
     }
 
-    override fun iaload() {
+    override fun ialod() {
         var address = fetchInt() + getLoadOffset()
         val indexCount = fetchInt()
 
@@ -335,7 +318,7 @@ object DebugCPU : CPU() {
         }
     }
 
-    override fun store() {
+    override fun sto() {
         val address = fetchInt() + framePointer
         val value = popStack()
 
@@ -344,7 +327,7 @@ object DebugCPU : CPU() {
         memory[address] = value
     }
 
-    override fun astore() {
+    override fun asto() {
         val address = fetchInt() + framePointer
         val size = popStack()
 
@@ -361,7 +344,7 @@ object DebugCPU : CPU() {
         }
     }
 
-    override fun istore() {
+    override fun isto() {
         var address = fetchInt() + framePointer
         val indexCount = fetchInt()
 
@@ -382,7 +365,7 @@ object DebugCPU : CPU() {
         memory[address] = value
     }
 
-    override fun iastore() {
+    override fun iasto() {
         var address = fetchInt() + framePointer
         val indexCount = fetchInt()
 
@@ -411,21 +394,75 @@ object DebugCPU : CPU() {
         }
     }
 
+    override fun alloc() {
+        val id = fetchInt()
+
+        val size = peekStackInt()
+
+        val address = allocateMemory(id, size)
+
+        println("ALLOC #$id <$size, @${address.toAddress()}>")
+
+        //pushStack(address.toFloat())
+    }
+
+    override fun free() {
+        val id = fetchInt()
+
+        println("FREE #$id")
+
+        freeMemory(id)
+    }
+
+    override fun halod() {}
+
+    override fun hilod() {}
+
+    override fun hialod() {}
+
+    override fun hasto() {
+        val id = fetchInt()
+        val address = memory[tablePointerOrigin + id].toInt()
+        val size = popStack()
+
+        val elements = MutableList(size.toInt()) {
+            popStack()
+        }
+
+        elements.add(0, size)
+
+        println("HASTO #$id <@${address.toAddress()}> [${elements.joinToString(separator = ",") { it.truncate() }}]")
+
+        for (offset in elements.indices) {
+            memory[address + offset] = elements[offset]
+        }
+    }
+
+    override fun histo() {}
+
+    override fun hiasto() {}
+
     override fun size() {
         val address = fetchInt() + getLoadOffset()
 
         val totalSize = memory[address].toInt()
 
+        println("SIZE @${address.toAddress()} <$totalSize>")
+
         pushStack(totalSize.toFloat())
     }
 
     override fun call() {
-        val address = instructionPointer + 1
-        instructionPointer = instructionPointerOrigin + fetchInt()
+        val index = fetchInt()
 
-        println("CALL @${instructionPointer.toAddress()}")
+        val address = instructionPointerOrigin + index
 
-        pushCall(address.toFloat())
+        val last = instructionPointer
+
+        println("CALL @${index.toAddress()}")
+
+        instructionPointer = address
+        pushCall(last.toFloat())
     }
 
     override fun ret() {
