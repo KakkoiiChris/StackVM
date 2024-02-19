@@ -495,8 +495,14 @@ class Compiler(
             tokens += GLOB
         }
 
-        tokens += if (node.dataType is DataType.Array) ALOD else LOD
-        tokens += node.address
+        if (node.dataType.isHeapAllocated) {
+            tokens += HALOD
+            tokens += node.id
+        }
+        else {
+            tokens += if (DataType.isArray(node.dataType)) ALOD else LOD
+            tokens += node.address
+        }
 
         return tokens
     }

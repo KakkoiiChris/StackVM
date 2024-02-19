@@ -19,7 +19,7 @@ object DebugCPU : CPU() {
     }
 
     private fun showMemory() {
-        print("\n${memory[51525134]}\n\nMEMORY:")
+        print("MEMORY:")
 
         for (i in 0..<30) {
             print(" ${memory[framePointerOrigin + i].truncate()}")
@@ -402,8 +402,6 @@ object DebugCPU : CPU() {
         val address = allocateMemory(id, size)
 
         println("ALLOC #$id <$size, @${address.toAddress()}>")
-
-        //pushStack(address.toFloat())
     }
 
     override fun free() {
@@ -414,7 +412,22 @@ object DebugCPU : CPU() {
         freeMemory(id)
     }
 
-    override fun halod() {}
+    override fun halod() {
+        val id = fetchInt()
+        val tableAddress = tablePointerOrigin+id
+        val address = memory[tableAddress].toInt()
+        val size = memory[address]
+
+        val elements = MutableList(size.toInt()) { memory[address + 1 + it] }
+
+        elements.add(0, size)
+
+        println("HALOD @${address.toAddress()} [${elements.joinToString(separator = ",") { it.truncate() }}]")
+
+        for (element in elements.reversed()) {
+            pushStack(element)
+        }
+    }
 
     override fun hilod() {}
 
