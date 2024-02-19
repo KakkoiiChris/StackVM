@@ -538,8 +538,14 @@ class Compiler(
         val tokens = mutableListOf<Token>()
 
         if (DataType.isArray(node.variable.dataType)) {
-            tokens += SIZE
-            tokens += node.variable.address
+            if (node.variable.dataType.isHeapAllocated) {
+                tokens += HSIZE
+                tokens += node.variable.id
+            }
+            else {
+                tokens += SIZE
+                tokens += node.variable.address
+            }
         }
         else {
             tokens += PUSH
@@ -604,8 +610,6 @@ class Compiler(
     override fun visitGetIndex(node: Node.GetIndex): List<Token> {
         val tokens = mutableListOf<Token>()
 
-        val origin = node.variable.address
-
         val indices = node
             .indices
             .reversed()
@@ -619,8 +623,15 @@ class Compiler(
             tokens += GLOB
         }
 
-        tokens += if (node.indices.size < node.arrayType.dimension) IALOD else ILOD
-        tokens += origin
+        if (node.variable.dataType.isHeapAllocated) {
+            tokens += if (node.indices.size < node.arrayType.dimension) HIALOD else HILOD
+            tokens += node.variable.id
+        }
+        else {
+            tokens += if (node.indices.size < node.arrayType.dimension) IALOD else ILOD
+            tokens += node.variable.address
+        }
+
         tokens += indices.size
 
         return tokens
@@ -628,8 +639,6 @@ class Compiler(
 
     override fun visitSetIndex(node: Node.SetIndex): List<Token> {
         val tokens = mutableListOf<Token>()
-
-        val origin = node.variable.address
 
         val indices = node
             .indices
@@ -642,8 +651,15 @@ class Compiler(
             tokens += index
         }
 
-        tokens += if (node.indices.size < node.arrayType.dimension) IASTO else ISTO
-        tokens += origin
+        if (node.variable.dataType.isHeapAllocated) {
+            tokens += if (node.indices.size < node.arrayType.dimension) HIASTO else HISTO
+            tokens += node.variable.id
+        }
+        else {
+            tokens += if (node.indices.size < node.arrayType.dimension) IASTO else ISTO
+            tokens += node.variable.address
+        }
+
         tokens += indices.size
         tokens += PUSH
         tokens += 0.0

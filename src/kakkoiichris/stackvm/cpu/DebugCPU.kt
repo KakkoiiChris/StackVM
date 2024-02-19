@@ -241,14 +241,14 @@ object DebugCPU : CPU() {
     override fun glob() {
         global = true
 
-        println("GLOBAL")
+        println("GLOB")
     }
 
     override fun lod() {
         val address = fetchInt() + getLoadOffset()
         val value = memory[address]
 
-        println("LOAD @${address.toAddress()} <${value.truncate()}>")
+        println("LOD @${address.toAddress()} <${value.truncate()}>")
 
         pushStack(value)
     }
@@ -261,7 +261,7 @@ object DebugCPU : CPU() {
 
         elements.add(0, size)
 
-        println("ALOAD @${address.toAddress()} [${elements.joinToString(separator = ",") { it.truncate() }}]")
+        println("ALOD @${address.toAddress()} [${elements.joinToString(separator = ",") { it.truncate() }}]")
 
         for (element in elements.reversed()) {
             pushStack(element)
@@ -286,7 +286,7 @@ object DebugCPU : CPU() {
 
         val value = memory[address]
 
-        println("ILOAD @${address.toAddress()} #$indexCount <[${indices.joinToString(separator = "][")}], ${value.truncate()}>")
+        println("ILOD @${address.toAddress()} #$indexCount <[${indices.joinToString(separator = "][")}], ${value.truncate()}>")
 
         pushStack(value)
     }
@@ -311,7 +311,7 @@ object DebugCPU : CPU() {
 
         val elements = DoubleArray(size.toInt() + 1) { memory[address + it] }
 
-        println("IALOAD @${address.toAddress()} [${elements.joinToString(separator = ",") { it.truncate() }}]")
+        println("IALOD @${address.toAddress()} [${elements.joinToString(separator = ",") { it.truncate() }}]")
 
         for (element in elements.reversed()) {
             pushStack(element)
@@ -322,7 +322,7 @@ object DebugCPU : CPU() {
         val address = fetchInt() + framePointer
         val value = popStack()
 
-        println("STORE @${address.toAddress()} <${value.truncate()}>")
+        println("STO @${address.toAddress()} <${value.truncate()}>")
 
         memory[address] = value
     }
@@ -337,7 +337,7 @@ object DebugCPU : CPU() {
 
         elements.add(0, size)
 
-        println("ASTORE @${address.toAddress()} [${elements.joinToString(separator = ",") { it.truncate() }}]")
+        println("ASTO @${address.toAddress()} [${elements.joinToString(separator = ",") { it.truncate() }}]")
 
         for (offset in elements.indices) {
             memory[address + offset] = elements[offset]
@@ -360,7 +360,7 @@ object DebugCPU : CPU() {
 
         val value = popStack()
 
-        println("ISTORE @${address.toAddress()} #$indexCount <${value.truncate()}>")
+        println("ISTO @${address.toAddress()} #$indexCount <${value.truncate()}>")
 
         memory[address] = value
     }
@@ -387,7 +387,7 @@ object DebugCPU : CPU() {
 
         elements.add(0, size)
 
-        println("IASTORE @${address.toAddress()} #$indexCount [${elements.joinToString(separator = ",") { it.truncate() }}]")
+        println("IASTO @${address.toAddress()} #$indexCount [${elements.joinToString(separator = ",") { it.truncate() }}]")
 
         for (offset in elements.indices) {
             memory[address + offset] = elements[offset]
@@ -429,9 +429,57 @@ object DebugCPU : CPU() {
         }
     }
 
-    override fun hilod() {}
+    override fun hilod() {
+        val id = fetchInt()
+        var address = memory[tablePointerOrigin + id].toInt()
+        val indexCount = fetchInt()
 
-    override fun hialod() {}
+        val indices = List(indexCount) { popStackInt() }
+
+        for (index in indices.dropLast(1)) {
+            address++
+
+            val subSize = memory[address].toInt()
+
+            address += index * (subSize + 1)
+        }
+
+        address += indices.last() + 1
+
+        val value = memory[address]
+
+        println("HILOD @${address.toAddress()} #$indexCount <[${indices.joinToString(separator = "][")}], ${value.truncate()}>")
+
+        pushStack(value)
+    }
+
+    override fun hialod() {
+        val id = fetchInt()
+        var address = memory[tablePointerOrigin + id].toInt()
+        val indexCount = fetchInt()
+
+        val indices = List(indexCount) { popStackInt() }
+
+        for (index in indices.dropLast(1)) {
+            address++
+
+            val subSize = memory[address].toInt()
+
+            address += index * (subSize + 1)
+        }
+
+        address += indices.last()
+
+        val size = memory[address]
+
+        val elements = DoubleArray(size.toInt() + 1) { memory[address + it] }
+
+        println("HIALOD @${address.toAddress()} [${elements.joinToString(separator = ",") { it.truncate() }}]")
+
+        for (element in elements.reversed()) {
+            pushStack(element)
+        }
+    }
 
     override fun hasto() {
         val id = fetchInt()
@@ -451,9 +499,57 @@ object DebugCPU : CPU() {
         }
     }
 
-    override fun histo() {}
+    override fun histo() {
+        val id = fetchInt()
+        var address = memory[tablePointerOrigin + id].toInt()
+        val indexCount = fetchInt()
 
-    override fun hiasto() {}
+        for (i in 0 until indexCount - 1) {
+            address++
+
+            val subSize = memory[address].toInt()
+
+            address += popStackInt() * (subSize + 1)
+        }
+
+        address += popStackInt() + 1
+
+        val value = popStack()
+
+        println("HISTO @${address.toAddress()} #$indexCount <${value.truncate()}>")
+
+        memory[address] = value
+    }
+
+    override fun hiasto() {
+        val id = fetchInt()
+        var address = memory[tablePointerOrigin + id].toInt()
+        val indexCount = fetchInt()
+
+        for (i in 0 until indexCount - 1) {
+            address++
+
+            val subSize = memory[address].toInt()
+
+            address += popStackInt() * (subSize + 1)
+        }
+
+        address += popStackInt() + 1
+
+        val size = popStack()
+
+        val elements = MutableList(size.toInt()) {
+            popStack()
+        }
+
+        elements.add(0, size)
+
+        println("HIASTO @${address.toAddress()} #$indexCount [${elements.joinToString(separator = ",") { it.truncate() }}]")
+
+        for (offset in elements.indices) {
+            memory[address + offset] = elements[offset]
+        }
+    }
 
     override fun size() {
         val address = fetchInt() + getLoadOffset()
@@ -461,6 +557,17 @@ object DebugCPU : CPU() {
         val totalSize = memory[address].toInt()
 
         println("SIZE @${address.toAddress()} <$totalSize>")
+
+        pushStack(totalSize.toDouble())
+    }
+
+    override fun hsize() {
+        val id = fetchInt()
+        val address = memory[tablePointerOrigin + id].toInt()
+
+        val totalSize = memory[address].toInt()
+
+        println("HSIZE @${address.toAddress()} <$totalSize>")
 
         pushStack(totalSize.toDouble())
     }

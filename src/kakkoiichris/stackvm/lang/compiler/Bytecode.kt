@@ -46,6 +46,7 @@ interface Bytecode {
         HISTO(2),
         HIASTO(2),
         SIZE(1),
+        HSIZE(1),
         CALL(1),
         RET,
         FRAME(1),

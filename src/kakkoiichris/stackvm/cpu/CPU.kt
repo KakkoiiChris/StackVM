@@ -185,6 +185,8 @@ abstract class CPU(protected val config: Config = Config()) {
 
             Bytecode.Instruction.SIZE   -> size()
 
+            Bytecode.Instruction.HSIZE  -> hsize()
+
             Bytecode.Instruction.CALL   -> call()
 
             Bytecode.Instruction.RET    -> ret()
@@ -369,6 +371,8 @@ abstract class CPU(protected val config: Config = Config()) {
     abstract fun hiasto()
 
     abstract fun size()
+
+    abstract fun hsize()
 
     abstract fun call()
 

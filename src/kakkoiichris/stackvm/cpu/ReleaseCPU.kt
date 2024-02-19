@@ -254,24 +254,122 @@ object ReleaseCPU : CPU() {
         }
     }
 
-    override fun alloc() {}
+    override fun alloc() {
+        allocateMemory(fetchInt(), peekStackInt())
+    }
 
-    override fun free() {}
+    override fun free() {
+        freeMemory(fetchInt())
+    }
 
-    override fun halod() {}
+    override fun halod() {
+        val address = memory[tablePointerOrigin + fetchInt()].toInt()
+        val size = memory[address].toInt()
 
-    override fun hilod() {}
+        for (i in size downTo 0) {
+            pushStack(memory[address + i])
+        }
+    }
 
-    override fun hialod() {}
+    override fun hilod() {
+        var address = memory[tablePointerOrigin + fetchInt()].toInt()
+        val indexCount = fetchInt()
 
-    override fun hasto() {}
+        for (i in 0 until indexCount - 1) {
+            address++
 
-    override fun histo() {}
+            val subSize = memory[address].toInt()
 
-    override fun hiasto() {}
+            address += popStackInt() * (subSize + 1)
+        }
+
+        address += popStackInt() + 1
+
+        pushStack(memory[address])
+    }
+
+    override fun hialod() {
+        var address = memory[tablePointerOrigin + fetchInt()].toInt()
+        val indexCount = fetchInt()
+
+        for (i in 0 until indexCount - 1) {
+            address++
+
+            val subSize = memory[address].toInt()
+
+            address += popStackInt() * (subSize + 1)
+        }
+
+        address += popStackInt()
+
+        val size = memory[address].toInt()
+
+        for (i in size downTo 0) {
+            pushStack(memory[address + i])
+        }
+    }
+
+    override fun hasto() {
+        val address = memory[tablePointerOrigin + fetchInt()].toInt()
+        val size = popStack()
+
+        memory[address] = size
+
+        for (i in 1..size.toInt()) {
+            memory[address + i] = popStack()
+        }
+    }
+
+    override fun histo() {
+        var address = memory[tablePointerOrigin + fetchInt()].toInt()
+        val indexCount = fetchInt()
+
+        for (i in 0 until indexCount - 1) {
+            address++
+
+            val subSize = memory[address].toInt()
+
+            address += popStackInt() * (subSize + 1)
+        }
+
+        address += popStackInt() + 1
+
+        memory[address] = popStack()
+    }
+
+    override fun hiasto() {
+        var address = memory[tablePointerOrigin + fetchInt()].toInt()
+        val indexCount = fetchInt()
+
+        for (i in 0 until indexCount - 1) {
+            address++
+
+            val subSize = memory[address].toInt()
+
+            address += popStackInt() * (subSize + 1)
+        }
+
+        address += popStackInt() + 1
+
+        val size = popStack()
+
+        memory[address] = size
+
+        for (i in 1..size.toInt()) {
+            memory[address + i] = popStack()
+        }
+    }
 
     override fun size() {
         val address = fetchInt() + getLoadOffset()
+
+        val totalSize = memory[address].toInt()
+
+        pushStack(totalSize.toDouble())
+    }
+
+    override fun hsize() {
+        val address = memory[tablePointerOrigin + fetchInt()].toInt()
 
         val totalSize = memory[address].toInt()
 
