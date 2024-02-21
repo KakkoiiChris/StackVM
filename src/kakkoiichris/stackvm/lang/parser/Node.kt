@@ -214,7 +214,7 @@ interface Node {
     }
 
     class String(override val location: Location, val value: TokenType.String) : Node {
-        override val dataType get() = DataType.Array(CHAR, value.value.length)
+        override val dataType get() = DataType.Alias(Name(location, TokenType.Name("string")))
 
         override fun <X> accept(visitor: Visitor<X>): X =
             visitor.visitString(this)

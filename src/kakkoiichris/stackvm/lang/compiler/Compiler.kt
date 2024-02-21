@@ -408,12 +408,20 @@ class Compiler(
         tokens += FRAME
         tokens += node.offset
 
-        for (param in node.params) {
-            tokens += if (param.dataType is DataType.Array) ASTO else STO
-            tokens += param.address
-        }
-
         push()
+
+        for (param in node.params) {
+            if (param.dataType.isHeapAllocated) {
+                tokens += ALLOC
+                tokens += param.id
+                tokens += HASTO
+                tokens += param.id
+            }
+            else {
+                tokens += if (param.dataType is DataType.Array) ASTO else STO
+                tokens += param.address
+            }
+        }
 
         for (stmt in node.body) {
             tokens += visit(stmt)

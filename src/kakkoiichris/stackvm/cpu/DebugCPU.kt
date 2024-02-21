@@ -19,25 +19,25 @@ object DebugCPU : CPU() {
     }
 
     private fun showMemory() {
-        print("MEMORY:")
+        print("MEMORY : ")
 
         for (i in 0..<30) {
             print(" ${memory[framePointerOrigin + i].truncate()}")
         }
 
-        print("\nTABLE:")
+        print("\nTABLE  : ")
 
         for (i in 0..<30) {
             print(" ${memory[tablePointerOrigin + i].truncate()}")
         }
 
-        print("\nHEAP:")
+        print("\nHEAP   : ")
 
         for (i in 0..<30) {
             print(" ${memory[heapPointerOrigin + i].truncate()}")
         }
 
-        print("\nSTACK: ")
+        print("\nSTACK  : ")
 
         for (i in stackPointerOrigin..<stackPointer) {
             print(" ${memory[i].truncate()}")
@@ -414,8 +414,7 @@ object DebugCPU : CPU() {
 
     override fun halod() {
         val id = fetchInt()
-        val tableAddress = tablePointerOrigin+id
-        val address = memory[tableAddress].toInt()
+        val address = memory[tablePointerOrigin + id].toInt()
         val size = memory[address]
 
         val elements = MutableList(size.toInt()) { memory[address + 1 + it] }

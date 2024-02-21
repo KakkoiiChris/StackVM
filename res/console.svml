@@ -16,10 +16,16 @@ function readInt: int;
 
 function readChar: char;
 
-function write(b: bool);
+function write(b: bool): void;
 
-function write(f: float);
+function write(f: float): void;
 
-function write(i: int);
+function write(i: int): void;
 
-function write(c: char);
+function write(c: char): void;
+
+function write(s: string): void {
+	for i = 0; i < #s; i += 1 {
+		write(s[i]);
+	}
+}

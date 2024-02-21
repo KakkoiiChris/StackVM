@@ -64,4 +64,3 @@ interface Token {
             "AwaitLabelEnd<$offset, ${label.name.value}>"
     }
 }
-

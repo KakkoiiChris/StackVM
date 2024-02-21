@@ -3,7 +3,7 @@ package kakkoiichris.stackvm.cpu
 import kakkoiichris.stackvm.lang.compiler.Bytecode
 import kakkoiichris.stackvm.util.bool
 
-abstract class CPU(protected val config: Config = Config()) {
+abstract class CPU(private val config: Config = Config()) {
     companion object {
         private var initAddress = 0
 
@@ -41,8 +41,8 @@ abstract class CPU(protected val config: Config = Config()) {
     protected var framePointerOrigin by Register.Int(FPO_ADR)
     protected var framePointer by Register.Int(FPA_ADR)
 
-    protected var callPointerOrigin by Register.Int(CPO_ADR)
-    protected var callPointer by Register.Int(CPA_ADR)
+    private var callPointerOrigin by Register.Int(CPO_ADR)
+    private var callPointer by Register.Int(CPA_ADR)
 
     protected var tablePointerOrigin by Register.Int(TPO_ADR)
     protected var tablePointer by Register.Int(TPA_ADR)

@@ -5,9 +5,9 @@ import kakkoiichris.stackvm.util.float
 import kotlin.reflect.KProperty
 
 sealed class Register<T>(private val address: kotlin.Int) {
-    abstract fun toFloat(t: T): kotlin.Double
+    abstract fun toFloat(t: T): Double
 
-    abstract fun toType(f: kotlin.Double): T
+    abstract fun toType(f: Double): T
 
     operator fun getValue(cpu: CPU, property: KProperty<*>): T {
         return toType(cpu.memory[address])
@@ -20,18 +20,18 @@ sealed class Register<T>(private val address: kotlin.Int) {
     class Bool(address: kotlin.Int) : Register<Boolean>(address) {
         override fun toFloat(t: Boolean) = t.float
 
-        override fun toType(f: kotlin.Double) = f.bool
+        override fun toType(f: Double) = f.bool
     }
 
     class Int(address: kotlin.Int) : Register<kotlin.Int>(address) {
         override fun toFloat(t: kotlin.Int) = t.toDouble()
 
-        override fun toType(f: kotlin.Double) = f.toInt()
+        override fun toType(f: Double) = f.toInt()
     }
 
     class Float(address: kotlin.Int) : Register<Double>(address) {
-        override fun toFloat(t: kotlin.Double) = t
+        override fun toFloat(t: Double) = t
 
-        override fun toType(f: kotlin.Double) = f
+        override fun toType(f: Double) = f
     }
 }
