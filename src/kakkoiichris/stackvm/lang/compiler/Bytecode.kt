@@ -38,6 +38,7 @@ interface Bytecode {
         ISTO(2),
         IASTO(2),
         ALLOC(1),
+        REALLOC(1),
         FREE(1),
         HALOD(1),
         HILOD(2),

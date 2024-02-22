@@ -258,6 +258,10 @@ object ReleaseCPU : CPU() {
         allocateMemory(fetchInt(), peekStackInt())
     }
 
+    override fun realloc() {
+        reallocateMemory(fetchInt(), peekStackInt())
+    }
+
     override fun free() {
         freeMemory(fetchInt())
     }

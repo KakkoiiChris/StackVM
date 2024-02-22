@@ -109,91 +109,93 @@ abstract class CPU(private val config: Config = Config()) {
         if (index !in Bytecode.Instruction.entries.indices) error("Value '$index' is not an instruction @ $instructionPointer!")
 
         when (Bytecode.Instruction.entries[index]) {
-            Bytecode.Instruction.HALT   -> halt()
+            Bytecode.Instruction.HALT    -> halt()
 
-            Bytecode.Instruction.PUSH   -> push()
+            Bytecode.Instruction.PUSH    -> push()
 
-            Bytecode.Instruction.POP    -> pop()
+            Bytecode.Instruction.POP     -> pop()
 
-            Bytecode.Instruction.DUP    -> dup()
+            Bytecode.Instruction.DUP     -> dup()
 
-            Bytecode.Instruction.ADD    -> add()
+            Bytecode.Instruction.ADD     -> add()
 
-            Bytecode.Instruction.SUB    -> sub()
+            Bytecode.Instruction.SUB     -> sub()
 
-            Bytecode.Instruction.MUL    -> mul()
+            Bytecode.Instruction.MUL     -> mul()
 
-            Bytecode.Instruction.DIV    -> div()
+            Bytecode.Instruction.DIV     -> div()
 
-            Bytecode.Instruction.IDIV   -> idiv()
+            Bytecode.Instruction.IDIV    -> idiv()
 
-            Bytecode.Instruction.MOD    -> mod()
+            Bytecode.Instruction.MOD     -> mod()
 
-            Bytecode.Instruction.IMOD   -> imod()
+            Bytecode.Instruction.IMOD    -> imod()
 
-            Bytecode.Instruction.NEG    -> neg()
+            Bytecode.Instruction.NEG     -> neg()
 
-            Bytecode.Instruction.AND    -> and()
+            Bytecode.Instruction.AND     -> and()
 
-            Bytecode.Instruction.OR     -> or()
+            Bytecode.Instruction.OR      -> or()
 
-            Bytecode.Instruction.NOT    -> not()
+            Bytecode.Instruction.NOT     -> not()
 
-            Bytecode.Instruction.EQU    -> equ()
+            Bytecode.Instruction.EQU     -> equ()
 
-            Bytecode.Instruction.GRT    -> grt()
+            Bytecode.Instruction.GRT     -> grt()
 
-            Bytecode.Instruction.GEQ    -> geq()
+            Bytecode.Instruction.GEQ     -> geq()
 
-            Bytecode.Instruction.JMP    -> jmp()
+            Bytecode.Instruction.JMP     -> jmp()
 
-            Bytecode.Instruction.JIF    -> jif()
+            Bytecode.Instruction.JIF     -> jif()
 
-            Bytecode.Instruction.GLOB   -> glob()
+            Bytecode.Instruction.GLOB    -> glob()
 
-            Bytecode.Instruction.LOD    -> lod()
+            Bytecode.Instruction.LOD     -> lod()
 
-            Bytecode.Instruction.ALOD   -> alod()
+            Bytecode.Instruction.ALOD    -> alod()
 
-            Bytecode.Instruction.ILOD   -> ilod()
+            Bytecode.Instruction.ILOD    -> ilod()
 
-            Bytecode.Instruction.IALOD  -> ialod()
+            Bytecode.Instruction.IALOD   -> ialod()
 
-            Bytecode.Instruction.STO    -> sto()
+            Bytecode.Instruction.STO     -> sto()
 
-            Bytecode.Instruction.ASTO   -> asto()
+            Bytecode.Instruction.ASTO    -> asto()
 
-            Bytecode.Instruction.ISTO   -> isto()
+            Bytecode.Instruction.ISTO    -> isto()
 
-            Bytecode.Instruction.IASTO  -> iasto()
+            Bytecode.Instruction.IASTO   -> iasto()
 
-            Bytecode.Instruction.ALLOC  -> alloc()
+            Bytecode.Instruction.ALLOC   -> alloc()
 
-            Bytecode.Instruction.FREE   -> free()
+            Bytecode.Instruction.REALLOC -> realloc()
 
-            Bytecode.Instruction.HALOD  -> halod()
+            Bytecode.Instruction.FREE    -> free()
 
-            Bytecode.Instruction.HILOD  -> hilod()
+            Bytecode.Instruction.HALOD   -> halod()
 
-            Bytecode.Instruction.HIALOD -> hialod()
+            Bytecode.Instruction.HILOD   -> hilod()
 
-            Bytecode.Instruction.HASTO  -> hasto()
+            Bytecode.Instruction.HIALOD  -> hialod()
 
-            Bytecode.Instruction.HISTO  -> histo()
+            Bytecode.Instruction.HASTO   -> hasto()
 
-            Bytecode.Instruction.HIASTO -> hiasto()
+            Bytecode.Instruction.HISTO   -> histo()
 
-            Bytecode.Instruction.SIZE   -> size()
+            Bytecode.Instruction.HIASTO  -> hiasto()
 
-            Bytecode.Instruction.HSIZE  -> hsize()
+            Bytecode.Instruction.SIZE    -> size()
 
-            Bytecode.Instruction.CALL   -> call()
+            Bytecode.Instruction.HSIZE   -> hsize()
 
-            Bytecode.Instruction.RET    -> ret()
+            Bytecode.Instruction.CALL    -> call()
 
-            Bytecode.Instruction.FRAME  -> frame()
+            Bytecode.Instruction.RET     -> ret()
 
-            Bytecode.Instruction.SYS    -> sys()
+            Bytecode.Instruction.FRAME   -> frame()
+
+            Bytecode.Instruction.SYS     -> sys()
         }
     }
 
@@ -284,6 +286,26 @@ abstract class CPU(private val config: Config = Config()) {
         return address
     }
 
+    protected fun reallocateMemory(id: Int, size: Int): Int {
+        var tableAddress = tablePointerOrigin + id
+
+        var address = memory[tableAddress].toInt()
+
+        val lastSize = memory[address].toInt()
+
+        if (lastSize != size) {
+            for (i in 0..lastSize) {
+                memory[address++] = 0.0
+            }
+
+            address = allocateMemory(id, size)
+
+            memory[tableAddress] = address.toDouble()
+        }
+
+        return tableAddress
+    }
+
     protected fun freeMemory(id: Int) {
         val tableAddress = tablePointerOrigin + id
 
@@ -355,6 +377,8 @@ abstract class CPU(private val config: Config = Config()) {
     abstract fun iasto()
 
     abstract fun alloc()
+
+    abstract fun realloc()
 
     abstract fun free()
 

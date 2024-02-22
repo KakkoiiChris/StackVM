@@ -112,7 +112,7 @@ class Parser(lexer: Lexer, private val optimize: Boolean) {
 
         if (statements.none {
                 it is Node.Function
-                    && it.name.name.value == "main" && DataType.isEqual(it.dataType, DataType.Primitive.INT)
+                    && it.name.name.value == "main" && DataType.isEquivalent(it.dataType, DataType.Primitive.INT)
             }) error("No main function @ ${here()}!")
 
         statements += implicitMainReturn()
@@ -268,7 +268,7 @@ class Parser(lexer: Lexer, private val optimize: Boolean) {
 
         type!!
 
-        if (node != null && !DataType.isEqual(
+        if (node != null && !DataType.isEquivalent(
                 type.dataType,
                 node.dataType!!
             )
@@ -574,7 +574,7 @@ class Parser(lexer: Lexer, private val optimize: Boolean) {
 
             val returnType = primaryReturn.dataType
 
-            if (!DataType.isEqual(returnType, type.type.value))
+            if (!DataType.isEquivalent(returnType, type.type.value))
                 error("Function must return value of type '${type.type.value}' @ ${primaryReturn.location}!")
 
             resolveBranchReturns(returnType, body)
@@ -724,7 +724,7 @@ class Parser(lexer: Lexer, private val optimize: Boolean) {
 
         val node = or()
 
-        if (dataType != node.dataType) error("Cannot assign a value of type '${node.dataType}' to a variable of type '$dataType' @ $location!")
+        if (!DataType.isEquivalent(dataType, node.dataType)) error("Cannot assign a value of type '${node.dataType}' to a variable of type '$dataType' @ $location!")
 
         return Node.Assign(location, expr, node)
     }

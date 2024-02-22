@@ -23,6 +23,8 @@ class Compiler(
     fun convert(): List<Bytecode> {
         val tokens = visit(program).toMutableList()
 
+        tokens.optimize()
+
         val subTokens = tokens.filterIsInstance<Token.Ok>()
 
         if (tokens.size > subTokens.size) error("Unresolved intermediate token!")
@@ -32,23 +34,47 @@ class Compiler(
             .toMutableList()
             .apply { add(HALT) }
 
+        return bytecodes
+    }
+
+    private fun MutableList<Token>.optimize() {
         if (optimize) {
             var i = 0
 
-            while (i < bytecodes.lastIndex) {
-                val a = bytecodes[i]
-                val b = bytecodes[i + 1]
+            while (i < lastIndex) {
+                val ta = get(1)
+                val tb = get(i + 1)
 
-                if (a === b && a in listOf(NOT, NEG)) {
-                    repeat(2) { bytecodes.removeAt(i) }
-                }
-                else {
+                if (ta !is Token.Ok || tb !is Token.Ok) {
                     i++
+
+                    continue
+                }
+
+                val a = ta.bytecode
+                val b = tb.bytecode
+
+                when {
+                    a === NOT && b === NOT -> repeat(2) { removeAt(i) }
+
+                    a === NEG && b === NEG -> repeat(2) { removeAt(i) }
+
+                    a === ADD && b === NEG -> {
+                        repeat(2) { removeAt(i) }
+
+                        add(i, SUB.ok)
+                    }
+
+                    a === SUB && b === NEG -> {
+                        repeat(2) { removeAt(i) }
+
+                        add(i, ADD.ok)
+                    }
+
+                    else                   -> i++
                 }
             }
         }
-
-        return bytecodes
     }
 
     private operator fun MutableList<Token>.plusAssign(x: Bytecode) {
@@ -243,6 +269,8 @@ class Compiler(
                 tokens += Token.AwaitLast()
             }
 
+            tokens.optimize()
+
             val end = pos.toDouble()
             last = end
 
@@ -278,6 +306,8 @@ class Compiler(
         tokens += JMP
         tokens += Token.AwaitStart()
 
+        tokens.optimize()
+
         val end = pos.toDouble()
 
         tokens = resolveStartAndEnd(tokens, start, end)
@@ -310,6 +340,8 @@ class Compiler(
 
         tokens += JIF
         tokens += Token.AwaitStart()
+
+        tokens.optimize()
 
         val end = pos.toDouble()
 
@@ -359,6 +391,8 @@ class Compiler(
 
         tokens += JMP
         tokens += Token.AwaitStart()
+
+        tokens.optimize()
 
         val end = pos.toDouble()
 
@@ -499,15 +533,15 @@ class Compiler(
     override fun visitVariable(node: Node.Variable): List<Token> {
         val tokens = mutableListOf<Token>()
 
-        if (node.isGlobal) {
-            tokens += GLOB
-        }
-
         if (node.dataType.isHeapAllocated) {
             tokens += HALOD
             tokens += node.id
         }
         else {
+            if (node.isGlobal) {
+                tokens += GLOB
+            }
+
             tokens += if (DataType.isArray(node.dataType)) ALOD else LOD
             tokens += node.address
         }
@@ -580,9 +614,21 @@ class Compiler(
 
         tokens += visit(node.node)
 
-        tokens += DUP
-        tokens += STO
-        tokens += node.variable.address
+        if (node.variable.dataType.isHeapAllocated) {
+            tokens += REALLOC
+            tokens += node.variable.id
+            tokens += HASTO
+            tokens += node.variable.id
+        }
+        else if (DataType.isArray(node.dataType)) {
+            tokens += ASTO
+            tokens += node.variable.address
+        }
+        else {
+            tokens += DUP
+            tokens += STO
+            tokens += node.variable.address
+        }
 
         return tokens
     }
@@ -627,15 +673,15 @@ class Compiler(
             tokens += index
         }
 
-        if (node.variable.isGlobal) {
-            tokens += GLOB
-        }
-
         if (node.variable.dataType.isHeapAllocated) {
             tokens += if (node.indices.size < node.arrayType.dimension) HIALOD else HILOD
             tokens += node.variable.id
         }
         else {
+            if (node.variable.isGlobal) {
+                tokens += GLOB
+            }
+
             tokens += if (node.indices.size < node.arrayType.dimension) IALOD else ILOD
             tokens += node.variable.address
         }

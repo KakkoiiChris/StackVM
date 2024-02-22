@@ -404,6 +404,16 @@ object DebugCPU : CPU() {
         println("ALLOC #$id <$size, @${address.toAddress()}>")
     }
 
+    override fun realloc() {
+        val id = fetchInt()
+
+        val size = peekStackInt()
+
+        val address = reallocateMemory(id, size)
+
+        println("ALLOC #$id <$size, @${address.toAddress()}>")
+    }
+
     override fun free() {
         val id = fetchInt()
 

@@ -69,11 +69,13 @@ sealed interface DataType {
             aliases[name.name.value] = type.type.value
         }
 
-        fun isEqual(a: DataType, b: DataType): Boolean = when (a) {
+        fun isEquivalent(a: DataType?, b: DataType?): Boolean = when (a) {
+            null         -> false
+
             is Primitive -> when (b) {
                 is Primitive -> a == b
 
-                is Alias     -> isEqual(a, getAlias(b.name))
+                is Alias     -> isEquivalent(a, getAlias(b.name))
 
                 else         -> false
             }
@@ -81,31 +83,36 @@ sealed interface DataType {
             is Alias     -> when (b) {
                 is Alias -> a.name.name.value == b.name.name.value
 
-                else     -> isEqual(getAlias(a.name), b)
+                else     -> isEquivalent(getAlias(a.name), b)
             }
 
             is User      -> when (b) {
                 is User -> a.name.name.value == b.name.name.value
 
-                else    -> isEqual(getAlias(a.name), b)
+                else    -> isEquivalent(getAlias(a.name), b)
             }
 
             is Array     -> when (b) {
-                is Array -> (a.size == b.size || a.isHeapAllocated || b.isHeapAllocated) && isEqual(a.subType, b.subType)
+                is Array -> (a.size == b.size || a.isHeapAllocated || b.isHeapAllocated) && isEquivalent(
+                    a.subType,
+                    b.subType
+                )
 
-                is Alias -> isEqual(a, getAlias(b.name))
+                is Alias -> isEquivalent(a, getAlias(b.name))
 
                 else     -> false
             }
         }
 
-        fun isArray(t: DataType): Boolean {
+        fun isArray(t: DataType?): Boolean {
+            t ?: return false
+
             if (t is Alias) return getAlias(t.name) is Array
 
             return t is Array
         }
 
-        fun asArray(t: DataType): Array {
+        fun asArray(t: DataType?): Array {
             if (t is Alias) return getAlias(t.name) as Array
 
             return t as Array

@@ -26,7 +26,7 @@ class BytecodeFormatter(private val file: File) {
 
         Allocator.allocate(program)
 
-        val compiler = Compiler(program, false)
+        val compiler = Compiler(program, true)
 
         values = compiler.compile()
     }
