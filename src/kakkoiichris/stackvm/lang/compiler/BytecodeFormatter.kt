@@ -1,5 +1,6 @@
 package kakkoiichris.stackvm.lang.compiler
 
+import kakkoiichris.stackvm.linker.Linker
 import kakkoiichris.stackvm.lang.Allocator
 import kakkoiichris.stackvm.lang.Source
 import kakkoiichris.stackvm.lang.lexer.Lexer
@@ -19,6 +20,8 @@ class BytecodeFormatter(private val file: File) {
         val source = Source.of(file)
 
         val lexer = Lexer(source)
+
+        Linker.link()
 
         val parser = Parser(lexer, false)
 

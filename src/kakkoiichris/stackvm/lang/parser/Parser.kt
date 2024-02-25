@@ -1,6 +1,6 @@
 package kakkoiichris.stackvm.lang.parser
 
-import kakkoiichris.stackvm.cpu.StandardLibrary
+import kakkoiichris.stackvm.linker.Linker
 import kakkoiichris.stackvm.lang.Directory
 import kakkoiichris.stackvm.lang.Source
 import kakkoiichris.stackvm.lang.lexer.Lexer
@@ -19,7 +19,7 @@ class Parser(lexer: Lexer, private val optimize: Boolean) {
     }
 
     fun parse(): Node.Program {
-        StandardLibrary
+        Linker
 
         val program = program()
 
@@ -145,8 +145,8 @@ class Parser(lexer: Lexer, private val optimize: Boolean) {
     }
 
     private fun importFile(name: Node.Name) {
-        val file = if (StandardLibrary.hasFile(name.name.value))
-            StandardLibrary.getFile(name.name.value)
+        val file = if (Linker.hasFile(name.name.value))
+            Linker.getFile(name.name.value)
         else
             Directory.getFile(name.name.value)
 
@@ -507,7 +507,7 @@ class Parser(lexer: Lexer, private val optimize: Boolean) {
         fun registerFunction(type: Node.Type, isNative: Boolean) {
             val signature = Signature(name, params.map { it.dataType })
 
-            if (isNative && !StandardLibrary.hasFunction(signature)) error("No system function for '$signature' @ ${name.location}!")
+            if (isNative && !Linker.hasFunction(signature)) error("No system function for '$signature' @ ${name.location}!")
 
             val here = Memory.pop()!!
 
@@ -980,7 +980,7 @@ class Parser(lexer: Lexer, private val optimize: Boolean) {
         val (isNative, dataType, id) = Memory.getFunction(signature)
 
         return if (isNative) {
-            val systemID = StandardLibrary[signature]
+            val systemID = Linker[signature]
 
             Node.SystemCall(location, name, dataType, systemID, args)
         }

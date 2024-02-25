@@ -3,6 +3,7 @@ package kakkoiichris.stackvm
 import kakkoiichris.stackvm.cpu.CPU
 import kakkoiichris.stackvm.cpu.DebugCPU
 import kakkoiichris.stackvm.cpu.ReleaseCPU
+import kakkoiichris.stackvm.linker.Linker
 import kakkoiichris.stackvm.lang.Allocator
 import kakkoiichris.stackvm.lang.Directory
 import kakkoiichris.stackvm.lang.Source
@@ -80,6 +81,8 @@ private fun compile(srcFile: File): DoubleArray {
     val source = Source.of(srcFile)
 
     val lexer = Lexer(source)
+
+    Linker.link()
 
     val parser = Parser(lexer, false)
 
@@ -170,6 +173,8 @@ private fun runFile(cpu: CPU, srcName: String) {
     }
 
     cpu.initialize(values)
+
+    Linker.link()
 
     val (result, runTime) = measureTimedValue { cpu.run() }
 

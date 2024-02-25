@@ -16,6 +16,10 @@ function readInt: int;
 
 function readChar: char;
 
+function read: string;
+
+function readLine: string;
+
 function write(b: bool): void;
 
 function write(f: float): void;
@@ -24,8 +28,33 @@ function write(i: int): void;
 
 function write(c: char): void;
 
+function writeLine(b: bool): void {
+	write(b);
+	write('\n');
+}
+
+function writeLine(f: float): void {
+	write(f);
+	write('\n');
+}
+
+function writeLine(i: int): void {
+	write(i);
+	write('\n');
+}
+
+function writeLine(c: char): void {
+	write(c);
+	write('\n');
+}
+
 function write(s: string): void {
 	for i = 0; i < #s; i += 1 {
 		write(s[i]);
 	}
+}
+
+function writeLine(s: string): void {
+	write(s);
+	write('\n');
 }

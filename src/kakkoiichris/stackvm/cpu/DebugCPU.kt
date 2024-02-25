@@ -1,5 +1,6 @@
 package kakkoiichris.stackvm.cpu
 
+import kakkoiichris.stackvm.linker.Linker
 import kakkoiichris.stackvm.util.bool
 import kakkoiichris.stackvm.util.float
 import kakkoiichris.stackvm.util.toAddress
@@ -623,7 +624,7 @@ object DebugCPU : CPU() {
     override fun sys() {
         val id = fetchInt()
 
-        val function = StandardLibrary[id]
+        val function = Linker[id]
 
         val args = mutableListOf<Double>()
 
