@@ -1,6 +1,6 @@
 package kakkoiichris.stackvm.lang.compiler
 
-class BytecodeLexer(private val src: String) : Iterator<Bytecode> {
+class BytecodeLexer(private val src: String, private val preserveComments: Boolean) : Iterator<Bytecode> {
     private var pos = 0
 
     override fun hasNext() = pos < src.length
@@ -14,13 +14,17 @@ class BytecodeLexer(private val src: String) : Iterator<Bytecode> {
             }
 
             if (match(';')) {
+                if (preserveComments) {
+                    return comment()
+                }
+
                 skipComment()
 
                 continue
             }
 
             if (match(Char::isLetter)) {
-                return keyword()
+                return instruction()
             }
 
             if (match(Char::isDigit)) {
@@ -58,6 +62,19 @@ class BytecodeLexer(private val src: String) : Iterator<Bytecode> {
         while (match(Char::isWhitespace))
     }
 
+    private fun comment(): Bytecode.Comment {
+        step()
+
+        val message = buildString {
+            while (!match('\n')) {
+                append(peek())
+                step()
+            }
+        }
+
+        return Bytecode.Comment(message)
+    }
+
     private fun skipComment() {
         do {
             step()
@@ -65,7 +82,7 @@ class BytecodeLexer(private val src: String) : Iterator<Bytecode> {
         while (!match('\n'))
     }
 
-    private fun keyword(): Bytecode {
+    private fun instruction(): Bytecode.Instruction {
         val result = buildString {
             do {
                 take()
@@ -76,7 +93,7 @@ class BytecodeLexer(private val src: String) : Iterator<Bytecode> {
         return Bytecode.Instruction.entries.first { it.name.equals(result, ignoreCase = true) }
     }
 
-    private fun value(): Bytecode {
+    private fun value(): Bytecode.Value {
         val result = buildString {
             do {
                 take()

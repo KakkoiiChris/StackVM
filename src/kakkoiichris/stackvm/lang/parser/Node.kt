@@ -188,6 +188,8 @@ interface Node {
     ) : Node {
         var offset = -1
 
+        val signature get() = Signature(name, params.map { it.dataType })
+
         override fun <X> accept(visitor: Visitor<X>): X =
             visitor.visitFunction(this)
     }

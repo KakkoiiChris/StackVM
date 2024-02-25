@@ -61,5 +61,10 @@ interface Bytecode {
             value.truncate()
     }
 
+    data class Comment(val message: String) : Bytecode {
+        override fun toString() =
+            "; $message"
+    }
+
     data object End : Bytecode
 }

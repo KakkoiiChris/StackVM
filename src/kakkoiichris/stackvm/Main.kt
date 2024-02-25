@@ -90,7 +90,7 @@ private fun compile(srcFile: File): DoubleArray {
 
     Allocator.allocate(program)
 
-    val compiler = Compiler(program, true)
+    val compiler = Compiler(program, true, false)
 
     return compiler.compile()
 }
@@ -102,7 +102,7 @@ private fun repl(cpu: CPU) {
         val src = readln().takeIf { it.isNotEmpty() } ?: break
 
         try {
-            val (tokens, compileTime) = measureTimedValue {
+            val (bytecodes, compileTime) = measureTimedValue {
                 val lexer = Lexer(Source("<REPL>", src))
 
                 val parser = Parser(lexer, false)
@@ -111,14 +111,14 @@ private fun repl(cpu: CPU) {
 
                 Allocator.allocate(program)
 
-                val compiler = Compiler(program, true)
+                val compiler = Compiler(program, true, false)
 
                 compiler.convert()
             }
 
             println("Compiled: ${compileTime.inWholeMilliseconds / 1E3}s\n")
 
-            cpu.initialize(tokens.iterator())
+            cpu.initialize(bytecodes.iterator())
 
             val (result, runTime) = measureTimedValue { cpu.run() }
 

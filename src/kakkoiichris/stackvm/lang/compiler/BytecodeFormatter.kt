@@ -1,20 +1,21 @@
 package kakkoiichris.stackvm.lang.compiler
 
-import kakkoiichris.stackvm.linker.Linker
 import kakkoiichris.stackvm.lang.Allocator
 import kakkoiichris.stackvm.lang.Source
 import kakkoiichris.stackvm.lang.lexer.Lexer
 import kakkoiichris.stackvm.lang.parser.Parser
+import kakkoiichris.stackvm.linker.Linker
 import kakkoiichris.stackvm.util.toAddress
-import kakkoiichris.stackvm.util.truncate
 import java.io.File
 import java.time.LocalDateTime
 import java.time.format.DateTimeFormatter
 
 class BytecodeFormatter(private val file: File) {
-    private val values: DoubleArray
+    private val bytecodes: List<Bytecode>
 
     private var pos = 0
+
+    private var address = 0
 
     init {
         val source = Source.of(file)
@@ -29,31 +30,39 @@ class BytecodeFormatter(private val file: File) {
 
         Allocator.allocate(program)
 
-        val compiler = Compiler(program, true)
+        val compiler = Compiler(program, true, true)
 
-        values = compiler.compile()
+        bytecodes = compiler.convert()
     }
 
-    private fun fetch() =
-        values[pos++]
+    private fun fetch(): Bytecode {
+        val bytecode = bytecodes[pos++]
 
-    private fun fetchInt() =
-        fetch().toInt()
+        address++
+
+        return bytecode
+    }
 
     fun format(): String {
         val lines = mutableListOf<Line>()
 
-        while (pos < values.size) {
-            val here = pos
+        while (pos < bytecodes.size) {
+            val here = address
 
-            val opCode = fetchInt()
+            lines += when (val bytecode = fetch()) {
+                is Bytecode.Comment     -> {
+                    address--
 
-            val instruction = Bytecode.Instruction.entries[opCode]
+                    Line(bytecode.toString(), -1)
+                }
 
-            lines += getLine(here, instruction)
+                is Bytecode.Instruction -> getLine(here, bytecode)
+
+                else                    -> error("Invalid start of line!")
+            }
         }
 
-        val maxLength = lines.maxBy { it.text.length }.text.length
+        val maxLength = lines.filter { it.pos >= 0 }.maxBy { it.text.length }.text.length
 
         val dateTime = LocalDateTime.now()
 
@@ -66,9 +75,13 @@ class BytecodeFormatter(private val file: File) {
             for ((text, pos) in lines) {
                 append(text)
 
-                append(" ".repeat(maxLength - text.length))
+                if (pos >= 0) {
+                    append(" ".repeat(maxLength - text.length))
 
-                appendLine(" ; ${pos.toAddress()}")
+                    append(" ; ${pos.toAddress()}")
+                }
+
+                appendLine()
             }
         }
     }
@@ -87,10 +100,10 @@ class BytecodeFormatter(private val file: File) {
         Line("$instruction", pos)
 
     private fun oneArgLine(pos: Int, instruction: Bytecode.Instruction) =
-        Line("$instruction ${fetch().truncate()}", pos)
+        Line("$instruction ${fetch()}", pos)
 
     private fun twoArgLine(pos: Int, instruction: Bytecode.Instruction) =
-        Line("$instruction ${fetch().truncate()} ${fetch().truncate()}", pos)
+        Line("$instruction ${fetch()} ${fetch()}", pos)
 
     data class Line(val text: String, val pos: Int)
 }

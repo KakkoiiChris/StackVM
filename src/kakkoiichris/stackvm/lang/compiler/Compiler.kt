@@ -7,7 +7,8 @@ import java.util.*
 
 class Compiler(
     private val program: Node.Program,
-    private val optimize: Boolean
+    private val optimize: Boolean,
+    private val generateComments: Boolean
 ) : Node.Visitor<List<Token>> {
     private var pos = 0
 
@@ -78,9 +79,11 @@ class Compiler(
     }
 
     private operator fun MutableList<Token>.plusAssign(x: Bytecode) {
+        if (x is Bytecode.Comment && !generateComments) return
+
         add(x.ok)
 
-        pos++
+        if (x !is Bytecode.Comment) pos++
     }
 
     private operator fun MutableList<Token>.plusAssign(x: Token) {
@@ -431,6 +434,8 @@ class Compiler(
         if (node.isNative) return emptyList()
 
         var tokens = mutableListOf<Token>()
+
+        tokens += Bytecode.Comment("${node.signature} @ ${node.location}")
 
         tokens += JMP
         tokens += Token.AwaitEnd()
