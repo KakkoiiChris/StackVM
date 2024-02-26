@@ -1,5 +1,8 @@
 package kakkoiichris.stackvm.lang.parser
 
+import kakkoiichris.stackvm.lang.lexer.Location
+import kakkoiichris.stackvm.lang.lexer.TokenType
+
 sealed interface DataType {
     val offset get() = 1
 
@@ -21,6 +24,16 @@ sealed interface DataType {
         override val isHeapAllocated get() = getAlias(name).isHeapAllocated
 
         override fun toString() = "${name.name.value}=${getAlias(name)}"
+
+        companion object {
+            fun of(name: String): Alias {
+                val nameToken = TokenType.Name(name)
+
+                val nameNode = Node.Name(Location.none(), nameToken)
+
+                return Alias(nameNode)
+            }
+        }
     }
 
     data class User(val name: Node.Name) : DataType

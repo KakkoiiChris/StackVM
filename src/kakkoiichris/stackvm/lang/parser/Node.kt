@@ -60,6 +60,8 @@ interface Node {
 
         fun visitSize(node: Size): X
 
+        fun visitIndexSize(node: IndexSize): X
+
         fun visitBinary(node: Binary): X
 
         fun visitAssign(node: Assign): X
@@ -309,6 +311,13 @@ interface Node {
 
         override fun <X> accept(visitor: Visitor<X>): X =
             visitor.visitSize(this)
+    }
+
+    class IndexSize(override val location: Location, val variable: Variable, val indices: List<Node>) : Node {
+        override val dataType get() = DataType.Primitive.INT
+
+        override fun <X> accept(visitor: Visitor<X>): X =
+            visitor.visitIndexSize(this)
     }
 
     class Binary(

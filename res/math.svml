@@ -8,9 +8,9 @@
  *         Stack Virtual Machine Language
  *     Copyright (C) 2024 Christian Alexander
  */
-let PI: float = 3.1415927;
+let PI: float = 3.141592653589793;
 
-let E : float = 2.7182817;
+let E : float = 2.718281828459045;
 
 function abs(n: float): float {
 	if n < 0 {

@@ -602,6 +602,27 @@ class Compiler(
         return tokens
     }
 
+    override fun visitIndexSize(node: Node.IndexSize): List<Token> {
+        val tokens = mutableListOf<Token>()
+
+        for (index in node.indices) {
+            tokens += visit(index)
+        }
+
+        if (node.variable.dataType.isHeapAllocated) {
+            tokens += HISIZE
+            tokens += node.variable.id
+            tokens += node.indices.size
+        }
+        else {
+            tokens += ISIZE
+            tokens += node.variable.address
+            tokens += node.indices.size
+        }
+
+        return tokens
+    }
+
     override fun visitBinary(node: Node.Binary): List<Token> {
         val tokens = mutableListOf<Token>()
 

@@ -381,6 +381,44 @@ object ReleaseCPU : CPU() {
         pushStack(totalSize.toDouble())
     }
 
+    override fun isize() {
+        var address = fetchInt() + getLoadOffset()
+        val indexCount = fetchInt()
+
+        for (i in 0 until indexCount - 1) {
+            address++
+
+            val subSize = memory[address].toInt()
+
+            address += popStackInt() * (subSize + 1)
+        }
+
+        address += popStackInt() + 1
+
+        val totalSize = memory[address].toInt()
+
+        pushStack(totalSize.toDouble())
+    }
+
+    override fun hisize() {
+        var address = memory[tablePointerOrigin + fetchInt()].toInt()
+        val indexCount = fetchInt()
+
+        for (i in 0 until indexCount - 1) {
+            address++
+
+            val subSize = memory[address].toInt()
+
+            address += popStackInt() * (subSize + 1)
+        }
+
+        address += popStackInt() + 1
+
+        val totalSize = memory[address].toInt()
+
+        pushStack(totalSize.toDouble())
+    }
+
     override fun call() {
         pushCall(instructionPointer + 1.0)
 

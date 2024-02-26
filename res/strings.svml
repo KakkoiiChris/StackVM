@@ -8,10 +8,6 @@
  *         Stack Virtual Machine Language
  *     Copyright (C) 2024 Christian Alexander
  */
-import lang;
-
-import strings;
-
-import console;
-
-import math;
+ alias string = char[];
+ 
+ //function concat(a: string, b: string): string;

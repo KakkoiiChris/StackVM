@@ -13,7 +13,7 @@ object Console : Link {
 
     override val name = "console"
 
-    override fun open(library: Linker) {
+    override fun open(linker: Linker) {
         Linker.addFunction("readBool") { _, _ ->
             listOf(input.nextBoolean().float)
         }
@@ -75,5 +75,5 @@ object Console : Link {
         }
     }
 
-    override fun close(library: Linker) = input.close()
+    override fun close(linker: Linker) = input.close()
 }

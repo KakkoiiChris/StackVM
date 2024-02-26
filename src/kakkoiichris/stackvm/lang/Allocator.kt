@@ -215,6 +215,14 @@ object Allocator : Node.Visitor<Unit> {
         visit(node.variable)
     }
 
+    override fun visitIndexSize(node: Node.IndexSize) {
+        visit(node.variable)
+
+        for (index in node.indices) {
+            visit(index)
+        }
+    }
+
     override fun visitBinary(node: Node.Binary) {
         visit(node.operandLeft)
 

@@ -571,6 +571,30 @@ object DebugCPU : CPU() {
         pushStack(totalSize.toDouble())
     }
 
+    override fun isize() {
+        var address = fetchInt() + getLoadOffset()
+
+        val indexCount = fetchInt()
+
+        val indices = List(indexCount) { popStackInt() }
+
+        for (index in indices.dropLast(1)) {
+            address++
+
+            val subSize = memory[address].toInt()
+
+            address += index * (subSize + 1)
+        }
+
+        address += indices.last() + 1
+
+        val totalSize = memory[address].toInt()
+
+        println("ISIZE @${address.toAddress()} <$totalSize>")
+
+        pushStack(totalSize.toDouble())
+    }
+
     override fun hsize() {
         val id = fetchInt()
         val address = memory[tablePointerOrigin + id].toInt()
@@ -578,6 +602,30 @@ object DebugCPU : CPU() {
         val totalSize = memory[address].toInt()
 
         println("HSIZE @${address.toAddress()} <$totalSize>")
+
+        pushStack(totalSize.toDouble())
+    }
+
+    override fun hisize() {
+        val id = fetchInt()
+        var address = memory[tablePointerOrigin + id].toInt()
+        val indexCount = fetchInt()
+
+        val indices = List(indexCount) { popStackInt() }
+
+        for (index in indices.dropLast(1)) {
+            address++
+
+            val subSize = memory[address].toInt()
+
+            address += index * (subSize + 1)
+        }
+
+        address += indices.last() + 1
+
+        val totalSize = memory[address].toInt()
+
+        println("HISIZE @${address.toAddress()} <$totalSize>")
 
         pushStack(totalSize.toDouble())
     }

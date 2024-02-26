@@ -8,8 +8,6 @@
  *         Stack Virtual Machine Language
  *     Copyright (C) 2024 Christian Alexander
  */
-alias string = char[];
-
 let MIN_FLOAT        : float = 1.4E-45;
 
 let MAX_FLOAT        : float = 3.4028235E38;

@@ -1,12 +1,12 @@
 package kakkoiichris.stackvm.lang.parser
 
-import kakkoiichris.stackvm.linker.Linker
 import kakkoiichris.stackvm.lang.Directory
 import kakkoiichris.stackvm.lang.Source
 import kakkoiichris.stackvm.lang.lexer.Lexer
 import kakkoiichris.stackvm.lang.lexer.Location
 import kakkoiichris.stackvm.lang.lexer.Token
 import kakkoiichris.stackvm.lang.lexer.TokenType
+import kakkoiichris.stackvm.linker.Linker
 import java.util.*
 
 class Parser(lexer: Lexer, private val optimize: Boolean) {
@@ -112,8 +112,10 @@ class Parser(lexer: Lexer, private val optimize: Boolean) {
 
         if (statements.none {
                 it is Node.Function
-                    && it.name.name.value == "main" && DataType.isEquivalent(it.dataType, DataType.Primitive.INT)
-            }) error("No main function @ ${here()}!")
+                    && it.name.name.value == "main"
+                    && DataType.isEquivalent(it.dataType, DataType.Primitive.INT)
+            })
+            error("No main function @ ${here()}!")
 
         statements += implicitMainReturn()
 
@@ -724,7 +726,11 @@ class Parser(lexer: Lexer, private val optimize: Boolean) {
 
         val node = or()
 
-        if (!DataType.isEquivalent(dataType, node.dataType)) error("Cannot assign a value of type '${node.dataType}' to a variable of type '$dataType' @ $location!")
+        if (!DataType.isEquivalent(
+                dataType,
+                node.dataType
+            )
+        ) error("Cannot assign a value of type '${node.dataType}' to a variable of type '$dataType' @ $location!")
 
         return Node.Assign(location, expr, node)
     }
@@ -920,7 +926,7 @@ class Parser(lexer: Lexer, private val optimize: Boolean) {
             mustSkip(operator)
 
             if (operator == TokenType.Symbol.POUND) {
-                Node.Size(location, name().toVariable())
+                size(location)
             }
             else {
                 Node.Unary(location, Node.Unary.Operator[operator], unary())
@@ -933,6 +939,25 @@ class Parser(lexer: Lexer, private val optimize: Boolean) {
         expr.dataType
 
         return expr
+    }
+
+    private fun size(location: Location): Node {
+        val variable = name().toVariable()
+
+        if (skip(TokenType.Symbol.LEFT_SQUARE)) {
+            val indices = mutableListOf<Node>()
+
+            do {
+                indices += expr()
+
+                mustSkip(TokenType.Symbol.RIGHT_SQUARE)
+            }
+            while (skip(TokenType.Symbol.LEFT_SQUARE))
+
+            return Node.IndexSize(location, variable, indices)
+        }
+
+        return Node.Size(location, variable)
     }
 
     private fun postfix(): Node {

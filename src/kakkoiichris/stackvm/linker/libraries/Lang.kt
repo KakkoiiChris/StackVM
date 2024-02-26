@@ -7,7 +7,7 @@ import kakkoiichris.stackvm.linker.Linker
 object Lang : Link {
     override val name = "lang"
 
-    override fun open(library: Linker) {
+    override fun open(linker: Linker) {
         Linker.addFunction("toFloat", DataType.Primitive.INT) { _, args ->
             val (i) = args
 
@@ -42,5 +42,5 @@ object Lang : Link {
         }
     }
 
-    override fun close(library: Linker) = Unit
+    override fun close(linker: Linker) = Unit
 }

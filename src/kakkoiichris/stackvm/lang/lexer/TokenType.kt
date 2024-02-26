@@ -21,7 +21,9 @@ interface TokenType {
         INT,
         FLOAT,
         CHAR,
-        ALIAS;
+        ALIAS,
+        STRUCT,
+        ENUM;
 
         override fun toString() = name.lowercase()
     }

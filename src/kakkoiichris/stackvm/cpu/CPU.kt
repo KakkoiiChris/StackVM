@@ -9,6 +9,7 @@ abstract class CPU(private val config: Config = Config()) {
 
         private val RUN_ADR = initAddress++
         private val GLO_ADR = initAddress++
+        private val HEP_ADR = initAddress++
         private val RES_ADR = initAddress++
         private val IPO_ADR = initAddress++
         private val IPA_ADR = initAddress++
@@ -24,11 +25,13 @@ abstract class CPU(private val config: Config = Config()) {
         private val HPA_ADR = initAddress++
     }
 
-    internal lateinit var memory: DoubleArray
+    internal val memory = DoubleArray(config.memorySize)
 
     internal var running by Register.Bool(RUN_ADR)
 
     protected var global by Register.Bool(GLO_ADR)
+
+    protected var heap by Register.Bool(HEP_ADR)
 
     internal var result by Register.Float(RES_ADR)
 
@@ -51,8 +54,6 @@ abstract class CPU(private val config: Config = Config()) {
     protected var heapPointer by Register.Int(HPA_ADR)
 
     fun initialize(instructions: DoubleArray) {
-        memory = DoubleArray(config.memorySize)
-
         running = true
         result = Double.NaN
 
@@ -188,6 +189,10 @@ abstract class CPU(private val config: Config = Config()) {
             Bytecode.Instruction.SIZE    -> size()
 
             Bytecode.Instruction.HSIZE   -> hsize()
+
+            Bytecode.Instruction.ISIZE    -> isize()
+
+            Bytecode.Instruction.HISIZE   -> hisize()
 
             Bytecode.Instruction.CALL    -> call()
 
@@ -397,6 +402,10 @@ abstract class CPU(private val config: Config = Config()) {
     abstract fun size()
 
     abstract fun hsize()
+
+    abstract fun isize()
+
+    abstract fun hisize()
 
     abstract fun call()
 

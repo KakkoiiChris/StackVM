@@ -8,7 +8,7 @@ import kotlin.math.*
 object Math : Link {
     override val name = "math"
 
-    override fun open(library: Linker) {
+    override fun open(linker: Linker) {
         Linker.addFunction("sin", DataType.Primitive.FLOAT) { _, values ->
             val (n) = values
 
@@ -184,5 +184,5 @@ object Math : Link {
         }
     }
 
-    override fun close(library: Linker) = Unit
+    override fun close(linker: Linker) = Unit
 }
