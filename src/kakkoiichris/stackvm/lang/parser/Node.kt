@@ -309,12 +309,30 @@ interface Node {
     class Size(override val location: Location, val variable: Variable) : Node {
         override val dataType get() = DataType.Primitive.INT
 
+        val arrayType: DataType.Array
+            get() {
+                if (variable.dataType is DataType.Alias) {
+                    return DataType.getAlias(variable.dataType.name) as DataType.Array
+                }
+
+                return variable.dataType as DataType.Array
+            }
+
         override fun <X> accept(visitor: Visitor<X>): X =
             visitor.visitSize(this)
     }
 
     class IndexSize(override val location: Location, val variable: Variable, val indices: List<Node>) : Node {
         override val dataType get() = DataType.Primitive.INT
+
+        val arrayType: DataType.Array
+            get() {
+                if (variable.dataType is DataType.Alias) {
+                    return DataType.getAlias(variable.dataType.name) as DataType.Array
+                }
+
+                return variable.dataType as DataType.Array
+            }
 
         override fun <X> accept(visitor: Visitor<X>): X =
             visitor.visitIndexSize(this)

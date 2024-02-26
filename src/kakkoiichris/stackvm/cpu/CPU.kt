@@ -152,6 +152,8 @@ abstract class CPU(private val config: Config = Config()) {
 
             Bytecode.Instruction.GLOB    -> glob()
 
+            Bytecode.Instruction.HEAP    -> heap()
+
             Bytecode.Instruction.LOD     -> lod()
 
             Bytecode.Instruction.ALOD    -> alod()
@@ -168,31 +170,19 @@ abstract class CPU(private val config: Config = Config()) {
 
             Bytecode.Instruction.IASTO   -> iasto()
 
+            Bytecode.Instruction.SIZE   -> size()
+
+            Bytecode.Instruction.ASIZE   -> asize()
+
+            Bytecode.Instruction.ISIZE   -> isize()
+
+            Bytecode.Instruction.IASIZE  -> iasize()
+
             Bytecode.Instruction.ALLOC   -> alloc()
 
             Bytecode.Instruction.REALLOC -> realloc()
 
             Bytecode.Instruction.FREE    -> free()
-
-            Bytecode.Instruction.HALOD   -> halod()
-
-            Bytecode.Instruction.HILOD   -> hilod()
-
-            Bytecode.Instruction.HIALOD  -> hialod()
-
-            Bytecode.Instruction.HASTO   -> hasto()
-
-            Bytecode.Instruction.HISTO   -> histo()
-
-            Bytecode.Instruction.HIASTO  -> hiasto()
-
-            Bytecode.Instruction.SIZE    -> size()
-
-            Bytecode.Instruction.HSIZE   -> hsize()
-
-            Bytecode.Instruction.ISIZE    -> isize()
-
-            Bytecode.Instruction.HISIZE   -> hisize()
 
             Bytecode.Instruction.CALL    -> call()
 
@@ -265,6 +255,26 @@ abstract class CPU(private val config: Config = Config()) {
         return framePointer
     }
 
+    protected fun getLoadAddress(): Int {
+        if (heap) {
+            heap = false
+
+            return memory[tablePointerOrigin + fetchInt()].toInt()
+        }
+
+        return fetchInt() + getLoadOffset()
+    }
+
+    protected fun getStoreAddress(): Int {
+        if (heap) {
+            heap = false
+
+            return memory[tablePointerOrigin + fetchInt()].toInt()
+        }
+
+        return fetchInt() + framePointer
+    }
+
     protected fun allocateMemory(id: Int, size: Int): Int {
         var address = heapPointerOrigin
 
@@ -292,7 +302,7 @@ abstract class CPU(private val config: Config = Config()) {
     }
 
     protected fun reallocateMemory(id: Int, size: Int): Int {
-        var tableAddress = tablePointerOrigin + id
+        val tableAddress = tablePointerOrigin + id
 
         var address = memory[tableAddress].toInt()
 
@@ -365,6 +375,8 @@ abstract class CPU(private val config: Config = Config()) {
 
     abstract fun glob()
 
+    abstract fun heap()
+
     abstract fun lod()
 
     abstract fun alod()
@@ -381,31 +393,19 @@ abstract class CPU(private val config: Config = Config()) {
 
     abstract fun iasto()
 
+    abstract fun size()
+
+    abstract fun asize()
+
+    abstract fun isize()
+
+    abstract fun iasize()
+
     abstract fun alloc()
 
     abstract fun realloc()
 
     abstract fun free()
-
-    abstract fun halod()
-
-    abstract fun hilod()
-
-    abstract fun hialod()
-
-    abstract fun hasto()
-
-    abstract fun histo()
-
-    abstract fun hiasto()
-
-    abstract fun size()
-
-    abstract fun hsize()
-
-    abstract fun isize()
-
-    abstract fun hisize()
 
     abstract fun call()
 

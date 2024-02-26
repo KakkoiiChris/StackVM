@@ -145,14 +145,18 @@ object ReleaseCPU : CPU() {
         global = true
     }
 
+    override fun heap() {
+        heap = true
+    }
+
     override fun lod() {
-        val address = fetchInt() + getLoadOffset()
+        val address = getLoadAddress()
 
         pushStack(memory[address])
     }
 
     override fun alod() {
-        val address = fetchInt() + getLoadOffset()
+        val address = getLoadAddress()
         val size = memory[address].toInt()
 
         for (i in size downTo 0) {
@@ -161,7 +165,7 @@ object ReleaseCPU : CPU() {
     }
 
     override fun ilod() {
-        var address = fetchInt() + getLoadOffset()
+        var address = getLoadAddress()
         val indexCount = fetchInt()
 
         for (i in 0 until indexCount - 1) {
@@ -178,7 +182,7 @@ object ReleaseCPU : CPU() {
     }
 
     override fun ialod() {
-        var address = fetchInt() + getLoadOffset()
+        var address = getLoadAddress()
         val indexCount = fetchInt()
 
         for (i in 0 until indexCount - 1) {
@@ -199,13 +203,13 @@ object ReleaseCPU : CPU() {
     }
 
     override fun sto() {
-        val address = fetchInt() + framePointer
+        val address = getStoreAddress()
 
         memory[address] = popStack()
     }
 
     override fun asto() {
-        val address = fetchInt() + framePointer
+        val address = getStoreAddress()
         val size = popStack()
 
         memory[address] = size
@@ -216,7 +220,7 @@ object ReleaseCPU : CPU() {
     }
 
     override fun isto() {
-        var address = fetchInt() + framePointer
+        var address = getStoreAddress()
         val indexCount = fetchInt()
 
         for (i in 0 until indexCount - 1) {
@@ -233,117 +237,7 @@ object ReleaseCPU : CPU() {
     }
 
     override fun iasto() {
-        var address = fetchInt() + framePointer
-        val indexCount = fetchInt()
-
-        for (i in 0 until indexCount - 1) {
-            address++
-
-            val subSize = memory[address].toInt()
-
-            address += popStackInt() * (subSize + 1)
-        }
-
-        address += popStackInt() + 1
-
-        val size = popStack()
-
-        memory[address] = size
-
-        for (i in 1..size.toInt()) {
-            memory[address + i] = popStack()
-        }
-    }
-
-    override fun alloc() {
-        allocateMemory(fetchInt(), peekStackInt())
-    }
-
-    override fun realloc() {
-        reallocateMemory(fetchInt(), peekStackInt())
-    }
-
-    override fun free() {
-        freeMemory(fetchInt())
-    }
-
-    override fun halod() {
-        val address = memory[tablePointerOrigin + fetchInt()].toInt()
-        val size = memory[address].toInt()
-
-        for (i in size downTo 0) {
-            pushStack(memory[address + i])
-        }
-    }
-
-    override fun hilod() {
-        var address = memory[tablePointerOrigin + fetchInt()].toInt()
-        val indexCount = fetchInt()
-
-        for (i in 0 until indexCount - 1) {
-            address++
-
-            val subSize = memory[address].toInt()
-
-            address += popStackInt() * (subSize + 1)
-        }
-
-        address += popStackInt() + 1
-
-        pushStack(memory[address])
-    }
-
-    override fun hialod() {
-        var address = memory[tablePointerOrigin + fetchInt()].toInt()
-        val indexCount = fetchInt()
-
-        for (i in 0 until indexCount - 1) {
-            address++
-
-            val subSize = memory[address].toInt()
-
-            address += popStackInt() * (subSize + 1)
-        }
-
-        address += popStackInt()
-
-        val size = memory[address].toInt()
-
-        for (i in size downTo 0) {
-            pushStack(memory[address + i])
-        }
-    }
-
-    override fun hasto() {
-        val address = memory[tablePointerOrigin + fetchInt()].toInt()
-        val size = popStack()
-
-        memory[address] = size
-
-        for (i in 1..size.toInt()) {
-            memory[address + i] = popStack()
-        }
-    }
-
-    override fun histo() {
-        var address = memory[tablePointerOrigin + fetchInt()].toInt()
-        val indexCount = fetchInt()
-
-        for (i in 0 until indexCount - 1) {
-            address++
-
-            val subSize = memory[address].toInt()
-
-            address += popStackInt() * (subSize + 1)
-        }
-
-        address += popStackInt() + 1
-
-        memory[address] = popStack()
-    }
-
-    override fun hiasto() {
-        var address = memory[tablePointerOrigin + fetchInt()].toInt()
+        var address = getStoreAddress()
         val indexCount = fetchInt()
 
         for (i in 0 until indexCount - 1) {
@@ -366,23 +260,23 @@ object ReleaseCPU : CPU() {
     }
 
     override fun size() {
-        val address = fetchInt() + getLoadOffset()
+        val address = getLoadAddress()
 
         val totalSize = memory[address].toInt()
 
         pushStack(totalSize.toDouble())
     }
 
-    override fun hsize() {
-        val address = memory[tablePointerOrigin + fetchInt()].toInt()
+    override fun asize() {
+        val address = getLoadAddress()
 
-        val totalSize = memory[address].toInt()
+        val totalSize = memory[address].toInt() / (memory[address + 1] + 1).toInt()
 
         pushStack(totalSize.toDouble())
     }
 
     override fun isize() {
-        var address = fetchInt() + getLoadOffset()
+        var address = getLoadAddress()
         val indexCount = fetchInt()
 
         for (i in 0 until indexCount - 1) {
@@ -400,8 +294,8 @@ object ReleaseCPU : CPU() {
         pushStack(totalSize.toDouble())
     }
 
-    override fun hisize() {
-        var address = memory[tablePointerOrigin + fetchInt()].toInt()
+    override fun iasize() {
+        var address = getLoadAddress()
         val indexCount = fetchInt()
 
         for (i in 0 until indexCount - 1) {
@@ -414,9 +308,21 @@ object ReleaseCPU : CPU() {
 
         address += popStackInt() + 1
 
-        val totalSize = memory[address].toInt()
+        val totalSize = memory[address].toInt() / (memory[address + 1] + 1).toInt()
 
         pushStack(totalSize.toDouble())
+    }
+
+    override fun alloc() {
+        allocateMemory(fetchInt(), peekStackInt())
+    }
+
+    override fun realloc() {
+        reallocateMemory(fetchInt(), peekStackInt())
+    }
+
+    override fun free() {
+        freeMemory(fetchInt())
     }
 
     override fun call() {

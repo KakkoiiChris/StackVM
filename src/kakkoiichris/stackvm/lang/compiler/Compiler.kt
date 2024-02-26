@@ -193,7 +193,8 @@ class Compiler(
         if (node.variable.dataType.isHeapAllocated) {
             tokens += ALLOC
             tokens += node.id
-            tokens += HASTO
+            tokens += HEAP
+            tokens += ASTO
             tokens += node.id
 
             addMemory(node.id)
@@ -453,7 +454,8 @@ class Compiler(
             if (param.dataType.isHeapAllocated) {
                 tokens += ALLOC
                 tokens += param.id
-                tokens += HASTO
+                tokens += HEAP
+                tokens += ASTO
                 tokens += param.id
             }
             else {
@@ -539,7 +541,8 @@ class Compiler(
         val tokens = mutableListOf<Token>()
 
         if (node.dataType.isHeapAllocated) {
-            tokens += HALOD
+            tokens += HEAP
+            tokens += ALOD
             tokens += node.id
         }
         else {
@@ -585,12 +588,15 @@ class Compiler(
         val tokens = mutableListOf<Token>()
 
         if (DataType.isArray(node.variable.dataType)) {
+            val instruction = if (node.arrayType.dimension > 1) ASIZE else SIZE
+
             if (node.variable.dataType.isHeapAllocated) {
-                tokens += HSIZE
+                tokens += HEAP
+                tokens += instruction
                 tokens += node.variable.id
             }
             else {
-                tokens += SIZE
+                tokens += instruction
                 tokens += node.variable.address
             }
         }
@@ -609,13 +615,16 @@ class Compiler(
             tokens += visit(index)
         }
 
+        val instruction = if (node.indices.size < node.arrayType.dimension - 1) IASIZE else ISIZE
+
         if (node.variable.dataType.isHeapAllocated) {
-            tokens += HISIZE
+            tokens += HEAP
+            tokens += instruction
             tokens += node.variable.id
             tokens += node.indices.size
         }
         else {
-            tokens += ISIZE
+            tokens += instruction
             tokens += node.variable.address
             tokens += node.indices.size
         }
@@ -643,7 +652,8 @@ class Compiler(
         if (node.variable.dataType.isHeapAllocated) {
             tokens += REALLOC
             tokens += node.variable.id
-            tokens += HASTO
+            tokens += HEAP
+            tokens += ASTO
             tokens += node.variable.id
         }
         else if (DataType.isArray(node.dataType)) {
@@ -699,8 +709,11 @@ class Compiler(
             tokens += index
         }
 
+        val instruction = if (node.indices.size < node.arrayType.dimension) IALOD else ILOD
+
         if (node.variable.dataType.isHeapAllocated) {
-            tokens += if (node.indices.size < node.arrayType.dimension) HIALOD else HILOD
+            tokens += HEAP
+            tokens += instruction
             tokens += node.variable.id
         }
         else {
@@ -708,7 +721,7 @@ class Compiler(
                 tokens += GLOB
             }
 
-            tokens += if (node.indices.size < node.arrayType.dimension) IALOD else ILOD
+            tokens += instruction
             tokens += node.variable.address
         }
 
@@ -731,12 +744,15 @@ class Compiler(
             tokens += index
         }
 
+        val instruction = if (node.indices.size < node.arrayType.dimension) IASTO else ISTO
+
         if (node.variable.dataType.isHeapAllocated) {
-            tokens += if (node.indices.size < node.arrayType.dimension) HIASTO else HISTO
+            tokens += HEAP
+            tokens += instruction
             tokens += node.variable.id
         }
         else {
-            tokens += if (node.indices.size < node.arrayType.dimension) IASTO else ISTO
+            tokens += instruction
             tokens += node.variable.address
         }
 
