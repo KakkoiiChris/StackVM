@@ -3,6 +3,7 @@ package kakkoiichris.stackvm.cpu
 import kakkoiichris.stackvm.linker.Linker
 import kakkoiichris.stackvm.util.bool
 import kakkoiichris.stackvm.util.float
+import kakkoiichris.stackvm.util.truncate
 
 object ReleaseCPU : CPU() {
     override fun run(): Double {
@@ -270,7 +271,10 @@ object ReleaseCPU : CPU() {
     override fun asize() {
         val address = getLoadAddress()
 
-        val totalSize = memory[address].toInt() / (memory[address + 1] + 1).toInt()
+        val size = memory[address].toInt()
+        val subSize = (memory[address + 1] + 1).toInt()
+
+        val totalSize = size / subSize
 
         pushStack(totalSize.toDouble())
     }
@@ -280,9 +284,7 @@ object ReleaseCPU : CPU() {
         val indexCount = fetchInt()
 
         for (i in 0 until indexCount - 1) {
-            address++
-
-            val subSize = memory[address].toInt()
+            val subSize = memory[++address].toInt()
 
             address += popStackInt() * (subSize + 1)
         }
@@ -294,21 +296,41 @@ object ReleaseCPU : CPU() {
         pushStack(totalSize.toDouble())
     }
 
+    private fun showMemory(address: Int) {
+        for (i in -15..15) {
+            if (i == 0) {
+                print("[${memory[address + i].truncate()}] ")
+            }
+            else {
+                print("${memory[address + i].truncate()} ")
+            }
+        }
+        println('\n')
+    }
+
     override fun iasize() {
         var address = getLoadAddress()
         val indexCount = fetchInt()
+        //showMemory(address)
 
         for (i in 0 until indexCount - 1) {
             address++
+            //showMemory(address)
 
             val subSize = memory[address].toInt()
 
             address += popStackInt() * (subSize + 1)
+            //showMemory(address)
         }
 
-        address += popStackInt() + 1
+        var subSize = memory[++address].toInt()
 
-        val totalSize = memory[address].toInt() / (memory[address + 1] + 1).toInt()
+        address += popStackInt() * (subSize + 1)
+        //showMemory(address)
+
+        val size = memory[address].toInt()
+        subSize = (memory[address + 1] + 1).toInt()
+        val totalSize = size / subSize
 
         pushStack(totalSize.toDouble())
     }

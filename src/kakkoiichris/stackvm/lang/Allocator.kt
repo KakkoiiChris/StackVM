@@ -62,6 +62,8 @@ object Allocator : Node.Visitor<Unit> {
     override fun visitProgram(node: Node.Program) {
         val offset = allocateDecls(node.statements, 0)
 
+        node.offset = offset
+
         for (statement in node.statements) {
             offsets.push(offset)
 
@@ -72,17 +74,13 @@ object Allocator : Node.Visitor<Unit> {
     override fun visitDeclareSingle(node: Node.DeclareSingle) {
         visit(node.variable)
 
-        if (node.node != null) {
-            visit(node.node)
-        }
+        node.node?.let { visit(it) }
     }
 
     override fun visitDeclareArray(node: Node.DeclareArray) {
         visit(node.variable)
 
-        if (node.node != null) {
-            visit(node.node)
-        }
+        node.node?.let { visit(it) }
     }
 
     override fun visitIf(node: Node.If) {
@@ -91,9 +89,7 @@ object Allocator : Node.Visitor<Unit> {
         for ((_, condition, body) in node.branches) {
             val offset = allocateDecls(body, startAddress)
 
-            if (condition != null) {
-                visit(condition)
-            }
+            condition?.let { visit(it) }
 
             for (statement in body) {
                 offsets.push(offset)
@@ -158,13 +154,11 @@ object Allocator : Node.Visitor<Unit> {
     override fun visitContinue(node: Node.Continue) = Unit
 
     override fun visitFunction(node: Node.Function) {
-        var offset = offsets.pop()
-
-        node.offset = offset
-
-        offset = 0
+        var offset = 0
 
         for (param in node.params) {
+            if (param.dataType.isHeapAllocated) continue
+
             param.address = offset
 
             addresses[param.id] = offset
@@ -179,6 +173,8 @@ object Allocator : Node.Visitor<Unit> {
 
             visit(statement)
         }
+
+        node.offset = offset
     }
 
     override fun visitReturn(node: Node.Return) {

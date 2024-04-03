@@ -14,6 +14,8 @@ class Compiler(
 
     private val functions = mutableMapOf<Int, Int>()
 
+    private val offsetStack = Stack<Int>()
+
     private val memoryToFree = Stack<MutableList<Int>>()
 
     fun compile() =
@@ -149,6 +151,8 @@ class Compiler(
     override fun visitProgram(node: Node.Program): List<Token> {
         val tokens = mutableListOf<Token>()
 
+        offsetStack.push(node.offset)
+
         push()
 
         for (statement in node.statements) {
@@ -158,6 +162,8 @@ class Compiler(
         tokens += freeMemory()
 
         pop()
+
+        offsetStack.pop()
 
         return tokens
     }
@@ -445,8 +451,7 @@ class Compiler(
 
         functions[node.id] = pos
 
-        tokens += FRAME
-        tokens += node.offset
+        offsetStack.push(node.offset)
 
         push()
 
@@ -476,6 +481,8 @@ class Compiler(
         }
 
         pop()
+
+        offsetStack.pop()
 
         val end = pos.toDouble()
 
@@ -676,6 +683,11 @@ class Compiler(
             tokens += visit(arg)
         }
 
+        val offset = offsetStack.peek()!!
+
+        tokens += FRAME
+        tokens += offset
+
         val address = functions[node.id]!!
 
         tokens += CALL
@@ -762,4 +774,6 @@ class Compiler(
 
         return tokens
     }
+
+    data class FunctionRecord(val pos: Int, val offset: Int)
 }

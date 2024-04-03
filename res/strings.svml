@@ -10,4 +10,4 @@
  */
  alias string = char[];
  
- //function concat(a: string, b: string): string;
+ function concat(a: string, b: string): string;

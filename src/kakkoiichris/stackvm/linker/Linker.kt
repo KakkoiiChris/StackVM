@@ -9,6 +9,7 @@ import kakkoiichris.stackvm.lang.parser.Signature
 import kakkoiichris.stackvm.linker.libraries.Console
 import kakkoiichris.stackvm.linker.libraries.Lang
 import kakkoiichris.stackvm.linker.libraries.Math
+import kakkoiichris.stackvm.linker.libraries.Strings
 import java.io.File
 
 typealias Method = (cpu: CPU, values: List<Double>) -> List<Double>
@@ -35,7 +36,7 @@ object Linker {
             sources[file.nameWithoutExtension] = file
         }
 
-        links += listOf(Lang, Console, Math)
+        links += listOf(Lang, Console, Math, Strings)
     }
 
     fun addLink(link: Link) {
@@ -74,6 +75,20 @@ object Linker {
 
         functionTable[signature.toString()] = functions.size - 1
     }
+
+    fun scanString(values: List<Double>, start: Int = 0): StringScan {
+        var i = start
+
+        val result = buildString {
+            while (values[i] != 0.0) {
+                append(values[i++].toInt().toChar())
+            }
+        }
+
+        return StringScan(result, i)
+    }
+
+    data class StringScan(val string: String, val end: Int)
 
     class Function(val signature: Signature, private val method: Method) {
         operator fun invoke(cpu: CPU, values: List<Double>) =

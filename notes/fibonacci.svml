@@ -1,5 +1,5 @@
-# Recursive Fibonacci
-# 1/26/2024
+// Recursive Fibonacci
+// 1/26/2024
 
 function fibonacci(num: float): float {
 	if num < 2 {

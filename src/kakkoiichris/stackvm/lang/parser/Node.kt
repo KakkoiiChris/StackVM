@@ -78,6 +78,8 @@ interface Node {
     }
 
     class Program(override val location: Location, val statements: Nodes) : Node {
+        var offset = -1
+
         override fun <X> accept(visitor: Visitor<X>): X =
             visitor.visitProgram(this)
     }
