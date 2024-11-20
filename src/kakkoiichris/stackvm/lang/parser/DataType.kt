@@ -23,7 +23,7 @@ sealed interface DataType {
 
         override val isHeapAllocated get() = getAlias(name).isHeapAllocated
 
-        override fun toString() = "${name.name.value}=${getAlias(name)}"
+        override fun toString() = getAlias(name).toString()
 
         companion object {
             fun of(name: String): Alias {
@@ -68,6 +68,8 @@ sealed interface DataType {
     companion object {
         private val aliases = mutableMapOf<String, DataType>()
 
+        val string = Array(Primitive.CHAR, -1)
+
         fun hasAlias(name: Node.Name) =
             name.name.value in aliases
 
@@ -106,10 +108,8 @@ sealed interface DataType {
             }
 
             is Array     -> when (b) {
-                is Array -> (a.size == b.size || a.isHeapAllocated || b.isHeapAllocated) && isEquivalent(
-                    a.subType,
-                    b.subType
-                )
+                is Array -> (a.size == b.size || a.isHeapAllocated || b.isHeapAllocated)
+                    && isEquivalent(a.subType, b.subType)
 
                 is Alias -> isEquivalent(a, getAlias(b.name))
 

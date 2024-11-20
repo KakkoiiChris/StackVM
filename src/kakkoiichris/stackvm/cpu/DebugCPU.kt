@@ -536,6 +536,14 @@ object DebugCPU : CPU() {
         pushFrame(value)
     }
 
+    override fun arg() {
+        TODO("Not yet implemented")
+    }
+
+    override fun aarg() {
+        TODO("Not yet implemented")
+    }
+
     override fun sys() {
         val id = fetchInt()
 

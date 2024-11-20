@@ -14,6 +14,6 @@ val Boolean.float get() = if (this) 1.0 else 0.0
 
 fun Int.toAddress() =
     if (this < 0)
-        "-0x${absoluteValue.toString(16).uppercase()}"
+        "-${absoluteValue.toString().uppercase()}"
     else
-        "0x${toString(16).uppercase()}"
+        "${toString().uppercase()}"

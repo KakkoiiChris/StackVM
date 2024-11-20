@@ -8,7 +8,7 @@ object Strings : Link {
     override val name = "strings"
 
     override fun open(linker: Linker) {
-        linker.addFunction("concat", DataType.Alias.of("string"), DataType.Alias.of("string")) { _, values ->
+        linker.addFunction("concat", DataType.string, DataType.string) { _, values ->
             val (a, end) = linker.scanString(values)
             val (b) = linker.scanString(values, start = end + 1)
 

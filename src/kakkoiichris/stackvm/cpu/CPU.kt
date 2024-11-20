@@ -7,22 +7,24 @@ abstract class CPU(private val config: Config = Config()) {
     companion object {
         private var initAddress = 0
 
-        private val RUN_ADR = initAddress++
-        private val GLO_ADR = initAddress++
-        private val HEP_ADR = initAddress++
-        private val RES_ADR = initAddress++
-        private val IPO_ADR = initAddress++
-        private val IPA_ADR = initAddress++
-        private val SPO_ADR = initAddress++
-        private val SPA_ADR = initAddress++
-        private val FPO_ADR = initAddress++
-        private val FPA_ADR = initAddress++
-        private val CPO_ADR = initAddress++
-        private val CPA_ADR = initAddress++
-        private val TPO_ADR = initAddress++
-        private val TPA_ADR = initAddress++
-        private val HPO_ADR = initAddress++
-        private val HPA_ADR = initAddress++
+        private fun adr() = initAddress++
+
+        private val RUN_ADR = adr()
+        private val GLO_ADR = adr()
+        private val HEP_ADR = adr()
+        private val RES_ADR = adr()
+        private val IPO_ADR = adr()
+        private val IPA_ADR = adr()
+        private val SPO_ADR = adr()
+        private val SPA_ADR = adr()
+        private val FPO_ADR = adr()
+        private val FPA_ADR = adr()
+        private val CPO_ADR = adr()
+        private val CPA_ADR = adr()
+        private val TPO_ADR = adr()
+        private val TPA_ADR = adr()
+        private val HPO_ADR = adr()
+        private val HPA_ADR = adr()
     }
 
     internal val memory = DoubleArray(config.memorySize)
@@ -42,16 +44,16 @@ abstract class CPU(private val config: Config = Config()) {
     protected var stackPointer by Register.Int(SPA_ADR)
 
     protected var framePointerOrigin by Register.Int(FPO_ADR)
-    protected var framePointer by Register.Int(FPA_ADR)
+    private var framePointer by Register.Int(FPA_ADR)
 
     private var callPointerOrigin by Register.Int(CPO_ADR)
     private var callPointer by Register.Int(CPA_ADR)
 
     protected var tablePointerOrigin by Register.Int(TPO_ADR)
-    protected var tablePointer by Register.Int(TPA_ADR)
+    private var tablePointer by Register.Int(TPA_ADR)
 
     protected var heapPointerOrigin by Register.Int(HPO_ADR)
-    protected var heapPointer by Register.Int(HPA_ADR)
+    private var heapPointer by Register.Int(HPA_ADR)
 
     fun initialize(instructions: DoubleArray) {
         running = true
@@ -170,7 +172,7 @@ abstract class CPU(private val config: Config = Config()) {
 
             Bytecode.Instruction.IASTO   -> iasto()
 
-            Bytecode.Instruction.SIZE   -> size()
+            Bytecode.Instruction.SIZE    -> size()
 
             Bytecode.Instruction.ASIZE   -> asize()
 
@@ -189,6 +191,10 @@ abstract class CPU(private val config: Config = Config()) {
             Bytecode.Instruction.RET     -> ret()
 
             Bytecode.Instruction.FRAME   -> frame()
+
+            Bytecode.Instruction.ARG     -> arg()
+
+            Bytecode.Instruction.AARG    -> aarg()
 
             Bytecode.Instruction.SYS     -> sys()
         }
@@ -213,7 +219,6 @@ abstract class CPU(private val config: Config = Config()) {
     protected fun popStackInt() = popStack().toInt()
 
     protected fun popStackBool() = popStack().bool
-
 
     protected fun peekStack() = memory[stackPointer - 1]
 
@@ -245,7 +250,7 @@ abstract class CPU(private val config: Config = Config()) {
         return -1
     }
 
-    protected fun getLoadOffset(): Int {
+    private fun getLoadOffset(): Int {
         if (global) {
             global = false
 
@@ -413,12 +418,16 @@ abstract class CPU(private val config: Config = Config()) {
 
     abstract fun frame()
 
+    abstract fun arg()
+
+    abstract fun aarg()
+
     abstract fun sys()
 
     data class Config(
         val memorySize: Int = 100_000_000,
         val maxCalls: Int = 10_000,
         val maxStack: Int = 1_000_000,
-        val maxAllocations: Int = 10_000
+        val maxAllocations: Int = 10_000,
     )
 }

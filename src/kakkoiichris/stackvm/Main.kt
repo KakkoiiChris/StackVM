@@ -90,7 +90,7 @@ private fun compile(srcFile: File): DoubleArray {
 
     Allocator.allocate(program)
 
-    val compiler = Compiler(program, true, false)
+    val compiler = Compiler(program, optimize = true, generateComments = false)
 
     return compiler.compile()
 }
@@ -111,7 +111,7 @@ private fun repl(cpu: CPU) {
 
                 Allocator.allocate(program)
 
-                val compiler = Compiler(program, true, false)
+                val compiler = Compiler(program, optimize = true, generateComments = false)
 
                 compiler.convert()
             }

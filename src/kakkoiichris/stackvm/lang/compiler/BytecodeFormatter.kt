@@ -30,7 +30,7 @@ class BytecodeFormatter(private val file: File) {
 
         Allocator.allocate(program)
 
-        val compiler = Compiler(program, true, true)
+        val compiler = Compiler(program, optimize = true, generateComments = true)
 
         bytecodes = compiler.convert()
     }

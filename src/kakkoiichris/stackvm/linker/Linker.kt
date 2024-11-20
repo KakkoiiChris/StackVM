@@ -79,8 +79,10 @@ object Linker {
     fun scanString(values: List<Double>, start: Int = 0): StringScan {
         var i = start
 
+        val size = values[i++]
+
         val result = buildString {
-            while (values[i] != 0.0) {
+            repeat(size.toInt()) {
                 append(values[i++].toInt().toChar())
             }
         }
