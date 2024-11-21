@@ -679,7 +679,7 @@ class Compiler(
     override fun visitInvoke(node: Node.Invoke): List<Token> {
         val tokens = mutableListOf<Token>()
 
-        for (arg in node.args.reversed()) {
+        for (arg in node.args) {
             tokens += visit(arg)
         }
 
@@ -701,7 +701,7 @@ class Compiler(
 
         tokens += ARG
 
-        for (arg in node.args.reversed() ) {
+        for (arg in node.args) {
             tokens += visit(arg)
         }
 
@@ -776,6 +776,4 @@ class Compiler(
 
         return tokens
     }
-
-    data class FunctionRecord(val pos: Int, val offset: Int)
 }

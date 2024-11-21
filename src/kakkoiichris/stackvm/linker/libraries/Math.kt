@@ -46,7 +46,7 @@ object Math : Link {
         }
 
         linker.addFunction("atan2", DataType.Primitive.FLOAT, DataType.Primitive.FLOAT) { _, values ->
-            val (y, x) = values
+            val (x, y) = values
 
             listOf(atan2(y, x))
         }
@@ -88,7 +88,7 @@ object Math : Link {
         }
 
         linker.addFunction("hypot", DataType.Primitive.FLOAT, DataType.Primitive.FLOAT) { _, values ->
-            val (x, y) = values
+            val (y, x) = values
 
             listOf(hypot(x, y))
         }
@@ -118,7 +118,7 @@ object Math : Link {
         }
 
         linker.addFunction("log", DataType.Primitive.FLOAT, DataType.Primitive.FLOAT) { _, values ->
-            val (n, base) = values
+            val (base, n) = values
 
             listOf(log(n, base))
         }
@@ -172,13 +172,13 @@ object Math : Link {
         }
 
         linker.addFunction("pow", DataType.Primitive.FLOAT, DataType.Primitive.FLOAT) { _, values ->
-            val (b, e) = values
+            val (e, b) = values
 
             listOf(b.pow(e))
         }
 
         linker.addFunction("pow", DataType.Primitive.FLOAT, DataType.Primitive.INT) { _, values ->
-            val (b, e) = values
+            val (e, b) = values
 
             listOf(b.pow(e.toInt()))
         }

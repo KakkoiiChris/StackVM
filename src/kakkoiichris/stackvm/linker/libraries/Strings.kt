@@ -9,8 +9,8 @@ object Strings : Link {
 
     override fun open(linker: Linker) {
         linker.addFunction("concat", DataType.string, DataType.string) { _, values ->
-            val (a, end) = linker.scanString(values)
-            val (b) = linker.scanString(values, start = end)
+            val (b, endB) = linker.scanString(values)
+            val (a) = linker.scanString(values, start = endB)
 
             val result = a + b
 
