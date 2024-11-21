@@ -110,17 +110,21 @@ class Parser(lexer: Lexer, private val optimize: Boolean) {
             step()
         }
 
-        if (statements.none {
-                it is Node.Function
-                    && it.name.name.value == "main"
-                    && DataType.isEquivalent(it.dataType, DataType.Primitive.INT)
-            })
+        if (statements.none(::isMainFunction)) {
             error("No main function @ ${here()}!")
+        }
 
         statements += implicitMainReturn()
 
         return Node.Program(location, statements)
     }
+
+    private fun isMainFunction(stmt: Node) =
+        stmt is Node.Function &&
+            stmt.name.name.value == "main" && (
+            DataType.isEquivalent(stmt.dataType, DataType.Primitive.INT) ||
+                DataType.isEquivalent(stmt.dataType, DataType.Primitive.VOID)
+            )
 
     private fun implicitMainReturn(): Node.Return {
         val location = here()
@@ -147,12 +151,16 @@ class Parser(lexer: Lexer, private val optimize: Boolean) {
     }
 
     private fun importFile(name: Node.Name) {
-        val file = if (Linker.hasFile(name.name.value))
-            Linker.getFile(name.name.value)
+        val fileSource = if (Linker.hasFile(name.name.value))
+            Linker
         else
-            Directory.getFile(name.name.value)
+            Directory
 
-        if (!file.exists()) error("Cannot import file '${name.name.value}' @ ${name.location}!")
+        val file = fileSource.getFile(name.name.value)
+
+        if (!file.exists()) {
+            error("Cannot import file '${name.name.value}' @ ${name.location}!")
+        }
 
         val source = Source.of(file)
 

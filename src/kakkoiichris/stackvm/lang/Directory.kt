@@ -1,10 +1,11 @@
 package kakkoiichris.stackvm.lang
 
+import kakkoiichris.stackvm.FileSource
 import java.io.File
 
-object Directory {
+object Directory : FileSource {
     lateinit var root: File
 
-    fun getFile(name: String) =
+    override fun getFile(name: String) =
         File(root, "$name.svml")
 }

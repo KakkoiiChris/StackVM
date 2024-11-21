@@ -1,5 +1,6 @@
 package kakkoiichris.stackvm.linker
 
+import kakkoiichris.stackvm.FileSource
 import kakkoiichris.stackvm.cpu.CPU
 import kakkoiichris.stackvm.lang.lexer.Location
 import kakkoiichris.stackvm.lang.lexer.TokenType
@@ -14,7 +15,7 @@ import java.io.File
 
 typealias Method = (cpu: CPU, values: List<Double>) -> List<Double>
 
-object Linker {
+object Linker : FileSource {
     private val links = mutableListOf<Link>()
 
     private val functionTable = mutableMapOf<String, Int>()
@@ -52,7 +53,7 @@ object Linker {
     fun hasFile(name: String) =
         name in sources
 
-    fun getFile(name: String) =
+    override fun getFile(name: String) =
         sources[name]!!
 
     fun hasFunction(signature: Signature): Boolean =
