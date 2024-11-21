@@ -8,31 +8,31 @@ object Lang : Link {
     override val name = "lang"
 
     override fun open(linker: Linker) {
-        Linker.addFunction("toFloat", DataType.Primitive.INT) { _, args ->
+        linker.addFunction("toFloat", DataType.Primitive.INT) { _, args ->
             val (i) = args
 
             listOf(i)
         }
 
-        Linker.addFunction("toInt", DataType.Primitive.FLOAT) { _, args ->
+        linker.addFunction("toInt", DataType.Primitive.FLOAT) { _, args ->
             val (i) = args
 
             listOf(i)
         }
 
-        Linker.addFunction("toInt", DataType.Primitive.CHAR) { _, args ->
+        linker.addFunction("toInt", DataType.Primitive.CHAR) { _, args ->
             val (i) = args
 
             listOf(i)
         }
 
-        Linker.addFunction("toChar", DataType.Primitive.INT) { _, args ->
+        linker.addFunction("toChar", DataType.Primitive.INT) { _, args ->
             val (i) = args
 
             listOf(i)
         }
 
-        Linker.addFunction("exit", DataType.Primitive.INT) { cpu, args ->
+        linker.addFunction("exit", DataType.Primitive.INT) { cpu, args ->
             val (code) = args
 
             cpu.result = code

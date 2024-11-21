@@ -374,23 +374,21 @@ object ReleaseCPU : CPU() {
     }
 
     override fun arg() {
-        TODO("Not yet implemented")
-    }
-
-    override fun aarg() {
-        TODO("Not yet implemented")
+        pushCall(stackPointer.toDouble())
     }
 
     override fun sys() {
         val function = Linker[fetchInt()]
 
-        val args = mutableListOf<Double>()
+        val arguments = mutableListOf<Double>()
 
-        repeat(function.signature.arity) {
-            args.add(popStack())
+        val argPointer = popCall()
+
+        while (stackPointer > argPointer) {
+            arguments.add(popStack())
         }
 
-        val result = function(this, args)
+        val result = function(this, arguments)
 
         for (value in result.reversed()) {
             pushStack(value)

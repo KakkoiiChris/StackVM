@@ -49,7 +49,6 @@ interface Bytecode {
         RET,
         FRAME(1),
         ARG,
-        AARG,
         SYS(1);
 
         override val value get() = ordinal.toDouble()

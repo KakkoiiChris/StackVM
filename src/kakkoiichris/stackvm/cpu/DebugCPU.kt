@@ -537,11 +537,11 @@ object DebugCPU : CPU() {
     }
 
     override fun arg() {
-        TODO("Not yet implemented")
-    }
+        val argPointer = stackPointer
 
-    override fun aarg() {
-        TODO("Not yet implemented")
+        pushCall(argPointer.toDouble())
+
+        println("ARG <@${argPointer.toAddress()}>")
     }
 
     override fun sys() {
@@ -549,15 +549,17 @@ object DebugCPU : CPU() {
 
         val function = Linker[id]
 
-        val args = mutableListOf<Double>()
+        val arguments = mutableListOf<Double>()
 
-        repeat(function.signature.arity) {
-            args.add(popStack())
+        val argPointer = popCall()
+
+        while (stackPointer > argPointer) {
+            arguments.add(popStack())
         }
 
-        println("SYS #$id <${args.joinToString()}>")
+        println("SYS #$id <${arguments.joinToString()}>")
 
-        val result = function(this, args)
+        val result = function(this, arguments)
 
         for (value in result.reversed()) {
             pushStack(value)

@@ -14,35 +14,35 @@ object Console : Link {
     override val name = "console"
 
     override fun open(linker: Linker) {
-        Linker.addFunction("readBool") { _, _ ->
+        linker.addFunction("readBool") { _, _ ->
             listOf(input.nextBoolean().float)
         }
 
-        Linker.addFunction("readFloat") { _, _ ->
+        linker.addFunction("readFloat") { _, _ ->
             listOf(input.nextDouble())
         }
 
-        Linker.addFunction("readInt") { _, _ ->
+        linker.addFunction("readInt") { _, _ ->
             listOf(input.nextInt().toDouble())
         }
 
-        Linker.addFunction("readChar") { _, _ ->
+        linker.addFunction("readChar") { _, _ ->
             Linker.void//TODO readChar
         }
 
-        Linker.addFunction("read") { _, _ ->
+        linker.addFunction("read") { _, _ ->
             val text = input.next().toCharArray().map { it.code.toDouble() }
 
-            text.toMutableList().apply { add(0, text.size.toDouble()) }
+            text.toMutableList().apply { addFirst(text.size.toDouble()) }
         }
 
-        Linker.addFunction("readLine") { _, _ ->
+        linker.addFunction("readLine") { _, _ ->
             val text = input.nextLine().toCharArray().map { it.code.toDouble() }
 
-            text.toMutableList().apply { add(0, text.size.toDouble()) }
+            text.toMutableList().apply { addFirst(text.size.toDouble()) }
         }
 
-        Linker.addFunction("write", DataType.Primitive.BOOL) { _, values ->
+        linker.addFunction("write", DataType.Primitive.BOOL) { _, values ->
             val (n) = values
 
             print(n.bool)
@@ -50,7 +50,7 @@ object Console : Link {
             Linker.void
         }
 
-        Linker.addFunction("write", DataType.Primitive.INT) { _, values ->
+        linker.addFunction("write", DataType.Primitive.INT) { _, values ->
             val (n) = values
 
             print(n.toInt())
@@ -58,7 +58,7 @@ object Console : Link {
             Linker.void
         }
 
-        Linker.addFunction("write", DataType.Primitive.FLOAT) { _, values ->
+        linker.addFunction("write", DataType.Primitive.FLOAT) { _, values ->
             val (n) = values
 
             print(n.truncate())
@@ -66,7 +66,7 @@ object Console : Link {
             Linker.void
         }
 
-        Linker.addFunction("write", DataType.Primitive.CHAR) { _, values ->
+        linker.addFunction("write", DataType.Primitive.CHAR) { _, values ->
             val (n) = values
 
             print(n.toInt().toChar())

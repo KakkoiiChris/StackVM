@@ -9,9 +9,8 @@ sealed class Register<T>(private val address: kotlin.Int) {
 
     abstract fun toType(f: Double): T
 
-    operator fun getValue(cpu: CPU, property: KProperty<*>): T {
-        return toType(cpu.memory[address])
-    }
+    operator fun getValue(cpu: CPU, property: KProperty<*>) =
+        toType(cpu.memory[address])
 
     operator fun setValue(cpu: CPU, property: KProperty<*>, value: T) {
         cpu.memory[address] = toFloat(value)

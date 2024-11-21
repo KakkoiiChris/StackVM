@@ -699,7 +699,9 @@ class Compiler(
     override fun visitSystemCall(node: Node.SystemCall): List<Token> {
         val tokens = mutableListOf<Token>()
 
-        for (arg in node.args.reversed()) {
+        tokens += ARG
+
+        for (arg in node.args.reversed() ) {
             tokens += visit(arg)
         }
 

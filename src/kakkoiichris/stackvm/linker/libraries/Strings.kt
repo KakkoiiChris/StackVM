@@ -10,11 +10,16 @@ object Strings : Link {
     override fun open(linker: Linker) {
         linker.addFunction("concat", DataType.string, DataType.string) { _, values ->
             val (a, end) = linker.scanString(values)
-            val (b) = linker.scanString(values, start = end + 1)
+            val (b) = linker.scanString(values, start = end)
 
             val result = a + b
 
-            result.toCharArray().map { it.code.toDouble() }
+            val length = result.length
+
+            result.toCharArray()
+                .map { it.code.toDouble() }
+                .toMutableList()
+                .apply { addFirst(length.toDouble()) }
         }
     }
 

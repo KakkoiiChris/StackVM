@@ -37,6 +37,7 @@ abstract class CPU(private val config: Config = Config()) {
 
     internal var result by Register.Float(RES_ADR)
 
+
     protected var instructionPointerOrigin by Register.Int(IPO_ADR)
     protected var instructionPointer by Register.Int(IPA_ADR)
 
@@ -193,8 +194,6 @@ abstract class CPU(private val config: Config = Config()) {
             Bytecode.Instruction.FRAME   -> frame()
 
             Bytecode.Instruction.ARG     -> arg()
-
-            Bytecode.Instruction.AARG    -> aarg()
 
             Bytecode.Instruction.SYS     -> sys()
         }
@@ -419,8 +418,6 @@ abstract class CPU(private val config: Config = Config()) {
     abstract fun frame()
 
     abstract fun arg()
-
-    abstract fun aarg()
 
     abstract fun sys()
 
