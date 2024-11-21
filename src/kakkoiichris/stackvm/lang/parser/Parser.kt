@@ -151,12 +151,10 @@ class Parser(lexer: Lexer, private val optimize: Boolean) {
     }
 
     private fun importFile(name: Node.Name) {
-        val fileSource = if (Linker.hasFile(name.name.value))
-            Linker
+        val file = if (Linker.hasFile(name.name.value))
+            Linker.getFile(name.name.value)
         else
-            Directory
-
-        val file = fileSource.getFile(name.name.value)
+            Directory.getFile(name.name.value)
 
         if (!file.exists()) {
             error("Cannot import file '${name.name.value}' @ ${name.location}!")
@@ -205,7 +203,7 @@ class Parser(lexer: Lexer, private val optimize: Boolean) {
         else                                                   -> expression()
     }
 
-    private fun type(): Node.Type {
+    private fun type(): Type {
         val location = here()
 
         val baseType = when {
@@ -252,7 +250,7 @@ class Parser(lexer: Lexer, private val optimize: Boolean) {
             while (match(TokenType.Symbol.LEFT_SQUARE))
         }
 
-        return Node.Type(location, TokenType.Type(type))
+        return Type(location, TokenType.Type(type))
     }
 
     private fun declare(): Node {
@@ -273,18 +271,18 @@ class Parser(lexer: Lexer, private val optimize: Boolean) {
         if (type == null && node == null) error("Variable declaration must either be explicitly typed or assigned to @ $location!")
 
         if (type == null && node != null) {
-            type = Node.Type(Location.none(), TokenType.Type(node.dataType!!))
+            type = Type(Location.none(), TokenType.Type(node.dataType!!))
         }
 
         type!!
 
         if (node != null && !DataType.isEquivalent(
-                type.dataType,
+                type.type.value,
                 node.dataType!!
             )
-        ) error("Cannot declare a variable of type '${type.dataType}' with value of type '${node.dataType}' @ ${node.location}!")
+        ) error("Cannot declare a variable of type '${type.type.value}' with value of type '${node.dataType}' @ ${node.location}!")
 
-        val variable = createVariable(constant, name, type.dataType)
+        val variable = createVariable(constant, name, type.type.value)
 
         val (_, activation) = Memory.getVariable(variable)
 
@@ -411,10 +409,10 @@ class Parser(lexer: Lexer, private val optimize: Boolean) {
             val node = expr()
 
             if (type == null) {
-                type = Node.Type(Location.none(), TokenType.Type(node.dataType!!))
+                type = Type(Location.none(), TokenType.Type(node.dataType!!))
             }
 
-            val variable = createVariable(false, name, type.dataType)
+            val variable = createVariable(false, name, type.type.value)
 
             val (_, activation) = Memory.getVariable(variable)
 
@@ -501,27 +499,27 @@ class Parser(lexer: Lexer, private val optimize: Boolean) {
 
                 val paramType = type()
 
-                params += createVariable(true, paramName, paramType.dataType)
+                params += createVariable(true, paramName, paramType.type.value)
             }
             while (skip(TokenType.Symbol.COMMA))
 
             mustSkip(TokenType.Symbol.RIGHT_PAREN)
         }
 
-        var type: Node.Type? = null
+        var type: Type? = null
 
         if (skip(TokenType.Symbol.COLON)) type = type()
 
         val body = mutableListOf<Node>()
 
-        fun registerFunction(type: Node.Type, isNative: Boolean) {
+        fun registerFunction(type: Type, isNative: Boolean) {
             val signature = Signature(name, params.map { it.dataType })
 
             if (isNative && !Linker.hasFunction(signature)) error("No system function for '$signature' @ ${name.location}!")
 
             val here = Memory.pop()!!
 
-            Memory.addFunction(type.dataType, id, signature, isNative)
+            Memory.addFunction(type.type.value, id, signature, isNative)
 
             Memory.push(here)
         }
@@ -533,7 +531,7 @@ class Parser(lexer: Lexer, private val optimize: Boolean) {
                 isNative = true
 
                 if (type == null) {
-                    type = Node.Type(Location.none(), TokenType.Type(DataType.Primitive.VOID))
+                    type = Type(Location.none(), TokenType.Type(DataType.Primitive.VOID))
                 }
 
                 registerFunction(type, true)
@@ -542,7 +540,7 @@ class Parser(lexer: Lexer, private val optimize: Boolean) {
             skip(TokenType.Symbol.EQUAL)     -> {
                 val expr = expr()
 
-                type = Node.Type(expr.location, TokenType.Type(expr.dataType!!))
+                type = Type(expr.location, TokenType.Type(expr.dataType!!))
 
                 registerFunction(type, false)
 
@@ -555,7 +553,7 @@ class Parser(lexer: Lexer, private val optimize: Boolean) {
                 mustSkip(TokenType.Symbol.LEFT_BRACE)
 
                 if (type == null) {
-                    type = Node.Type(Location.none(), TokenType.Type(DataType.Primitive.VOID))
+                    type = Type(Location.none(), TokenType.Type(DataType.Primitive.VOID))
                 }
 
                 registerFunction(type, false)

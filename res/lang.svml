@@ -44,4 +44,6 @@ function toInt(c: char): int;
 
 function toChar(i: int): char;
 
+function sleep(time: float): void;
+
 function exit(code: int): void;

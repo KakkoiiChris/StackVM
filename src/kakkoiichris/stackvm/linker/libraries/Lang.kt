@@ -32,6 +32,14 @@ object Lang : Link {
             listOf(i)
         }
 
+        linker.addFunction("sleep", DataType.Primitive.FLOAT) { _, values ->
+            val (time) = values
+
+            Thread.sleep((time * 1000).toLong())
+
+            Linker.void
+        }
+
         linker.addFunction("exit", DataType.Primitive.INT) { cpu, args ->
             val (code) = args
 

@@ -564,10 +564,6 @@ class Compiler(
         return tokens
     }
 
-    override fun visitType(node: Node.Type): List<Token> {
-        error("Should not visit Type!")
-    }
-
     override fun visitArray(node: Node.Array): List<Token> {
         val tokens = mutableListOf<Token>()
 

@@ -195,8 +195,6 @@ object Allocator : Node.Visitor<Unit> {
         node.address = addresses[node.id]!!
     }
 
-    override fun visitType(node: Node.Type) = Unit
-
     override fun visitArray(node: Node.Array) {
         for (element in node.elements) {
             visit(element)

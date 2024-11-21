@@ -1,0 +1,23 @@
+/*   ______  ____   ____  ____    ____  _____     
+ * .' ____ \|_  _| |_  _||_   \  /   _||_   _|    
+ * | (___ \_| \ \   / /    |   \/   |    | |      
+ *  _.____`.   \ \ / /     | |\  /| |    | |   _  
+ * | \____) |   \ ' /     _| |_\/_| |_  _| |__/ | 
+ *  \______.'    \_/     |_____||_____||________| 
+ *
+ *         Stack Virtual Machine Language
+ *     Copyright (C) 2024 Christian Alexander
+ */
+ function gfxCreate(width: int, height: int, title: string): int;
+ 
+ function gfxOpen(id: int): void;
+ 
+ function gfxClose(id: int): void;
+ 
+ function gfxIsOpen(id: int): bool;
+ 
+ function gfxFlip(id: int): void;
+ 
+ function gfxSetColor(id: int, red: int, green: int, blue: int, alpha: int): void;
+ 
+ function gfxFillRect(id: int, x: int, y: int, width: int, height: int): void;

@@ -16,4 +16,4 @@ fun Int.toAddress() =
     if (this < 0)
         "-${absoluteValue.toString().uppercase()}"
     else
-        "${toString().uppercase()}"
+        toString().uppercase()

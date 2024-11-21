@@ -3,7 +3,6 @@ package kakkoiichris.stackvm
 import kakkoiichris.stackvm.cpu.CPU
 import kakkoiichris.stackvm.cpu.DebugCPU
 import kakkoiichris.stackvm.cpu.ReleaseCPU
-import kakkoiichris.stackvm.linker.Linker
 import kakkoiichris.stackvm.lang.Allocator
 import kakkoiichris.stackvm.lang.Directory
 import kakkoiichris.stackvm.lang.Source
@@ -11,6 +10,7 @@ import kakkoiichris.stackvm.lang.compiler.BytecodeFormatter
 import kakkoiichris.stackvm.lang.compiler.Compiler
 import kakkoiichris.stackvm.lang.lexer.Lexer
 import kakkoiichris.stackvm.lang.parser.Parser
+import kakkoiichris.stackvm.linker.Linker
 import kakkoiichris.stackvm.util.truncate
 import java.io.*
 import kotlin.time.measureTimedValue
@@ -141,10 +141,8 @@ private fun compileFile(srcName: String, dstName: String) {
 
     val dstFile = File(dstName)
 
-    if (!dstFile.exists()) {
-        if (!dstFile.createNewFile()) {
-            error("Cannot create destination file!")
-        }
+    if (!dstFile.exists() && !dstFile.createNewFile()) {
+        error("Cannot create destination file!")
     }
 
     val out = DataOutputStream(BufferedOutputStream(FileOutputStream(dstFile, false)))
@@ -194,10 +192,8 @@ private fun formatFile(srcName: String, dstName: String) {
 
     val dstFile = File(dstName)
 
-    if (!dstFile.exists()) {
-        if (!dstFile.createNewFile()) {
-            error("Cannot create destination file!")
-        }
+    if (!dstFile.exists() && !dstFile.createNewFile()) {
+        error("Cannot create destination file!")
     }
 
     val out = BufferedWriter(FileWriter(dstFile, false))

@@ -3,7 +3,6 @@ package kakkoiichris.stackvm.cpu
 import kakkoiichris.stackvm.linker.Linker
 import kakkoiichris.stackvm.util.bool
 import kakkoiichris.stackvm.util.float
-import kakkoiichris.stackvm.util.truncate
 
 object ReleaseCPU : CPU() {
     override fun run(): Double {
@@ -294,18 +293,6 @@ object ReleaseCPU : CPU() {
         val totalSize = memory[address].toInt()
 
         pushStack(totalSize.toDouble())
-    }
-
-    private fun showMemory(address: Int) {
-        for (i in -15..15) {
-            if (i == 0) {
-                print("[${memory[address + i].truncate()}] ")
-            }
-            else {
-                print("${memory[address + i].truncate()} ")
-            }
-        }
-        println('\n')
     }
 
     override fun iasize() {

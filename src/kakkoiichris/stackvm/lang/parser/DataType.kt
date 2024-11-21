@@ -76,7 +76,7 @@ sealed interface DataType {
         fun getAlias(name: Node.Name) =
             aliases[name.name.value] ?: error("No type alias called '${name.name.value}' @ ${name.location}!")
 
-        fun addAlias(name: Node.Name, type: Node.Type) {
+        fun addAlias(name: Node.Name, type: Type) {
             if (name.name.value in aliases) {
                 error("Redefined type alias '${name.name.value}' @ ${name.location}!")
             }
@@ -124,11 +124,7 @@ sealed interface DataType {
 
             return t is Array
         }
-
-        fun asArray(t: DataType?): Array {
-            if (t is Alias) return getAlias(t.name) as Array
-
-            return t as Array
-        }
     }
 }
+
+data class Type(val location: Location, val type: TokenType.Type)
