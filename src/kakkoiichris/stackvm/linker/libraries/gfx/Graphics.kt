@@ -8,6 +8,8 @@ import kakkoiichris.stackvm.util.float
 object Graphics : Link {
     private val displays = mutableListOf<Display>()
 
+    private var active: Display? = null
+
     override val name = "graphics"
 
     override fun open(linker: Linker) {
@@ -27,32 +29,32 @@ object Graphics : Link {
             listOf(displays.size.toDouble() - 1)
         }
 
-        linker.addFunction("gfxOpen", DataType.Primitive.INT) { _, values ->
+        linker.addFunction("gfxSetActive", DataType.Primitive.INT) { _, values ->
             val (id) = values
 
-            displays[id.toInt()].open()
+            active = displays[id.toInt()]
 
             Linker.void
         }
 
-        linker.addFunction("gfxClose", DataType.Primitive.INT) { _, values ->
-            val (id) = values
-
-            displays[id.toInt()].close()
+        linker.addFunction("gfxOpen") { _, _ ->
+            active?.open()
 
             Linker.void
         }
 
-        linker.addFunction("gfxIsOpen", DataType.Primitive.INT) { _, values ->
-            val (id) = values
+        linker.addFunction("gfxClose") { _, _ ->
+            active?.close()
 
-            listOf(displays[id.toInt()].isOpen.float)
+            Linker.void
         }
 
-        linker.addFunction("gfxFlip", DataType.Primitive.INT) { _, values ->
-            val (id) = values
+        linker.addFunction("gfxIsOpen") { _, _ ->
+            listOf(active?.isOpen?.float ?: 0.0)
+        }
 
-            displays[id.toInt()].flip()
+        linker.addFunction("gfxFlip") { _, _ ->
+            active?.flip()
 
             Linker.void
         }
@@ -62,12 +64,17 @@ object Graphics : Link {
             DataType.Primitive.INT,
             DataType.Primitive.INT,
             DataType.Primitive.INT,
-            DataType.Primitive.INT,
             DataType.Primitive.INT
         ) { _, values ->
-            val (alpha, blue, green, red, id) = values
+            val (alpha, blue, green, red) = values
 
-            displays[id.toInt()].setColor(red.toInt(), green.toInt(), blue.toInt(), alpha.toInt())
+            active?.setColor(red.toInt(), green.toInt(), blue.toInt(), alpha.toInt())
+
+            Linker.void
+        }
+
+        linker.addFunction("gfxClear") { _, _ ->
+            active?.clear()
 
             Linker.void
         }
@@ -77,12 +84,11 @@ object Graphics : Link {
             DataType.Primitive.INT,
             DataType.Primitive.INT,
             DataType.Primitive.INT,
-            DataType.Primitive.INT,
             DataType.Primitive.INT
         ) { _, values ->
-            val (height, width, y, x, id) = values
+            val (height, width, y, x) = values
 
-            displays[id.toInt()].fillRect(x.toInt(), y.toInt(), width.toInt(), height.toInt())
+            active?.fillRect(x.toInt(), y.toInt(), width.toInt(), height.toInt())
 
             Linker.void
         }

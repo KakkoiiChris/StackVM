@@ -3,21 +3,22 @@ package kakkoiichris.stackvm.linker.libraries.gfx
 import java.awt.*
 import java.awt.event.*
 import java.awt.geom.AffineTransform
-import java.awt.image.BufferStrategy
 import java.awt.image.BufferedImage
 import javax.imageio.ImageIO
+import javax.swing.JFrame
+import javax.swing.JPanel
 
 class Display(width: Int, height: Int, title: String) : KeyListener, MouseListener, MouseMotionListener,
-                                                       MouseWheelListener {
-    private val frame = Frame(title)
-    private val canvas = Canvas()
+                                                        MouseWheelListener {
+    private val frame = JFrame(title)
+    private val canvas = JPanel()
 
     private val images = mutableListOf<BufferedImage>()
 
     private val transformStack = mutableListOf<AffineTransform>()
 
-    private var buffer: BufferStrategy
-    private var graphics: Graphics2D
+    private val buffer: BufferedImage
+    private val graphics: Graphics2D
 
     private val keys = Array(256) { Toggle() }
     private val buttons = Array(4) { Toggle() }
@@ -40,17 +41,16 @@ class Display(width: Int, height: Int, title: String) : KeyListener, MouseListen
         frame.isResizable = false
         frame.setLocationRelativeTo(null)
         frame.addWindowListener(object : WindowAdapter() {
-            override fun windowClosing(e: WindowEvent) {
+            override fun windowClosing(e: WindowEvent?) {
                 close()
             }
         })
 
-        //val icon = ImageIO.read(javaClass.getResource("/img/icon.png"))
-        //frame.iconImage = icon
+        val icon = ImageIO.read(javaClass.getResource("/icon.png"))
+        frame.iconImage = icon
 
-        canvas.createBufferStrategy(2)
-        buffer = canvas.bufferStrategy
-        graphics = buffer.drawGraphics as Graphics2D
+        buffer = BufferedImage(width, height, BufferedImage.TYPE_INT_RGB)
+        graphics = buffer.createGraphics() as Graphics2D
 
         transformStack.add(0, graphics.transform)
 
@@ -191,10 +191,7 @@ class Display(width: Int, height: Int, title: String) : KeyListener, MouseListen
         graphics.drawImage(images[image], dxa, dya, dxb, dyb, sxa, sya, sxb, syb, null)
 
     fun flip() {
-        buffer.show()
-
-        buffer = canvas.bufferStrategy
-        graphics = buffer.drawGraphics as Graphics2D
+        canvas.graphics.drawImage(buffer, 0, 0, null)
     }
 
     fun keyIsDown(keyCode: Int): Boolean {

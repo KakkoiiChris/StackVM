@@ -124,6 +124,12 @@ sealed interface DataType {
 
             return t is Array
         }
+
+        fun asArray(t: DataType): Array {
+            if (t is Alias) return asArray(getAlias(t.name))
+
+            return t as Array
+        }
     }
 }
 

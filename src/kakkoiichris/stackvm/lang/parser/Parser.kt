@@ -744,11 +744,13 @@ class Parser(lexer: Lexer, private val optimize: Boolean) {
     private fun assignIndex(location: Location, expr: Node.GetIndex): Node.SetIndex {
         val (_, variable) = Memory.getVariable(expr.variable)
 
-        val (constant, dataType, _) = variable
+        var (constant, dataType, _) = variable
 
         if (constant) error("Variable '${expr.variable.name.value}' cannot be reassigned @ ${expr.variable.location}!")
 
-        if (dataType !is DataType.Array) error("Cannot index a value of type '$dataType' @ ${expr.variable.location}!")
+        if (!DataType.isArray(dataType)) error("Cannot index a value of type '$dataType' @ ${expr.variable.location}!")
+
+        dataType = DataType.asArray(dataType)
 
         val node = or()
 

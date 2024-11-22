@@ -643,7 +643,7 @@ interface Node {
 
     class SetIndex(override val location: Location, val variable: Variable, val indices: List<Node>, val value: Node) :
         Node {
-        val arrayType get() = variable.dataType as DataType.Array
+        val arrayType get() = DataType.asArray(variable.dataType)
 
         override fun <X> accept(visitor: Visitor<X>): X =
             visitor.visitSetIndex(this)

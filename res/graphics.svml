@@ -10,14 +10,18 @@
  */
  function gfxCreate(width: int, height: int, title: string): int;
  
- function gfxOpen(id: int): void;
+ function gfxSetActive(id: int): void;
  
- function gfxClose(id: int): void;
+ function gfxOpen: void;
  
- function gfxIsOpen(id: int): bool;
+ function gfxClose: void;
  
- function gfxFlip(id: int): void;
+ function gfxIsOpen: bool;
  
- function gfxSetColor(id: int, red: int, green: int, blue: int, alpha: int): void;
+ function gfxFlip: void;
  
- function gfxFillRect(id: int, x: int, y: int, width: int, height: int): void;
+ function gfxSetColor(red: int, green: int, blue: int, alpha: int): void;
+ 
+ function gfxClear: void;
+ 
+ function gfxFillRect(x: int, y: int, width: int, height: int): void;
