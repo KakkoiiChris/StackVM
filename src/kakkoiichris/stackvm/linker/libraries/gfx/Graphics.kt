@@ -1,9 +1,7 @@
 package kakkoiichris.stackvm.linker.libraries.gfx
 
-import kakkoiichris.stackvm.lang.parser.DataType
 import kakkoiichris.stackvm.linker.Link
 import kakkoiichris.stackvm.linker.Linker
-import kakkoiichris.stackvm.util.float
 
 object Graphics : Link {
     private val displays = mutableListOf<Display>()
@@ -13,7 +11,7 @@ object Graphics : Link {
     override val name = "graphics"
 
     override fun open(linker: Linker) {
-        linker.addFunction(
+        /*linker.addFunction(
             "gfxCreate",
             DataType.Primitive.INT,
             DataType.Primitive.INT,
@@ -91,7 +89,7 @@ object Graphics : Link {
             active?.fillRect(x.toInt(), y.toInt(), width.toInt(), height.toInt())
 
             Linker.void
-        }
+        }*/
     }
 
     override fun close(linker: Linker) {

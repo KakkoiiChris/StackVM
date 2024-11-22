@@ -13,7 +13,9 @@ import kakkoiichris.stackvm.linker.libraries.Strings
 import kakkoiichris.stackvm.linker.libraries.gfx.Graphics
 import java.io.File
 
-typealias Method = (cpu: CPU, values: List<Double>) -> List<Double>
+typealias Values = List<Double>
+
+typealias Method = (cpu: CPU, data: LinkData) -> Values
 
 object Linker {
     private val links = mutableListOf<Link>()
@@ -65,36 +67,23 @@ object Linker {
     operator fun get(id: Int) =
         functions[id]
 
-    fun addFunction(name: String, vararg params: DataType, method: Method) {
+    fun addFunction(name: String, format: String="", vararg params: DataType, method: Method) {
         val node = Node.Name(Location.none(), TokenType.Name(name))
 
         val signature = Signature(node, params.toList())
 
-        val function = Function(signature, method)
+        val function = Function(signature, format, method)
 
         functions += function
 
         functionTable[signature.toString()] = functions.size - 1
     }
 
-    fun scanString(values: List<Double>, start: Int = 0): StringScan {
-        var i = start
+    class Function(val signature: Signature, val format: String, private val method: Method) {
+        operator fun invoke(cpu: CPU, values: Values): Values {
+            val data = LinkData.parse(values, format)
 
-        val size = values[i++]
-
-        val result = buildString {
-            repeat(size.toInt()) {
-                append(values[i++].toInt().toChar())
-            }
+            return method.invoke(cpu, data)
         }
-
-        return StringScan(result, i)
-    }
-
-    data class StringScan(val string: String, val end: Int)
-
-    class Function(val signature: Signature, private val method: Method) {
-        operator fun invoke(cpu: CPU, values: List<Double>) =
-            method.invoke(cpu, values)
     }
 }

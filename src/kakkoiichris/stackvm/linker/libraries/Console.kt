@@ -3,7 +3,6 @@ package kakkoiichris.stackvm.linker.libraries
 import kakkoiichris.stackvm.lang.parser.DataType
 import kakkoiichris.stackvm.linker.Link
 import kakkoiichris.stackvm.linker.Linker
-import kakkoiichris.stackvm.util.bool
 import kakkoiichris.stackvm.util.float
 import kakkoiichris.stackvm.util.truncate
 import java.util.*
@@ -27,7 +26,7 @@ object Console : Link {
         }
 
         linker.addFunction("readChar") { _, _ ->
-            Linker.void//TODO readChar
+            TODO("readChar not implemented")
         }
 
         linker.addFunction("read") { _, _ ->
@@ -42,34 +41,34 @@ object Console : Link {
             text.toMutableList().apply { addFirst(text.size.toDouble()) }
         }
 
-        linker.addFunction("write", DataType.Primitive.BOOL) { _, values ->
-            val (n) = values
+        linker.addFunction("write", "B", DataType.Primitive.BOOL) { _, data ->
+            val b = data.bool(0)
 
-            print(n.bool)
-
-            Linker.void
-        }
-
-        linker.addFunction("write", DataType.Primitive.INT) { _, values ->
-            val (n) = values
-
-            print(n.toInt())
+            print(b)
 
             Linker.void
         }
 
-        linker.addFunction("write", DataType.Primitive.FLOAT) { _, values ->
-            val (n) = values
+        linker.addFunction("write", "I", DataType.Primitive.INT) { _, data ->
+            val i = data.int(0)
 
-            print(n.truncate())
+            print(i)
 
             Linker.void
         }
 
-        linker.addFunction("write", DataType.Primitive.CHAR) { _, values ->
-            val (n) = values
+        linker.addFunction("write", "F", DataType.Primitive.FLOAT) { _, data ->
+            val f = data.float(0)
 
-            print(n.toInt().toChar())
+            print(f.truncate())
+
+            Linker.void
+        }
+
+        linker.addFunction("write", "C", DataType.Primitive.CHAR) { _, data ->
+            val c = data.char(0)
+
+            print(c)
 
             Linker.void
         }
