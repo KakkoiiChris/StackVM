@@ -2,55 +2,30 @@ package kakkoiichris.stackvm.linker
 
 import kakkoiichris.stackvm.util.bool
 
-class LinkData private constructor(val arguments: MutableMap<Int, Any>) {
-    fun bool(i: Int) =
-        arguments[i] as Boolean
+class LinkData(val values: Values) {
+    private var scanIndex = 0
 
-    fun float(i: Int) =
-        arguments[i] as Double
+    fun bool() =
+        values[scanIndex++].bool
 
-    fun int(i: Int) =
-        arguments[i] as Int
+    fun float() =
+        values[scanIndex++]
 
-    fun char(i: Int) =
-        arguments[i] as Char
+    fun int() =
+        values[scanIndex++].toInt()
 
-    fun string(i: Int) =
-        arguments[i] as String
+    fun char() =
+        values[scanIndex++].toInt().toChar()
+
+    fun string(): String {
+        val (string, end) = scanString(values, scanIndex)
+
+        scanIndex = end
+
+        return string
+    }
 
     companion object {
-        fun parse(values: Values, format: String): LinkData {
-            val arguments = mutableMapOf<Int, Any>()
-
-            val parseOrder = format.uppercase().withIndex().reversed()
-
-            var j = 0
-
-            for ((i, c) in parseOrder) {
-                arguments[i] = when (c) {
-                    'B'  -> values[j++].bool
-
-                    'F'  -> values[j++]
-
-                    'I'  -> values[j++].toInt()
-
-                    'C'  -> values[j++].toInt().toChar()
-
-                    'S'  -> {
-                        val (string, end) = scanString(values, j)
-
-                        j = end
-
-                        string
-                    }
-
-                    else -> TODO()
-                }
-            }
-
-            return LinkData(arguments)
-        }
-
         private fun scanString(values: List<Double>, start: Int = 0): StringScan {
             var i = start
 

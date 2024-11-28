@@ -8,40 +8,40 @@ object Lang : Link {
     override val name = "lang"
 
     override fun open(linker: Linker) {
-        linker.addFunction("toFloat", "I", DataType.Primitive.INT) { _, data ->
-            val i = data.int(0)
+        linker.addFunction("toFloat", DataType.Primitive.INT) { _, data ->
+            val i = data.int()
 
             listOf(i.toDouble())
         }
 
-        linker.addFunction("toInt", "F", DataType.Primitive.FLOAT) { _, data ->
-            val f = data.float(0)
+        linker.addFunction("toInt", DataType.Primitive.FLOAT) { _, data ->
+            val f = data.float()
 
             listOf(f)
         }
 
-        linker.addFunction("toInt", "C", DataType.Primitive.CHAR) { _, data ->
-            val c = data.char(0)
+        linker.addFunction("toInt", DataType.Primitive.CHAR) { _, data ->
+            val c = data.char()
 
             listOf(c.code.toDouble())
         }
 
-        linker.addFunction("toChar", "I", DataType.Primitive.INT) { _, data ->
-            val i = data.int(0)
+        linker.addFunction("toChar", DataType.Primitive.INT) { _, data ->
+            val i = data.int()
 
             listOf(i.toDouble())
         }
 
-        linker.addFunction("sleep", "F", DataType.Primitive.FLOAT) { _, data ->
-            val time = data.float(0)
+        linker.addFunction("sleep", DataType.Primitive.FLOAT) { _, data ->
+            val time = data.float()
 
             Thread.sleep((time * 1000).toLong())
 
             Linker.void
         }
 
-        linker.addFunction("exit", "I", DataType.Primitive.INT) { cpu, data ->
-            val code = data.int(0)
+        linker.addFunction("exit", DataType.Primitive.INT) { cpu, data ->
+            val code = data.int()
 
             cpu.result = code.toDouble()
             cpu.running = false

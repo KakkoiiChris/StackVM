@@ -1,7 +1,9 @@
 package kakkoiichris.stackvm.linker.libraries.gfx
 
+import kakkoiichris.stackvm.lang.parser.DataType
 import kakkoiichris.stackvm.linker.Link
 import kakkoiichris.stackvm.linker.Linker
+import kakkoiichris.stackvm.util.float
 
 object Graphics : Link {
     private val displays = mutableListOf<Display>()
@@ -11,26 +13,25 @@ object Graphics : Link {
     override val name = "graphics"
 
     override fun open(linker: Linker) {
-        /*linker.addFunction(
+        linker.addFunction(
             "gfxCreate",
             DataType.Primitive.INT,
             DataType.Primitive.INT,
             DataType.string
-        ) { _, values ->
-            var (title, end) = linker.scanString(values)
-
-            val height = values[end++].toInt()
-            val width = values[end].toInt()
+        ) { _, data ->
+            val width = data.int()
+            val height = data.int()
+            val title = data.string()
 
             displays += Display(width, height, title)
 
             listOf(displays.size.toDouble() - 1)
         }
 
-        linker.addFunction("gfxSetActive", DataType.Primitive.INT) { _, values ->
-            val (id) = values
+        linker.addFunction("gfxSetActive", DataType.Primitive.INT) { _, data ->
+            val id = data.int()
 
-            active = displays[id.toInt()]
+            active = displays[id]
 
             Linker.void
         }
@@ -63,10 +64,13 @@ object Graphics : Link {
             DataType.Primitive.INT,
             DataType.Primitive.INT,
             DataType.Primitive.INT
-        ) { _, values ->
-            val (alpha, blue, green, red) = values
+        ) { _, data ->
+            val red = data.int()
+            val green = data.int()
+            val blue = data.int()
+            val alpha = data.int()
 
-            active?.setColor(red.toInt(), green.toInt(), blue.toInt(), alpha.toInt())
+            active?.setColor(red, green, blue, alpha)
 
             Linker.void
         }
@@ -83,13 +87,16 @@ object Graphics : Link {
             DataType.Primitive.INT,
             DataType.Primitive.INT,
             DataType.Primitive.INT
-        ) { _, values ->
-            val (height, width, y, x) = values
+        ) { _, data ->
+            val x = data.int()
+            val y = data.int()
+            val width = data.int()
+            val height = data.int()
 
-            active?.fillRect(x.toInt(), y.toInt(), width.toInt(), height.toInt())
+            active?.fillRect(x, y, width, height)
 
             Linker.void
-        }*/
+        }
     }
 
     override fun close(linker: Linker) {

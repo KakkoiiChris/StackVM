@@ -67,21 +67,21 @@ object Linker {
     operator fun get(id: Int) =
         functions[id]
 
-    fun addFunction(name: String, format: String="", vararg params: DataType, method: Method) {
+    fun addFunction(name: String, vararg params: DataType, method: Method) {
         val node = Node.Name(Location.none(), TokenType.Name(name))
 
         val signature = Signature(node, params.toList())
 
-        val function = Function(signature, format, method)
+        val function = Function(signature, method)
 
         functions += function
 
         functionTable[signature.toString()] = functions.size - 1
     }
 
-    class Function(val signature: Signature, val format: String, private val method: Method) {
+    class Function(val signature: Signature, private val method: Method) {
         operator fun invoke(cpu: CPU, values: Values): Values {
-            val data = LinkData.parse(values, format)
+            val data = LinkData(values)
 
             return method.invoke(cpu, data)
         }

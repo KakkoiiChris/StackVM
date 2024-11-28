@@ -9,181 +9,181 @@ object Math : Link {
     override val name = "math"
 
     override fun open(linker: Linker) {
-        linker.addFunction("sin", "F", DataType.Primitive.FLOAT) { _, data ->
-            val n = data.float(0)
+        linker.addFunction("sin", DataType.Primitive.FLOAT) { _, data ->
+            val n = data.float()
 
             listOf(sin(n))
         }
 
-        linker.addFunction("cos", "F", DataType.Primitive.FLOAT) { _, data ->
-            val n = data.float(0)
+        linker.addFunction("cos", DataType.Primitive.FLOAT) { _, data ->
+            val n = data.float()
 
             listOf(cos(n))
         }
 
-        linker.addFunction("tan", "F", DataType.Primitive.FLOAT) { _, data ->
-            val n = data.float(0)
+        linker.addFunction("tan", DataType.Primitive.FLOAT) { _, data ->
+            val n = data.float()
 
             listOf(tan(n))
         }
 
-        linker.addFunction("asin", "F", DataType.Primitive.FLOAT) { _, data ->
-            val n = data.float(0)
+        linker.addFunction("asin", DataType.Primitive.FLOAT) { _, data ->
+            val n = data.float()
 
             listOf(asin(n))
         }
 
-        linker.addFunction("acos", "F", DataType.Primitive.FLOAT) { _, data ->
-            val n = data.float(0)
+        linker.addFunction("acos", DataType.Primitive.FLOAT) { _, data ->
+            val n = data.float()
 
             listOf(acos(n))
         }
 
-        linker.addFunction("atan", "F", DataType.Primitive.FLOAT) { _, data ->
-            val n = data.float(0)
+        linker.addFunction("atan", DataType.Primitive.FLOAT) { _, data ->
+            val n = data.float()
 
             listOf(atan(n))
         }
 
-        linker.addFunction("atan2", "FF", DataType.Primitive.FLOAT, DataType.Primitive.FLOAT) { _, data ->
-            val y=data.float(0)
-            val x=data.float(1)
+        linker.addFunction("atan2", DataType.Primitive.FLOAT, DataType.Primitive.FLOAT) { _, data ->
+            val y = data.float()
+            val x = data.float()
 
             listOf(atan2(y, x))
         }
 
-        linker.addFunction("sinh", "F", DataType.Primitive.FLOAT) { _, data ->
-            val n = data.float(0)
+        linker.addFunction("sinh", DataType.Primitive.FLOAT) { _, data ->
+            val n = data.float()
 
             listOf(sinh(n))
         }
 
-        linker.addFunction("cosh", "F", DataType.Primitive.FLOAT) { _, data ->
-            val n = data.float(0)
+        linker.addFunction("cosh", DataType.Primitive.FLOAT) { _, data ->
+            val n = data.float()
 
             listOf(cosh(n))
         }
 
-        linker.addFunction("tanh", "F", DataType.Primitive.FLOAT) { _, data ->
-            val n = data.float(0)
+        linker.addFunction("tanh", DataType.Primitive.FLOAT) { _, data ->
+            val n = data.float()
 
             listOf(tanh(n))
         }
 
-        linker.addFunction("asinh", "F", DataType.Primitive.FLOAT) { _, data ->
-            val n = data.float(0)
+        linker.addFunction("asinh", DataType.Primitive.FLOAT) { _, data ->
+            val n = data.float()
 
             listOf(asinh(n))
         }
 
-        linker.addFunction("acosh", "F", DataType.Primitive.FLOAT) { _, data ->
-            val n = data.float(0)
+        linker.addFunction("acosh", DataType.Primitive.FLOAT) { _, data ->
+            val n = data.float()
 
             listOf(acosh(n))
         }
 
-        linker.addFunction("atanh", "F", DataType.Primitive.FLOAT) { _, data ->
-            val n = data.float(0)
+        linker.addFunction("atanh", DataType.Primitive.FLOAT) { _, data ->
+            val n = data.float()
 
             listOf(atanh(n))
         }
 
-        linker.addFunction("hypot", "FF", DataType.Primitive.FLOAT, DataType.Primitive.FLOAT) { _, data ->
-            val x=data.float(0)
-            val y=data.float(1)
+        linker.addFunction("hypot", DataType.Primitive.FLOAT, DataType.Primitive.FLOAT) { _, data ->
+            val x = data.float()
+            val y = data.float()
 
             listOf(hypot(x, y))
         }
 
-        linker.addFunction("sqrt", "F", DataType.Primitive.FLOAT) { _, data ->
-            val n = data.float(0)
+        linker.addFunction("sqrt", DataType.Primitive.FLOAT) { _, data ->
+            val n = data.float()
 
             listOf(sqrt(n))
         }
 
-        linker.addFunction("cbrt", "F", DataType.Primitive.FLOAT) { _, data ->
-            val n = data.float(0)
+        linker.addFunction("cbrt", DataType.Primitive.FLOAT) { _, data ->
+            val n = data.float()
 
             listOf(cbrt(n))
         }
 
-        linker.addFunction("exp", "F", DataType.Primitive.FLOAT) { _, data ->
-            val n = data.float(0)
+        linker.addFunction("exp", DataType.Primitive.FLOAT) { _, data ->
+            val n = data.float()
 
             listOf(exp(n))
         }
 
-        linker.addFunction("expm1", "F", DataType.Primitive.FLOAT) { _, data ->
-            val n = data.float(0)
+        linker.addFunction("expm1", DataType.Primitive.FLOAT) { _, data ->
+            val n = data.float()
 
             listOf(expm1(n))
         }
 
-        linker.addFunction("log", "FF", DataType.Primitive.FLOAT, DataType.Primitive.FLOAT) { _, data ->
-            val n=data.float(0)
-            val base=data.float(1)
+        linker.addFunction("log", DataType.Primitive.FLOAT, DataType.Primitive.FLOAT) { _, data ->
+            val n = data.float()
+            val base = data.float()
 
             listOf(log(n, base))
         }
 
-        linker.addFunction("ln", "F", DataType.Primitive.FLOAT) { _, data ->
-            val n = data.float(0)
+        linker.addFunction("ln", DataType.Primitive.FLOAT) { _, data ->
+            val n = data.float()
 
             listOf(ln(n))
         }
 
-        linker.addFunction("log10", "F", DataType.Primitive.FLOAT) { _, data ->
-            val n = data.float(0)
+        linker.addFunction("log10", DataType.Primitive.FLOAT) { _, data ->
+            val n = data.float()
 
             listOf(log10(n))
         }
 
-        linker.addFunction("log2", "F", DataType.Primitive.FLOAT) { _, data ->
-            val n = data.float(0)
+        linker.addFunction("log2", DataType.Primitive.FLOAT) { _, data ->
+            val n = data.float()
 
             listOf(log2(n))
         }
 
-        linker.addFunction("ln1p", "F", DataType.Primitive.FLOAT) { _, data ->
-            val n = data.float(0)
+        linker.addFunction("ln1p", DataType.Primitive.FLOAT) { _, data ->
+            val n = data.float()
 
             listOf(ln1p(n))
         }
 
-        linker.addFunction("ceil", "F", DataType.Primitive.FLOAT) { _, data ->
-            val n = data.float(0)
+        linker.addFunction("ceil", DataType.Primitive.FLOAT) { _, data ->
+            val n = data.float()
 
             listOf(ceil(n))
         }
 
-        linker.addFunction("floor", "F", DataType.Primitive.FLOAT) { _, data ->
-            val n = data.float(0)
+        linker.addFunction("floor", DataType.Primitive.FLOAT) { _, data ->
+            val n = data.float()
 
             listOf(floor(n))
         }
 
-        linker.addFunction("truncate", "F", DataType.Primitive.FLOAT) { _, data ->
-            val n = data.float(0)
+        linker.addFunction("truncate", DataType.Primitive.FLOAT) { _, data ->
+            val n = data.float()
 
             listOf(truncate(n))
         }
 
-        linker.addFunction("round", "F", DataType.Primitive.FLOAT) { _, data ->
-            val n = data.float(0)
+        linker.addFunction("round", DataType.Primitive.FLOAT) { _, data ->
+            val n = data.float()
 
             listOf(round(n))
         }
 
-        linker.addFunction("pow", "FF", DataType.Primitive.FLOAT, DataType.Primitive.FLOAT) { _, data ->
-            val b=data.float(0)
-            val e=data.float(1)
+        linker.addFunction("pow", DataType.Primitive.FLOAT, DataType.Primitive.FLOAT) { _, data ->
+            val b = data.float()
+            val e = data.float()
 
             listOf(b.pow(e))
         }
 
-        linker.addFunction("pow", "FI", DataType.Primitive.FLOAT, DataType.Primitive.INT) { _, data ->
-            val b=data.float(0)
-            val e=data.float(1)
+        linker.addFunction("pow", DataType.Primitive.FLOAT, DataType.Primitive.INT) { _, data ->
+            val b = data.float()
+            val e = data.float()
 
             listOf(b.pow(e.toInt()))
         }

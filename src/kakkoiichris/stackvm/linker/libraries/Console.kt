@@ -41,32 +41,32 @@ object Console : Link {
             text.toMutableList().apply { addFirst(text.size.toDouble()) }
         }
 
-        linker.addFunction("write", "B", DataType.Primitive.BOOL) { _, data ->
-            val b = data.bool(0)
+        linker.addFunction("write", DataType.Primitive.BOOL) { _, data ->
+            val b = data.bool()
 
             print(b)
 
             Linker.void
         }
 
-        linker.addFunction("write", "I", DataType.Primitive.INT) { _, data ->
-            val i = data.int(0)
+        linker.addFunction("write", DataType.Primitive.INT) { _, data ->
+            val i = data.int()
 
             print(i)
 
             Linker.void
         }
 
-        linker.addFunction("write", "F", DataType.Primitive.FLOAT) { _, data ->
-            val f = data.float(0)
+        linker.addFunction("write", DataType.Primitive.FLOAT) { _, data ->
+            val f = data.float()
 
             print(f.truncate())
 
             Linker.void
         }
 
-        linker.addFunction("write", "C", DataType.Primitive.CHAR) { _, data ->
-            val c = data.char(0)
+        linker.addFunction("write", DataType.Primitive.CHAR) { _, data ->
+            val c = data.char()
 
             print(c)
 
