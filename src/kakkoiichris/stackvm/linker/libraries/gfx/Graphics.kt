@@ -15,6 +15,7 @@ object Graphics : Link {
     override fun open(linker: Linker) {
         linker.addFunction(
             "gfxCreate",
+            "IIS",
             DataType.Primitive.INT,
             DataType.Primitive.INT,
             DataType.string
@@ -28,7 +29,7 @@ object Graphics : Link {
             listOf(displays.size.toDouble() - 1)
         }
 
-        linker.addFunction("gfxSetActive", DataType.Primitive.INT) { _, data ->
+        linker.addFunction("gfxSetActive", "I", DataType.Primitive.INT) { _, data ->
             val id = data.int()
 
             active = displays[id]
@@ -60,6 +61,7 @@ object Graphics : Link {
 
         linker.addFunction(
             "gfxSetColor",
+            "IIII",
             DataType.Primitive.INT,
             DataType.Primitive.INT,
             DataType.Primitive.INT,
@@ -83,6 +85,7 @@ object Graphics : Link {
 
         linker.addFunction(
             "gfxFillRect",
+            "IIII",
             DataType.Primitive.INT,
             DataType.Primitive.INT,
             DataType.Primitive.INT,

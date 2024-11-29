@@ -41,7 +41,7 @@ object Console : Link {
             text.toMutableList().apply { addFirst(text.size.toDouble()) }
         }
 
-        linker.addFunction("write", DataType.Primitive.BOOL) { _, data ->
+        linker.addFunction("write", "B", DataType.Primitive.BOOL) { _, data ->
             val b = data.bool()
 
             print(b)
@@ -49,7 +49,7 @@ object Console : Link {
             Linker.void
         }
 
-        linker.addFunction("write", DataType.Primitive.INT) { _, data ->
+        linker.addFunction("write", "I", DataType.Primitive.INT) { _, data ->
             val i = data.int()
 
             print(i)
@@ -57,7 +57,7 @@ object Console : Link {
             Linker.void
         }
 
-        linker.addFunction("write", DataType.Primitive.FLOAT) { _, data ->
+        linker.addFunction("write", "F", DataType.Primitive.FLOAT) { _, data ->
             val f = data.float()
 
             print(f.truncate())
@@ -65,7 +65,7 @@ object Console : Link {
             Linker.void
         }
 
-        linker.addFunction("write", DataType.Primitive.CHAR) { _, data ->
+        linker.addFunction("write", "C", DataType.Primitive.CHAR) { _, data ->
             val c = data.char()
 
             print(c)

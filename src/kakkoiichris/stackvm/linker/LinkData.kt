@@ -2,30 +2,57 @@ package kakkoiichris.stackvm.linker
 
 import kakkoiichris.stackvm.util.bool
 
-class LinkData(val values: Values) {
-    private var scanIndex = 0
+class LinkData private constructor(private val arguments: MutableMap<Int, Any>) {
+    private var i = 0
 
     fun bool() =
-        values[scanIndex++].bool
+        arguments[i++] as Boolean
 
     fun float() =
-        values[scanIndex++]
+        arguments[i++] as Double
 
     fun int() =
-        values[scanIndex++].toInt()
+        arguments[i++] as Int
 
     fun char() =
-        values[scanIndex++].toInt().toChar()
+        arguments[i++] as Char
 
-    fun string(): String {
-        val (string, end) = scanString(values, scanIndex)
-
-        scanIndex = end
-
-        return string
-    }
+    fun string() =
+        arguments[i++] as String
 
     companion object {
+        fun parse(format: String, values: Values): LinkData {
+            val arguments = mutableMapOf<Int, Any>()
+
+            val parseOrder = format.uppercase().withIndex().reversed()
+
+            var j = 0
+
+            for ((i, c) in parseOrder) {
+                arguments[i] = when (c) {
+                    'B'  -> values[j++].bool
+
+                    'F'  -> values[j++]
+
+                    'I'  -> values[j++].toInt()
+
+                    'C'  -> values[j++].toInt().toChar()
+
+                    'S'  -> {
+                        val (string, end) = scanString(values, j)
+
+                        j = end
+
+                        string
+                    }
+
+                    else -> TODO()
+                }
+            }
+
+            return LinkData(arguments)
+        }
+
         private fun scanString(values: List<Double>, start: Int = 0): StringScan {
             var i = start
 

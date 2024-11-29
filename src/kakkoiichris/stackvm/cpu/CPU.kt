@@ -37,7 +37,6 @@ abstract class CPU(private val config: Config = Config()) {
 
     internal var result by Register.Float(RES_ADR)
 
-
     protected var instructionPointerOrigin by Register.Int(IPO_ADR)
     protected var instructionPointer by Register.Int(IPA_ADR)
 

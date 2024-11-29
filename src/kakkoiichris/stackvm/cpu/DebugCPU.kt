@@ -262,11 +262,9 @@ object DebugCPU : CPU() {
 
     override fun alod() {
         val address = getLoadAddress()
-        val size = memory[address]
+        val size = memory[address].toInt()
 
-        val elements = MutableList(size.toInt()) { memory[address + 1 + it] }
-
-        elements.add(0, size)
+        val elements = MutableList(size + 1) { memory[address + it] }
 
         println("ALOD @${address.toAddress()} [${elements.joinToString(separator = ",") { it.truncate() }}]")
 
