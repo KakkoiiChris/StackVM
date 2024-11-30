@@ -111,7 +111,11 @@ abstract class CPU(private val config: Config = Config()) {
 
         if (index !in Bytecode.Instruction.entries.indices) error("Value '$index' is not an instruction @ $instructionPointer!")
 
-        when (Bytecode.Instruction.entries[index]) {
+        val ins = Bytecode.Instruction.entries[index]
+
+        //println(ins)
+
+        when (ins) {
             Bytecode.Instruction.HALT    -> halt()
 
             Bytecode.Instruction.PUSH    -> push()
