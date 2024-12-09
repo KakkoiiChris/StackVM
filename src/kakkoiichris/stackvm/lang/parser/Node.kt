@@ -75,7 +75,7 @@ interface Node {
         fun visitName(node: Name): X
     }
 
-    class Program(override val location: Location, val statements: Nodes) : Node {
+    class Program(override val location: Location, val statements: Nodes, val mainReturn: Return) : Node {
         var offset = -1
 
         override fun <X> accept(visitor: Visitor<X>): X =
@@ -217,7 +217,7 @@ interface Node {
             visitor.visitValue(this)
     }
 
-    class String(override val location: Location, val value: TokenType.String) : Node {
+    class String(override val location: Location, val value: kotlin.String) : Node {
         override val dataType get() = DataType.Alias(Name(location, TokenType.Name("string")))
 
         override fun <X> accept(visitor: Visitor<X>): X =

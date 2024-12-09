@@ -151,6 +151,9 @@ class Compiler(
     override fun visitProgram(node: Node.Program): List<Token> {
         val tokens = mutableListOf<Token>()
 
+        tokens += JMP
+        tokens += Double.NaN
+
         offsetStack.push(node.offset)
 
         push()
@@ -158,6 +161,12 @@ class Compiler(
         for (statement in node.statements) {
             tokens += visit(statement)
         }
+
+        val mainReturnPos = pos
+
+        tokens += visit(program.mainReturn)
+
+        tokens[1] = mainReturnPos.toDouble().ok
 
         tokens += freeMemory()
 
@@ -444,9 +453,6 @@ class Compiler(
 
         tokens += Bytecode.Comment("${node.signature} @ ${node.location}")
 
-        tokens += JMP
-        tokens += Token.AwaitEnd()
-
         val start = pos.toDouble()
 
         functions[node.id] = pos
@@ -529,13 +535,13 @@ class Compiler(
     override fun visitString(node: Node.String): List<Token> {
         val tokens = mutableListOf<Token>()
 
-        for (c in node.value.value.reversed()) {
+        for (c in node.value.reversed()) {
             tokens += PUSH
             tokens += c.code
         }
 
         tokens += PUSH
-        tokens += node.value.value.length
+        tokens += node.value.length
 
         return tokens
     }

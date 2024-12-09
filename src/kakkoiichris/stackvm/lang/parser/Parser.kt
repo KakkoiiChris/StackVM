@@ -114,9 +114,7 @@ class Parser(lexer: Lexer, private val optimize: Boolean) {
             error("No main function @ ${here()}!")
         }
 
-        statements += implicitMainReturn()
-
-        return Node.Program(location, statements)
+        return Node.Program(location, statements, implicitMainReturn())
     }
 
     private fun isMainFunction(stmt: Node) =
@@ -233,21 +231,16 @@ class Parser(lexer: Lexer, private val optimize: Boolean) {
 
         var type: DataType = baseType
 
-        if (match(TokenType.Symbol.LEFT_SQUARE)) {
-            do {
-                mustSkip(TokenType.Symbol.LEFT_SQUARE)
+        while (skip(TokenType.Symbol.LEFT_SQUARE)) {
+            val sizeNode = if (!match(TokenType.Symbol.RIGHT_SQUARE)) value() else null
 
-                val sizeNode = if (!match(TokenType.Symbol.RIGHT_SQUARE)) value() else null
+            mustSkip(TokenType.Symbol.RIGHT_SQUARE)
 
-                mustSkip(TokenType.Symbol.RIGHT_SQUARE)
+            if (sizeNode != null && sizeNode.dataType != DataType.Primitive.INT) error("Array size must be an int @ ${sizeNode.location}!")
 
-                if (sizeNode != null && sizeNode.dataType != DataType.Primitive.INT) error("Array size must be an int @ ${sizeNode.location}!")
+            val size = sizeNode?.value?.value?.toInt() ?: -1
 
-                val size = sizeNode?.value?.value?.toInt() ?: -1
-
-                type = DataType.Array(type, size)
-            }
-            while (match(TokenType.Symbol.LEFT_SQUARE))
+            type = DataType.Array(type, size)
         }
 
         return Type(location, TokenType.Type(type))
@@ -276,11 +269,9 @@ class Parser(lexer: Lexer, private val optimize: Boolean) {
 
         type!!
 
-        if (node != null && !DataType.isEquivalent(
-                type.type.value,
-                node.dataType!!
-            )
-        ) error("Cannot declare a variable of type '${type.type.value}' with value of type '${node.dataType}' @ ${node.location}!")
+        if (node != null && !DataType.isEquivalent(type.type.value, node.dataType!!)) {
+            error("Cannot declare a variable of type '${type.type.value}' with value of type '${node.dataType}' @ ${node.location}!")
+        }
 
         val variable = createVariable(constant, name, type.type.value)
 
@@ -732,11 +723,9 @@ class Parser(lexer: Lexer, private val optimize: Boolean) {
 
         val node = or()
 
-        if (!DataType.isEquivalent(
-                dataType,
-                node.dataType
-            )
-        ) error("Cannot assign a value of type '${node.dataType}' to a variable of type '$dataType' @ $location!")
+        if (!DataType.isEquivalent(dataType, node.dataType)) {
+            error("Cannot assign a value of type '${node.dataType}' to a variable of type '$dataType' @ $location!")
+        }
 
         return Node.Assign(location, expr, node)
     }
@@ -944,8 +933,6 @@ class Parser(lexer: Lexer, private val optimize: Boolean) {
             postfix()
         }
 
-        expr.dataType
-
         return expr
     }
 
@@ -1076,7 +1063,7 @@ class Parser(lexer: Lexer, private val optimize: Boolean) {
 
         val value = get<TokenType.String>()!!
 
-        return Node.String(location, value)
+        return Node.String(location, value.value)
     }
 
     private fun name(): Node.Name {
