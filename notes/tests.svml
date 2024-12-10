@@ -1,6 +1,55 @@
-function x(a, b) { return a + b; } x(1, 2);
-function x(a, b) { return a + b; } function y(a, b, c, d) { return x(a, b) * x(c, d); } y(1, 2, 3, 4);
-function z(a) { return a / 2; } function y(a, b) { return z(a) * z(b); } function x(a,b,c,d) { return y(a, b) + y(c, d); } x(1, 2, 3, 4);
-function abs(n) { if n < 0 { return -n; } return n; } abs(-5);
-function fibonacci(num) { if num < 2 { return num; } return fibonacci(num - 1) + fibonacci(num - 2); } fibonacci(10);
-function fibonacci(num) { var a = 0; var b = 1; var c = 0; var n = 1; while n < num { var t = a + b; a = b; b = c; c = t; n = n + 1; return c; } return fibonacci(10);
+function x(a, b) {
+	return a + b;
+}
+x(1, 2);
+
+function x(a, b) {
+	return a + b;
+}
+function y(a, b, c, d) {
+	return x(a, b) * x(c, d);
+}
+y(1, 2, 3, 4);
+
+function z(a) {
+	return a / 2;
+}
+function y(a, b) {
+	return z(a) * z(b);
+}
+function x(a,b,c,d) {
+	return y(a, b) + y(c, d);
+}
+x(1, 2, 3, 4);
+
+function abs(n) {
+	if n < 0 {
+		return -n;
+	}
+	return n;
+}
+abs(-5);
+
+function fibonacci(num) {
+	if num < 2 {
+	return num;
+	}
+	return fibonacci(num - 1) + fibonacci(num - 2);
+}
+fibonacci(10);
+
+function fibonacci(num) {
+	var a = 0;
+	var b = 1;
+	var c = 0;
+	var n = 1;
+	while n < num {
+		var t = a + b;
+		a = b;
+		b = c;
+		c = t;
+		n = n + 1;
+	}
+	return c;
+}
+return fibonacci(10);

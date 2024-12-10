@@ -58,3 +58,7 @@ function writeLine(s: string): void {
 	write(s);
 	write('\n');
 }
+
+function writeLine: void {
+	write('\n');
+}

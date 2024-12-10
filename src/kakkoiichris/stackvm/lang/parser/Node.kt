@@ -71,8 +71,6 @@ interface Node {
         fun visitGetIndex(node: GetIndex): X
 
         fun visitSetIndex(node: SetIndex): X
-
-        fun visitName(node: Name): X
     }
 
     class Program(override val location: Location, val statements: Nodes, val mainReturn: Return) : Node {
@@ -591,6 +589,8 @@ interface Node {
         val id: Int,
         val args: Nodes
     ) : Node {
+        var offset = 0
+
         override fun <X> accept(visitor: Visitor<X>): X =
             visitor.visitInvoke(this)
     }
@@ -649,10 +649,7 @@ interface Node {
             visitor.visitSetIndex(this)
     }
 
-    class Name(override val location: Location, val name: TokenType.Name) : Node {
-        override fun <X> accept(visitor: Visitor<X>): X =
-            visitor.visitName(this)
-
+    data class Name(val location: Location, val name: TokenType.Name) {
         override fun equals(other: Any?): Boolean {
             if (other !is Name) return false
 

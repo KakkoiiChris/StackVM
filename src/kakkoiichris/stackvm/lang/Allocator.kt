@@ -230,6 +230,8 @@ object Allocator : Node.Visitor<Unit> {
     }
 
     override fun visitInvoke(node: Node.Invoke) {
+        node.offset = offsets.peek()
+
         for (arg in node.args) {
             visit(arg)
         }
@@ -258,6 +260,4 @@ object Allocator : Node.Visitor<Unit> {
 
         visit(node.value)
     }
-
-    override fun visitName(node: Node.Name) = Unit
 }

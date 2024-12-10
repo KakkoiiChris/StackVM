@@ -956,27 +956,19 @@ class Parser(lexer: Lexer, private val optimize: Boolean) {
     }
 
     private fun postfix(): Node {
-        var expr = terminal()
+        if (match<TokenType.Name>()) {
+            val name = name()
 
-        when {
-            match(TokenType.Symbol.LEFT_PAREN)  -> {
-                if (expr !is Node.Name) error("Invalid invoke.")
+            return when {
+                match(TokenType.Symbol.LEFT_PAREN)  -> invoke(name)
 
-                expr = invoke(expr)
-            }
+                match(TokenType.Symbol.LEFT_SQUARE) -> getIndex(name.toVariable())
 
-            match(TokenType.Symbol.LEFT_SQUARE) -> {
-                if (expr !is Node.Name) error("Invalid index.")
-
-                expr = getIndex(expr.toVariable())
+                else                                -> name.toVariable()
             }
         }
 
-        if (expr is Node.Name) {
-            return expr.toVariable()
-        }
-
-        return expr
+        return terminal()
     }
 
     private fun invoke(name: Node.Name): Node {
@@ -1038,8 +1030,6 @@ class Parser(lexer: Lexer, private val optimize: Boolean) {
         match<TokenType.Value>()           -> value()
 
         match<TokenType.String>()          -> string()
-
-        match<TokenType.Name>()            -> name()
 
         match(TokenType.Symbol.LEFT_PAREN) -> nested()
 

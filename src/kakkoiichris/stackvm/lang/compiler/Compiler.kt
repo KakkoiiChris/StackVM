@@ -546,10 +546,6 @@ class Compiler(
         return tokens
     }
 
-    override fun visitName(node: Node.Name): List<Token> {
-        error("Should not visit Name!")
-    }
-
     override fun visitVariable(node: Node.Variable): List<Token> {
         val tokens = mutableListOf<Token>()
 
@@ -688,7 +684,7 @@ class Compiler(
         val offset = offsetStack.peek()!!
 
         tokens += FRAME
-        tokens += offset
+        tokens += offset + node.offset
 
         val address = functions[node.id]!!
 
