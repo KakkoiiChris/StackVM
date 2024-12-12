@@ -193,9 +193,11 @@ object ReleaseCPU : CPU() {
             address += popStackInt() * (subSize + 1)
         }
 
-        address += popStackInt()
+        address++
 
         val size = memory[address].toInt()
+
+        address += popStackInt() * size
 
         for (i in size downTo 0) {
             pushStack(memory[address + i])

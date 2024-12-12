@@ -62,3 +62,22 @@ function writeLine(s: string): void {
 function writeLine: void {
 	write('\n');
 }
+
+function write(a: int[]): void {
+	if #a == 0 {
+		write("{}");
+		return;
+	}
+	
+	write('{');
+	
+	for i = 0; i < #a; i += 1 {
+		if i != 0 {
+			write(',');
+		}
+		
+		write(a[i]);
+	}
+	
+	write('}');
+}

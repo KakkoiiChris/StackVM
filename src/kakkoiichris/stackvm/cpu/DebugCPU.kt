@@ -13,7 +13,7 @@ object DebugCPU : CPU() {
         while (running) {
             decode()
 
-            //showMemory()
+            showMemory()
         }
 
         return result
@@ -44,13 +44,13 @@ object DebugCPU : CPU() {
             print(" ${memory[i].truncate()}")
         }
 
-        //println("\n")
+        println("\n")
     }
 
     override fun halt() {
         result = popStack()
 
-        //println("HALT #${result.truncate()}")
+        println("HALT #${result.truncate()}")
 
         running = false
     }
@@ -58,7 +58,7 @@ object DebugCPU : CPU() {
     override fun push() {
         val value = fetch()
 
-        //println("PUSH #${value.truncate()}")
+        println("PUSH #${value.truncate()}")
 
         pushStack(value)
     }
@@ -66,13 +66,13 @@ object DebugCPU : CPU() {
     override fun pop() {
         val value = popStack()
 
-        //println("POP <${value.truncate()}>")
+        println("POP <${value.truncate()}>")
     }
 
     override fun dup() {
         val value = peekStack()
 
-        //println("DUP <${value.truncate()}>")
+        println("DUP <${value.truncate()}>")
 
         pushStack(value)
     }
@@ -83,7 +83,7 @@ object DebugCPU : CPU() {
 
         val value = a + b
 
-        //println("ADD #${a.truncate()} #${b.truncate()} <$value>")
+        println("ADD #${a.truncate()} #${b.truncate()} <$value>")
 
         pushStack(value)
     }
@@ -94,7 +94,7 @@ object DebugCPU : CPU() {
 
         val value = a - b
 
-        //println("SUB #${a.truncate()} #${b.truncate()} <$value>")
+        println("SUB #${a.truncate()} #${b.truncate()} <$value>")
 
         pushStack(value)
     }
@@ -105,7 +105,7 @@ object DebugCPU : CPU() {
 
         val value = a * b
 
-        //println("MUL #${a.truncate()} #${b.truncate()} <$value>")
+        println("MUL #${a.truncate()} #${b.truncate()} <$value>")
 
         pushStack(value)
     }
@@ -116,7 +116,7 @@ object DebugCPU : CPU() {
 
         val value = a / b
 
-        //println("DIV #${a.truncate()} #${b.truncate()} <$value>")
+        println("DIV #${a.truncate()} #${b.truncate()} <$value>")
 
         pushStack(value)
     }
@@ -127,7 +127,7 @@ object DebugCPU : CPU() {
 
         val value = (a.toInt() / b.toInt()).toDouble()
 
-        //println("IDIV #${a.truncate()} #${b.truncate()} <$value>")
+        println("IDIV #${a.truncate()} #${b.truncate()} <$value>")
 
         pushStack(value)
     }
@@ -138,7 +138,7 @@ object DebugCPU : CPU() {
 
         val value = a % b
 
-        //println("MOD #${a.truncate()} #${b.truncate()} <$value>")
+        println("MOD #${a.truncate()} #${b.truncate()} <$value>")
 
         pushStack(value)
     }
@@ -149,7 +149,7 @@ object DebugCPU : CPU() {
 
         val value = (a.toInt() % b.toInt()).toDouble()
 
-        //println("IMOD #${a.truncate()} #${b.truncate()} <$value>")
+        println("IMOD #${a.truncate()} #${b.truncate()} <$value>")
 
         pushStack(value)
     }
@@ -159,7 +159,7 @@ object DebugCPU : CPU() {
 
         val value = -a
 
-        //println("NEG #${value.truncate()}")
+        println("NEG #${value.truncate()}")
 
         pushStack(value)
     }
@@ -168,7 +168,7 @@ object DebugCPU : CPU() {
         val b = popStack()
         val a = popStack()
 
-        //println("AND #${a.truncate()} #${b.truncate()}")
+        println("AND #${a.truncate()} #${b.truncate()}")
 
         pushStack((a.bool && b.bool).float)
     }
@@ -177,7 +177,7 @@ object DebugCPU : CPU() {
         val b = popStack()
         val a = popStack()
 
-        //println("OR #${a.truncate()} #${b.truncate()}")
+        println("OR #${a.truncate()} #${b.truncate()}")
 
         pushStack((a.bool || b.bool).float)
     }
@@ -185,7 +185,7 @@ object DebugCPU : CPU() {
     override fun not() {
         val value = popStack()
 
-        //println("NOT #${value.truncate()}")
+        println("NOT #${value.truncate()}")
 
         pushStack((!value.bool).float)
     }
@@ -194,7 +194,7 @@ object DebugCPU : CPU() {
         val b = popStack()
         val a = popStack()
 
-        //println("EQU #${a.truncate()} #${b.truncate()}")
+        println("EQU #${a.truncate()} #${b.truncate()}")
 
         pushStack((a == b).float)
     }
@@ -203,7 +203,7 @@ object DebugCPU : CPU() {
         val b = popStack()
         val a = popStack()
 
-        //println("GRT #${a.truncate()} #${b.truncate()}")
+        println("GRT #${a.truncate()} #${b.truncate()}")
 
         pushStack((a > b).float)
     }
@@ -212,7 +212,7 @@ object DebugCPU : CPU() {
         val b = popStack()
         val a = popStack()
 
-        //println("GEQ #${a.truncate()} #${b.truncate()}")
+        println("GEQ #${a.truncate()} #${b.truncate()}")
 
         pushStack((a >= b).float)
     }
@@ -222,7 +222,7 @@ object DebugCPU : CPU() {
 
         val address = instructionPointerOrigin + index
 
-        //println("JMP @${index.toAddress()}")
+        println("JMP @${index.toAddress()}")
 
         instructionPointer = address
     }
@@ -232,7 +232,7 @@ object DebugCPU : CPU() {
 
         val address = instructionPointerOrigin + index
 
-        //println("JIF @${index.toAddress()}")
+        println("JIF @${index.toAddress()}")
 
         if (popStackBool()) {
             instructionPointer = address
@@ -242,20 +242,20 @@ object DebugCPU : CPU() {
     override fun glob() {
         global = true
 
-        //println("GLOB")
+        println("GLOB")
     }
 
     override fun heap() {
         heap = true
 
-        //println("HEAP")
+        println("HEAP")
     }
 
     override fun lod() {
         val address = getLoadAddress()
         val value = memory[address]
 
-        //println("LOD @${address.toAddress()} <${value.truncate()}>")
+        println("LOD @${address.toAddress()} <${value.truncate()}>")
 
         pushStack(value)
     }
@@ -266,7 +266,7 @@ object DebugCPU : CPU() {
 
         val elements = MutableList(size + 1) { memory[address + it] }
 
-        //println("ALOD @${address.toAddress()} [${elements.joinToString(separator = ",") { it.truncate() }}]")
+        println("ALOD @${address.toAddress()} [${elements.joinToString(separator = ",") { it.truncate() }}]")
 
         for (element in elements.reversed()) {
             pushStack(element)
@@ -291,7 +291,7 @@ object DebugCPU : CPU() {
 
         val value = memory[address]
 
-        //println("ILOD @${address.toAddress()} #$indexCount <[${indices.joinToString(separator = "][")}], ${value.truncate()}>")
+        println("ILOD @${address.toAddress()} #$indexCount <[${indices.joinToString(separator = "][")}], ${value.truncate()}>")
 
         pushStack(value)
     }
@@ -310,13 +310,15 @@ object DebugCPU : CPU() {
             address += index * (subSize + 1)
         }
 
-        address += indices.last()
+        address++
 
         val size = memory[address]
 
+        address += (indices.last() * size).toInt()
+
         val elements = DoubleArray(size.toInt() + 1) { memory[address + it] }
 
-        //println("IALOD @${address.toAddress()} [${elements.joinToString(separator = ",") { it.truncate() }}]")
+        println("IALOD @${address.toAddress()} [${elements.joinToString(separator = ",") { it.truncate() }}]")
 
         for (element in elements.reversed()) {
             pushStack(element)
@@ -327,7 +329,7 @@ object DebugCPU : CPU() {
         val address = getStoreAddress()
         val value = popStack()
 
-        //println("STO @${address.toAddress()} <${value.truncate()}>")
+        println("STO @${address.toAddress()} <${value.truncate()}>")
 
         memory[address] = value
     }
@@ -342,7 +344,7 @@ object DebugCPU : CPU() {
 
         elements.add(0, size)
 
-        //println("ASTO @${address.toAddress()} [${elements.joinToString(separator = ",") { it.truncate() }}]")
+        println("ASTO @${address.toAddress()} [${elements.joinToString(separator = ",") { it.truncate() }}]")
 
         for (offset in elements.indices) {
             memory[address + offset] = elements[offset]
@@ -365,7 +367,7 @@ object DebugCPU : CPU() {
 
         val value = popStack()
 
-        //println("ISTO @${address.toAddress()} #$indexCount <${value.truncate()}>")
+        println("ISTO @${address.toAddress()} #$indexCount <${value.truncate()}>")
 
         memory[address] = value
     }
@@ -392,7 +394,7 @@ object DebugCPU : CPU() {
 
         elements.add(0, size)
 
-        //println("IASTO @${address.toAddress()} #$indexCount [${elements.joinToString(separator = ",") { it.truncate() }}]")
+        println("IASTO @${address.toAddress()} #$indexCount [${elements.joinToString(separator = ",") { it.truncate() }}]")
 
         for (offset in elements.indices) {
             memory[address + offset] = elements[offset]
@@ -406,7 +408,7 @@ object DebugCPU : CPU() {
 
         val address = allocateMemory(id, size)
 
-        //println("ALLOC #$id <$size, @${address.toAddress()}>")
+        println("ALLOC #$id <$size, @${address.toAddress()}>")
     }
 
     override fun realloc() {
@@ -416,13 +418,13 @@ object DebugCPU : CPU() {
 
         val address = reallocateMemory(id, size)
 
-        //println("ALLOC #$id <$size, @${address.toAddress()}>")
+        println("ALLOC #$id <$size, @${address.toAddress()}>")
     }
 
     override fun free() {
         val id = fetchInt()
 
-        //println("FREE #$id")
+        println("FREE #$id")
 
         freeMemory(id)
     }
@@ -432,7 +434,7 @@ object DebugCPU : CPU() {
 
         val totalSize = memory[address].toInt()
 
-        //println("SIZE @${address.toAddress()} <$totalSize>")
+        println("SIZE @${address.toAddress()} <$totalSize>")
 
         pushStack(totalSize.toDouble())
     }
@@ -442,7 +444,7 @@ object DebugCPU : CPU() {
 
         val totalSize = memory[address].toInt() / (memory[address + 1] + 1).toInt()
 
-        //println("ASIZE @${address.toAddress()} <$totalSize>")
+        println("ASIZE @${address.toAddress()} <$totalSize>")
 
         pushStack(totalSize.toDouble())
     }
@@ -466,7 +468,7 @@ object DebugCPU : CPU() {
 
         val totalSize = memory[address].toInt()
 
-        //println("ISIZE @${address.toAddress()} <$totalSize>")
+        println("ISIZE @${address.toAddress()} <$totalSize>")
 
         pushStack(totalSize.toDouble())
     }
@@ -490,7 +492,7 @@ object DebugCPU : CPU() {
 
         val totalSize = memory[address].toInt() / (memory[address + 1] + 1).toInt()
 
-        //println("IASIZE @${address.toAddress()} <$totalSize>")
+        println("IASIZE @${address.toAddress()} <$totalSize>")
 
         pushStack(totalSize.toDouble())
     }
@@ -502,7 +504,7 @@ object DebugCPU : CPU() {
 
         val last = instructionPointer
 
-        //println("CALL @${index.toAddress()}")
+        println("CALL @${index.toAddress()}")
 
         instructionPointer = address
         pushCall(last.toDouble())
@@ -511,7 +513,7 @@ object DebugCPU : CPU() {
     override fun ret() {
         val address = popCall()
 
-        //println("RET @${address.toAddress()}")
+        println("RET @${address.toAddress()}")
 
         if (address < 0) {
             result = popStack()
@@ -529,7 +531,7 @@ object DebugCPU : CPU() {
     override fun frame() {
         val value = fetchInt()
 
-        //println("FRAME $$value")
+        println("FRAME $$value")
 
         pushFrame(value)
     }
@@ -539,7 +541,7 @@ object DebugCPU : CPU() {
 
         pushCall(argPointer.toDouble())
 
-        //println("ARG <@${argPointer.toAddress()}>")
+        println("ARG <@${argPointer.toAddress()}>")
     }
 
     override fun sys() {
@@ -555,7 +557,7 @@ object DebugCPU : CPU() {
             arguments.add(popStack())
         }
 
-        //println("SYS #$id <${arguments.joinToString()}>")
+        println("SYS #$id <${arguments.joinToString()}>")
 
         val result = function(this, arguments)
 
