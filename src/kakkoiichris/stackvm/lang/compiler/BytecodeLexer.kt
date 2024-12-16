@@ -37,7 +37,11 @@ class BytecodeLexer(private val src: String, private val preserveComments: Boole
         return Bytecode.End
     }
 
-    private fun peek() = if (pos < src.length) src[pos] else '\u0000'
+    private fun peek() =
+        if (pos < src.length)
+            src[pos]
+        else
+            '\u0000'
 
     private fun match(char: Char) =
         peek() == char
@@ -90,7 +94,9 @@ class BytecodeLexer(private val src: String, private val preserveComments: Boole
             while (match(Char::isLetter))
         }
 
-        return Bytecode.Instruction.entries.first { it.name.equals(result, ignoreCase = true) }
+        return Bytecode.Instruction.entries
+            .firstOrNull { it.name.equals(result, ignoreCase = true) }
+            ?: error("Bytecode '$result' is invalid!")
     }
 
     private fun value(): Bytecode.Value {
@@ -108,7 +114,9 @@ class BytecodeLexer(private val src: String, private val preserveComments: Boole
             }
         }
 
-        val value = result.toDoubleOrNull() ?: error("Number too big!")
+        val value = result
+            .toDoubleOrNull()
+            ?: error("Number '$result' is too big!")
 
         return Bytecode.Value(value)
     }
