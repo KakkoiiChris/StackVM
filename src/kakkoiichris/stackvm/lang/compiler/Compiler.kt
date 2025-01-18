@@ -196,7 +196,7 @@ class Compiler(
         if (node.node != null) {
             tokens += visit(node.node)
         }
-        else if (!node.variable.dataType.isHeapAllocated) {
+        else if (!node.variable.dataType.isHeapAllocated(node.variable.context.source)) {
             val sizes = (node.variable.dataType as DataType.Array).sizes
 
             tokens += getDefaultArray(*sizes)
@@ -205,7 +205,7 @@ class Compiler(
             tokens += getDefaultArray(1)
         }
 
-        if (node.variable.dataType.isHeapAllocated) {
+        if (node.variable.dataType.isHeapAllocated(node.variable.context.source)) {
             tokens += ALLOC
             tokens += node.id
             tokens += HEAP
@@ -451,7 +451,7 @@ class Compiler(
 
         var tokens = mutableListOf<Token>()
 
-        tokens += Bytecode.Comment("${node.signature} @ ${node.location}")
+        tokens += Bytecode.Comment("${node.signature} @ ${node.context}")
 
         val start = pos.toDouble()
 
@@ -462,7 +462,7 @@ class Compiler(
         push()
 
         for (param in node.params) {
-            if (param.dataType.isHeapAllocated) {
+            if (param.dataType.isHeapAllocated(param.context.source)) {
                 tokens += ALLOC
                 tokens += param.id
                 tokens += HEAP
@@ -549,7 +549,7 @@ class Compiler(
     override fun visitVariable(node: Node.Variable): List<Token> {
         val tokens = mutableListOf<Token>()
 
-        if (node.dataType.isHeapAllocated) {
+        if (node.dataType.isHeapAllocated(node.context.source)) {
             tokens += HEAP
             tokens += ALOD
             tokens += node.id
@@ -559,7 +559,7 @@ class Compiler(
                 tokens += GLOB
             }
 
-            tokens += if (DataType.isArray(node.dataType)) ALOD else LOD
+            tokens += if (DataType.isArray(node.dataType, node.context.source)) ALOD else LOD
             tokens += node.address
         }
 
@@ -574,7 +574,7 @@ class Compiler(
         }
 
         tokens += PUSH
-        tokens += node.dataType.offset - 1
+        tokens += node.getDataType(node.context.source).getOffset(node.context.source) - 1
 
         return tokens
     }
@@ -592,10 +592,10 @@ class Compiler(
     override fun visitSize(node: Node.Size): List<Token> {
         val tokens = mutableListOf<Token>()
 
-        if (DataType.isArray(node.variable.dataType)) {
-            val instruction = if (node.arrayType.dimension > 1) ASIZE else SIZE
+        if (DataType.isArray(node.variable.dataType, node.variable.context.source)) {
+            val instruction = if (node.getArrayType(node.variable.context.source).dimension > 1) ASIZE else SIZE
 
-            if (node.variable.dataType.isHeapAllocated) {
+            if (node.variable.dataType.isHeapAllocated(node.variable.context.source)) {
                 tokens += HEAP
                 tokens += instruction
                 tokens += node.variable.id
@@ -620,9 +620,10 @@ class Compiler(
             tokens += visit(index)
         }
 
-        val instruction = if (node.indices.size < node.arrayType.dimension - 1) IASIZE else ISIZE
+        val instruction =
+            if (node.indices.size < node.getArrayType(node.variable.context.source).dimension - 1) IASIZE else ISIZE
 
-        if (node.variable.dataType.isHeapAllocated) {
+        if (node.variable.dataType.isHeapAllocated(node.variable.context.source)) {
             tokens += HEAP
             tokens += instruction
             tokens += node.variable.id
@@ -654,14 +655,14 @@ class Compiler(
 
         tokens += visit(node.node)
 
-        if (node.variable.dataType.isHeapAllocated) {
+        if (node.variable.dataType.isHeapAllocated(node.variable.context.source)) {
             tokens += REALLOC
             tokens += node.variable.id
             tokens += HEAP
             tokens += ASTO
             tokens += node.variable.id
         }
-        else if (DataType.isArray(node.dataType)) {
+        else if (DataType.isArray(node.getDataType(node.variable.context.source), node.variable.context.source)) {
             tokens += ASTO
             tokens += node.variable.address
         }
@@ -721,9 +722,10 @@ class Compiler(
             tokens += index
         }
 
-        val instruction = if (node.indices.size < node.arrayType.dimension) IALOD else ILOD
+        val instruction =
+            if (node.indices.size < node.getArrayType(node.variable.context.source).dimension) IALOD else ILOD
 
-        if (node.variable.dataType.isHeapAllocated) {
+        if (node.variable.dataType.isHeapAllocated(node.variable.context.source)) {
             tokens += HEAP
             tokens += instruction
             tokens += node.variable.id
@@ -756,9 +758,10 @@ class Compiler(
             tokens += index
         }
 
-        val instruction = if (node.indices.size < node.arrayType.dimension) IASTO else ISTO
+        val instruction =
+            if (node.indices.size < node.getArrayType(node.variable.context.source).dimension) IASTO else ISTO
 
-        if (node.variable.dataType.isHeapAllocated) {
+        if (node.variable.dataType.isHeapAllocated(node.variable.context.source)) {
             tokens += HEAP
             tokens += instruction
             tokens += node.variable.id

@@ -2,11 +2,12 @@ package kakkoiichris.stackvm.lang.parser
 
 import kakkoiichris.stackvm.lang.Directory
 import kakkoiichris.stackvm.lang.Source
+import kakkoiichris.stackvm.lang.lexer.Context
 import kakkoiichris.stackvm.lang.lexer.Lexer
-import kakkoiichris.stackvm.lang.lexer.Location
 import kakkoiichris.stackvm.lang.lexer.Token
 import kakkoiichris.stackvm.lang.lexer.TokenType
 import kakkoiichris.stackvm.linker.Linker
+import kakkoiichris.stackvm.util.svmlError
 import java.util.*
 
 class Parser(lexer: Lexer, private val optimize: Boolean) {
@@ -28,7 +29,9 @@ class Parser(lexer: Lexer, private val optimize: Boolean) {
         return program
     }
 
-    private fun here() = token.location
+    private fun here() = token.context
+
+    private fun source() = here().source
 
     private fun matchAny(vararg types: TokenType) =
         types.any { it == token.type }
@@ -57,7 +60,7 @@ class Parser(lexer: Lexer, private val optimize: Boolean) {
 
     private fun mustSkip(type: TokenType) {
         if (!skip(type)) {
-            error("Expected a '$type', but encountered a '${token.type}' @ ${here()}!")
+            svmlError("Expected a '$type', but encountered a '${token.type}'", source(), here())
         }
     }
 
@@ -74,11 +77,12 @@ class Parser(lexer: Lexer, private val optimize: Boolean) {
     }
 
     private fun program(): Node.Program {
-        importFile(Node.Name(Location.none(), TokenType.Name("common")))
+        importFile(Node.Name(Context.none(), TokenType.Name("common")))
 
         step()
 
         val location = here()
+        val source = source()
 
         val statements = mutableListOf<Node>()
 
@@ -101,7 +105,11 @@ class Parser(lexer: Lexer, private val optimize: Boolean) {
 
                     match(TokenType.Keyword.FUNCTION)                      -> function()
 
-                    else                                                   -> error("Only imports and declarations allowed at the file level @ ${here()}!")
+                    else                                                   -> svmlError(
+                        "Only imports and declarations allowed at the file level",
+                        source(),
+                        here()
+                    )
                 }
             }
 
@@ -110,18 +118,18 @@ class Parser(lexer: Lexer, private val optimize: Boolean) {
             step()
         }
 
-        if (statements.none(::isMainFunction)) {
-            error("No main function @ ${here()}!")
+        if (statements.none { isMainFunction(it, source) }) {
+            svmlError("No main function", source, here())
         }
 
         return Node.Program(location, statements, implicitMainReturn())
     }
 
-    private fun isMainFunction(stmt: Node) =
+    private fun isMainFunction(stmt: Node, source: Source) =
         stmt is Node.Function &&
             stmt.name.name.value == "main" && (
-            DataType.isEquivalent(stmt.dataType, DataType.Primitive.INT) ||
-                DataType.isEquivalent(stmt.dataType, DataType.Primitive.VOID)
+            DataType.isEquivalent(stmt.dataType, DataType.Primitive.INT, source) ||
+                DataType.isEquivalent(stmt.dataType, DataType.Primitive.VOID, source)
             )
 
     private fun implicitMainReturn(): Node.Return {
@@ -155,7 +163,7 @@ class Parser(lexer: Lexer, private val optimize: Boolean) {
             Directory.getFile(name.name.value)
 
         if (!file.exists()) {
-            error("Cannot import file '${name.name.value}' @ ${name.location}!")
+            svmlError("Cannot import file '${name.name.value}'", source(), name.context)
         }
 
         val source = Source.of(file)
@@ -176,7 +184,7 @@ class Parser(lexer: Lexer, private val optimize: Boolean) {
 
         mustSkip(TokenType.Symbol.SEMICOLON)
 
-        DataType.addAlias(name, type)
+        DataType.addAlias(name, type, source())
     }
 
     private fun statement() = when {
@@ -202,7 +210,8 @@ class Parser(lexer: Lexer, private val optimize: Boolean) {
     }
 
     private fun type(): Type {
-        val location = here()
+        val context = here()
+        val source = source()
 
         val baseType = when {
             skip(TokenType.Keyword.VOID)  -> DataType.Primitive.VOID
@@ -226,7 +235,11 @@ class Parser(lexer: Lexer, private val optimize: Boolean) {
                 }
             }
 
-            else                          -> error("Invalid base type beginning with '${token.type}' @ ${token.location}!")
+            else                          -> svmlError(
+                "Invalid base type beginning with '${token.type}'",
+                source,
+                token.context
+            )
         }
 
         var type: DataType = baseType
@@ -236,18 +249,21 @@ class Parser(lexer: Lexer, private val optimize: Boolean) {
 
             mustSkip(TokenType.Symbol.RIGHT_SQUARE)
 
-            if (sizeNode != null && sizeNode.dataType != DataType.Primitive.INT) error("Array size must be an int @ ${sizeNode.location}!")
+            if (sizeNode != null && sizeNode.getDataType(source) != DataType.Primitive.INT) {
+                svmlError("Array size must be an int", source, sizeNode.context)
+            }
 
             val size = sizeNode?.value?.value?.toInt() ?: -1
 
             type = DataType.Array(type, size)
         }
 
-        return Type(location, TokenType.Type(type))
+        return Type(context, TokenType.Type(type))
     }
 
     private fun declare(): Node {
-        val location = here()
+        val context = here()
+        val source = source()
 
         val constant = skip(TokenType.Keyword.LET)
 
@@ -261,16 +277,24 @@ class Parser(lexer: Lexer, private val optimize: Boolean) {
 
         val node = if (skip(TokenType.Symbol.EQUAL)) expr() else null
 
-        if (type == null && node == null) error("Variable declaration must either be explicitly typed or assigned to @ $location!")
+        if (type == null && node == null) {
+            svmlError("Variable declaration must either be explicitly typed or assigned to", source, context)
+        }
 
         if (type == null && node != null) {
-            type = Type(Location.none(), TokenType.Type(node.dataType!!))
+            type = Type(Context.none(), TokenType.Type(node.getDataType(source())!!))
         }
 
         type!!
 
-        if (node != null && !DataType.isEquivalent(type.type.value, node.dataType!!)) {
-            error("Cannot declare a variable of type '${type.type.value}' with value of type '${node.dataType}' @ ${node.location}!")
+        if (node != null && !DataType.isEquivalent(type.type.value, node.getDataType(source)!!, source)) {
+            svmlError(
+                "Cannot declare a variable of type '${type.type.value}' with value of type '${
+                    node.getDataType(
+                        source
+                    )
+                }'", source, node.context
+            )
         }
 
         val variable = createVariable(constant, name, type.type.value)
@@ -281,11 +305,11 @@ class Parser(lexer: Lexer, private val optimize: Boolean) {
 
         mustSkip(TokenType.Symbol.SEMICOLON)
 
-        if (DataType.isArray(type.type.value)) {
-            return Node.DeclareArray(location, variable, address, node)
+        if (DataType.isArray(type.type.value, source)) {
+            return Node.DeclareArray(context, variable, address, node)
         }
 
-        return Node.DeclareSingle(location, variable, address, node)
+        return Node.DeclareSingle(context, variable, address, node)
     }
 
     private fun `if`(): Node.If {
@@ -383,6 +407,7 @@ class Parser(lexer: Lexer, private val optimize: Boolean) {
 
     private fun `for`(): Node.For {
         val location = here()
+        val source = source()
 
         mustSkip(TokenType.Keyword.FOR)
 
@@ -400,7 +425,7 @@ class Parser(lexer: Lexer, private val optimize: Boolean) {
             val node = expr()
 
             if (type == null) {
-                type = Type(Location.none(), TokenType.Type(node.dataType!!))
+                type = Type(Context.none(), TokenType.Type(node.getDataType(source)!!))
             }
 
             val variable = createVariable(false, name, type.type.value)
@@ -409,7 +434,7 @@ class Parser(lexer: Lexer, private val optimize: Boolean) {
 
             val (_, _, id) = activation
 
-            init = Node.DeclareSingle(name.location, variable, id, node)
+            init = Node.DeclareSingle(name.context, variable, id, node)
 
             mustSkip(TokenType.Symbol.SEMICOLON)
         }
@@ -470,7 +495,8 @@ class Parser(lexer: Lexer, private val optimize: Boolean) {
     }
 
     private fun function(): Node.Function {
-        val location = here()
+        val context = here()
+        val source = source()
 
         mustSkip(TokenType.Keyword.FUNCTION)
 
@@ -504,13 +530,17 @@ class Parser(lexer: Lexer, private val optimize: Boolean) {
         val body = mutableListOf<Node>()
 
         fun registerFunction(type: Type, isNative: Boolean) {
-            val signature = Signature(name, params.map { it.dataType })
+            val signature = Signature(name, params.map { it.getDataType(source) })
 
-            if (isNative && !Linker.hasFunction(signature)) error("No system function for '$signature' @ ${name.location}!")
+            if (isNative && !Linker.hasFunction(signature)) {
+                svmlError("No system function for '$signature'", source, name.context)
+            }
 
             val here = Memory.pop()!!
 
-            Memory.addFunction(type.type.value, id, signature, isNative)
+            if (!Memory.addFunction(type.type.value, id, signature, isNative)) {
+                svmlError("Redeclared function '$signature'", source, name.context)
+            }
 
             Memory.push(here)
         }
@@ -522,7 +552,7 @@ class Parser(lexer: Lexer, private val optimize: Boolean) {
                 isNative = true
 
                 if (type == null) {
-                    type = Type(Location.none(), TokenType.Type(DataType.Primitive.VOID))
+                    type = Type(Context.none(), TokenType.Type(DataType.Primitive.VOID))
                 }
 
                 registerFunction(type, true)
@@ -531,7 +561,7 @@ class Parser(lexer: Lexer, private val optimize: Boolean) {
             skip(TokenType.Symbol.EQUAL)     -> {
                 val expr = expr()
 
-                type = Type(expr.location, TokenType.Type(expr.dataType!!))
+                type = Type(expr.context, TokenType.Type(expr.getDataType(source)!!))
 
                 registerFunction(type, false)
 
@@ -544,7 +574,7 @@ class Parser(lexer: Lexer, private val optimize: Boolean) {
                 mustSkip(TokenType.Symbol.LEFT_BRACE)
 
                 if (type == null) {
-                    type = Type(Location.none(), TokenType.Type(DataType.Primitive.VOID))
+                    type = Type(Context.none(), TokenType.Type(DataType.Primitive.VOID))
                 }
 
                 registerFunction(type, false)
@@ -560,49 +590,52 @@ class Parser(lexer: Lexer, private val optimize: Boolean) {
         if (!isNative) {
             if (type.type.value == DataType.Primitive.VOID && body.last() !is Node.Return) {
                 body += Node.Return(
-                    Location.none(),
-                    Node.Value(Location.none(), TokenType.Value(0.0, DataType.Primitive.VOID))
+                    Context.none(),
+                    Node.Value(Context.none(), TokenType.Value(0.0, DataType.Primitive.VOID))
                 )
             }
 
-            resolveBranches(location, body)
+            resolveBranches(context, body)
 
             checkUnreachable(body)
 
             val primaryReturn = getPrimaryReturn(body)
 
-            val returnType = primaryReturn.dataType
+            val returnType = primaryReturn.getDataType(source)
 
-            if (!DataType.isEquivalent(returnType, type.type.value))
-                error("Function must return value of type '${type.type.value}' @ ${primaryReturn.location}!")
+            if (!DataType.isEquivalent(returnType, type.type.value, source)) {
+                svmlError("Function must return value of type '${type.type.value}'", source, primaryReturn.context)
+            }
 
             resolveBranchReturns(returnType, body)
         }
 
-        return Node.Function(location, name, id, params, type.type.value, isNative, body)
+        return Node.Function(context, name, id, params, type.type.value, isNative, body)
     }
 
-    private fun resolveBranches(parentLocation: Location, nodes: Nodes) {
+    private fun resolveBranches(parentContext: Context, nodes: Nodes) {
         when (val last = nodes.lastOrNull()) {
             is Node.Return -> return
 
             is Node.If     -> {
-                if (last.branches.last().condition != null) error("Final if statement must return a value from else branch @ ${last.location}!")
+                if (last.branches.last().condition != null) {
+                    svmlError("Final if statement must return a value from else branch", source(), last.context)
+                }
 
                 for (branch in last.branches) {
-                    resolveBranches(branch.location, branch.body)
+                    resolveBranches(branch.context, branch.body)
                 }
             }
 
-            is Node.While  -> resolveBranches(last.location, last.body)
+            is Node.While  -> resolveBranches(last.context, last.body)
 
-            is Node.Do     -> resolveBranches(last.location, last.body)
+            is Node.Do     -> resolveBranches(last.context, last.body)
 
-            is Node.For    -> resolveBranches(last.location, last.body)
+            is Node.For    -> resolveBranches(last.context, last.body)
 
-            null           -> error("Function does not return a value @ ${parentLocation}!")
+            null           -> svmlError("Function does not return a value", source(), parentContext)
 
-            else           -> error("Function does not return a value @ ${last.location}!")
+            else           -> svmlError("Function does not return a value", source(), last.context)
         }
     }
 
@@ -618,7 +651,7 @@ class Parser(lexer: Lexer, private val optimize: Boolean) {
 
             if (node.branches.last().condition != null) continue
 
-            error("Unreachable code @ ${nodes[i + 1].location}!")
+            svmlError("Unreachable code", source(), nodes[i + 1].context)
         }
     }
 
@@ -634,12 +667,14 @@ class Parser(lexer: Lexer, private val optimize: Boolean) {
 
             is Node.For    -> getPrimaryReturn(last.body)
 
-            else           -> error("Function does not have a primary return @ ${last.location}!")
+            else           -> svmlError("Function does not have a primary return", source(), last.context)
         }
 
     private fun resolveBranchReturns(dataType: DataType, nodes: Nodes) {
         for (node in nodes) {
-            if (node is Node.Return && node.dataType != dataType) error("All paths must return the same type @ ${node.location}!")
+            if (node is Node.Return && node.getDataType(source()) != dataType) {
+                svmlError("All paths must return the same type", source(), node.context)
+            }
 
             return resolveBranchReturns(dataType, node.subNodes)
         }
@@ -688,23 +723,23 @@ class Parser(lexer: Lexer, private val optimize: Boolean) {
                 TokenType.Symbol.DOUBLE_PIPE_EQUAL
             )
         ) {
-            val (location, symbol) = token
+            val (context, symbol) = token
 
             mustSkip(symbol)
 
             expr = when (symbol) {
                 TokenType.Symbol.EQUAL -> when (expr) {
-                    is Node.Variable -> assign(location, expr)
+                    is Node.Variable -> assign(context, expr)
 
-                    is Node.GetIndex -> assignIndex(location, expr)
+                    is Node.GetIndex -> assignIndex(context, expr)
 
                     else             -> error("Invalid assign.")
                 }
 
                 else                   -> when (expr) {
-                    is Node.Variable -> desugarAssign(location, expr, symbol as TokenType.Symbol)
+                    is Node.Variable -> desugarAssign(context, expr, symbol as TokenType.Symbol)
 
-                    is Node.GetIndex -> desugarAssignIndex(location, expr, symbol as TokenType.Symbol)
+                    is Node.GetIndex -> desugarAssignIndex(context, expr, symbol as TokenType.Symbol)
 
                     else             -> error("Invalid assign desugar.")
                 }
@@ -714,32 +749,46 @@ class Parser(lexer: Lexer, private val optimize: Boolean) {
         return expr
     }
 
-    private fun assign(location: Location, expr: Node.Variable): Node.Assign {
+    private fun assign(context: Context, expr: Node.Variable): Node.Assign {
+        val source = source()
+
         val (_, variable) = Memory.getVariable(expr)
 
         val (constant, dataType, _) = variable
 
-        if (constant) error("Variable '${expr.name.value}' cannot be reassigned @ ${expr.location}!")
+        if (constant) {
+            svmlError("Variable '${expr.name.value}' cannot be reassigned", source, expr.context)
+        }
 
         val node = or()
 
-        if (!DataType.isEquivalent(dataType, node.dataType)) {
-            error("Cannot assign a value of type '${node.dataType}' to a variable of type '$dataType' @ $location!")
+        if (!DataType.isEquivalent(dataType, node.getDataType(source), source)) {
+            svmlError(
+                "Cannot assign a value of type '${node.getDataType(source)}' to a variable of type '$dataType'",
+                source,
+                context
+            )
         }
 
-        return Node.Assign(location, expr, node)
+        return Node.Assign(context, expr, node)
     }
 
-    private fun assignIndex(location: Location, expr: Node.GetIndex): Node.SetIndex {
+    private fun assignIndex(context: Context, expr: Node.GetIndex): Node.SetIndex {
+        val source = source()
+
         val (_, variable) = Memory.getVariable(expr.variable)
 
         var (constant, dataType, _) = variable
 
-        if (constant) error("Variable '${expr.variable.name.value}' cannot be reassigned @ ${expr.variable.location}!")
+        if (constant) {
+            svmlError("Variable '${expr.variable.name.value}' cannot be reassigned", source, expr.variable.context)
+        }
 
-        if (!DataType.isArray(dataType)) error("Cannot index a value of type '$dataType' @ ${expr.variable.location}!")
+        if (!DataType.isArray(dataType, source)) {
+            svmlError("Cannot index a value of type '$dataType'", source, expr.variable.context)
+        }
 
-        dataType = DataType.asArray(dataType)
+        dataType = DataType.asArray(dataType, source())
 
         val node = or()
 
@@ -751,17 +800,27 @@ class Parser(lexer: Lexer, private val optimize: Boolean) {
             indexType = subArrayType
         }
 
-        if (indexType != node.dataType) error("Cannot assign a value of type '${node.dataType}' to array of type '${dataType.subType}' @ $location!")
+        if (indexType != node.getDataType(source())) {
+            svmlError(
+                "Cannot assign a value of type '${node.getDataType(source)}' to array of type '${dataType.subType}'",
+                source,
+                context
+            )
+        }
 
-        return Node.SetIndex(location, expr.variable, expr.indices, node)
+        return Node.SetIndex(context, expr.variable, expr.indices, node)
     }
 
-    private fun desugarAssign(location: Location, expr: Node.Variable, symbol: TokenType.Symbol): Node.Assign {
+    private fun desugarAssign(context: Context, expr: Node.Variable, symbol: TokenType.Symbol): Node.Assign {
+        val source = source()
+
         val (_, variable) = Memory.getVariable(expr)
 
         val (constant, dataType, _) = variable
 
-        if (constant) error("Variable '${expr.name.value}' cannot be reassigned @ ${expr.location}!")
+        if (constant) {
+            svmlError("Variable '${expr.name.value}' cannot be reassigned", source, expr.context)
+        }
 
         val node = or()
 
@@ -769,25 +828,37 @@ class Parser(lexer: Lexer, private val optimize: Boolean) {
 
         var operator = Node.Binary.Operator[desugaredOperator]
 
-        if (expr.dataType == DataType.Primitive.INT && node.dataType == DataType.Primitive.INT) {
+        if (expr.dataType == DataType.Primitive.INT && node.getDataType(source) == DataType.Primitive.INT) {
             operator = operator.intVersion
         }
 
-        val intermediate = Node.Binary(location, operator, expr, node)
+        val intermediate = Node.Binary(context, operator, expr, node)
 
-        if (dataType != intermediate.dataType) error("Cannot assign a value of type '${intermediate.dataType}' to a variable of type '$dataType' @ $location!")
+        if (dataType != intermediate.getDataType(source)) {
+            svmlError(
+                "Cannot assign a value of type '${intermediate.getDataType(source)}' to a variable of type '$dataType'",
+                source,
+                context
+            )
+        }
 
-        return Node.Assign(location, expr, intermediate)
+        return Node.Assign(context, expr, intermediate)
     }
 
-    private fun desugarAssignIndex(location: Location, expr: Node.GetIndex, symbol: TokenType.Symbol): Node.SetIndex {
+    private fun desugarAssignIndex(context: Context, expr: Node.GetIndex, symbol: TokenType.Symbol): Node.SetIndex {
+        val source = source()
+
         val (_, variable) = Memory.getVariable(expr.variable)
 
         val (constant, dataType, _) = variable
 
-        if (constant) error("Variable '${expr.variable.name.value}' cannot be reassigned @ ${expr.variable.location}!")
+        if (constant) {
+            svmlError("Variable '${expr.variable.name.value}' cannot be reassigned", source, expr.variable.context)
+        }
 
-        if (dataType !is DataType.Array) error("Cannot assign an index for a value of type '$dataType' @ ${expr.variable.location}!")
+        if (dataType !is DataType.Array) {
+            svmlError("Cannot assign an index for a value of type '$dataType'", source, expr.variable.context)
+        }
 
         val node = or()
 
@@ -795,18 +866,28 @@ class Parser(lexer: Lexer, private val optimize: Boolean) {
 
         var operator = Node.Binary.Operator[desugaredOperator]
 
-        if (expr.dataType == DataType.Primitive.INT && node.dataType == DataType.Primitive.INT) {
+        if (expr.getDataType(source) == DataType.Primitive.INT && node.getDataType(source) == DataType.Primitive.INT) {
             operator = operator.intVersion
         }
 
-        val intermediate = Node.Binary(location, operator, expr, node)
+        val intermediate = Node.Binary(context, operator, expr, node)
 
-        if (dataType.subType != intermediate.dataType) error("Cannot assign a value of type '${intermediate.dataType}' to array of type '${dataType.subType}' @ $location!")
+        if (dataType.subType != intermediate.getDataType(source)) {
+            svmlError(
+                "Cannot assign a value of type '${
+                    intermediate.getDataType(
+                        source
+                    )
+                }' to array of type '${dataType.subType}'", source, context
+            )
+        }
 
-        return Node.SetIndex(location, expr.variable, expr.indices, intermediate)
+        return Node.SetIndex(context, expr.variable, expr.indices, intermediate)
     }
 
     private fun or(): Node {
+        val source = source()
+
         var expr = and()
 
         while (match(TokenType.Symbol.DOUBLE_PIPE)) {
@@ -816,13 +897,15 @@ class Parser(lexer: Lexer, private val optimize: Boolean) {
 
             expr = Node.Binary(location, Node.Binary.Operator[operator], expr, and())
 
-            expr.dataType
+            expr.getDataType(source)
         }
 
         return expr
     }
 
     private fun and(): Node {
+        val source = source()
+
         var expr = equality()
 
         while (match(TokenType.Symbol.DOUBLE_AMPERSAND)) {
@@ -832,13 +915,15 @@ class Parser(lexer: Lexer, private val optimize: Boolean) {
 
             expr = Node.Binary(location, Node.Binary.Operator[operator], expr, equality())
 
-            expr.dataType
+            expr.getDataType(source)
         }
 
         return expr
     }
 
     private fun equality(): Node {
+        val source = source()
+
         var expr = relation()
 
         while (matchAny(TokenType.Symbol.DOUBLE_EQUAL, TokenType.Symbol.EXCLAMATION_EQUAL)) {
@@ -848,13 +933,15 @@ class Parser(lexer: Lexer, private val optimize: Boolean) {
 
             expr = Node.Binary(location, Node.Binary.Operator[operator], expr, relation())
 
-            expr.dataType
+            expr.getDataType(source)
         }
 
         return expr
     }
 
     private fun relation(): Node {
+        val source = source()
+
         var expr = additive()
 
         while (matchAny(
@@ -870,13 +957,15 @@ class Parser(lexer: Lexer, private val optimize: Boolean) {
 
             expr = Node.Binary(location, Node.Binary.Operator[operator], expr, additive())
 
-            expr.dataType
+            expr.getDataType(source)
         }
 
         return expr
     }
 
     private fun additive(): Node {
+        val source = source()
+
         var expr = multiplicative()
 
         while (matchAny(TokenType.Symbol.PLUS, TokenType.Symbol.DASH)) {
@@ -886,17 +975,19 @@ class Parser(lexer: Lexer, private val optimize: Boolean) {
 
             expr = Node.Binary(location, Node.Binary.Operator[operator], expr, multiplicative())
 
-            expr.dataType
+            expr.getDataType(source)
         }
 
         return expr
     }
 
     private fun multiplicative(): Node {
+        val source = source()
+
         var expr = unary()
 
         while (matchAny(TokenType.Symbol.STAR, TokenType.Symbol.SLASH, TokenType.Symbol.PERCENT)) {
-            val (location, symbol) = token
+            val (context, symbol) = token
 
             mustSkip(symbol)
 
@@ -904,13 +995,13 @@ class Parser(lexer: Lexer, private val optimize: Boolean) {
 
             val right = unary()
 
-            if (expr.dataType == DataType.Primitive.INT && right.dataType == DataType.Primitive.INT) {
+            if (expr.getDataType(source) == DataType.Primitive.INT && right.getDataType(source) == DataType.Primitive.INT) {
                 operator = operator.intVersion
             }
 
-            expr = Node.Binary(location, operator, expr, right)
+            expr = Node.Binary(context, operator, expr, right)
 
-            expr.dataType
+            expr.getDataType(source)
         }
 
         return expr
@@ -918,15 +1009,15 @@ class Parser(lexer: Lexer, private val optimize: Boolean) {
 
     private fun unary(): Node {
         val expr = if (matchAny(TokenType.Symbol.DASH, TokenType.Symbol.EXCLAMATION, TokenType.Symbol.POUND)) {
-            val (location, operator) = token
+            val (context, operator) = token
 
             mustSkip(operator)
 
             if (operator == TokenType.Symbol.POUND) {
-                size(location)
+                size(context)
             }
             else {
-                Node.Unary(location, Node.Unary.Operator[operator], unary())
+                Node.Unary(context, Node.Unary.Operator[operator], unary())
             }
         }
         else {
@@ -936,7 +1027,7 @@ class Parser(lexer: Lexer, private val optimize: Boolean) {
         return expr
     }
 
-    private fun size(location: Location): Node {
+    private fun size(context: Context): Node {
         val variable = name().toVariable()
 
         if (skip(TokenType.Symbol.LEFT_SQUARE)) {
@@ -949,10 +1040,10 @@ class Parser(lexer: Lexer, private val optimize: Boolean) {
             }
             while (skip(TokenType.Symbol.LEFT_SQUARE))
 
-            return Node.IndexSize(location, variable, indices)
+            return Node.IndexSize(context, variable, indices)
         }
 
-        return Node.Size(location, variable)
+        return Node.Size(context, variable)
     }
 
     private fun postfix(): Node {
@@ -972,7 +1063,8 @@ class Parser(lexer: Lexer, private val optimize: Boolean) {
     }
 
     private fun invoke(name: Node.Name): Node {
-        val location = token.location
+        val context = here()
+        val source = source()
 
         val args = mutableListOf<Node>()
 
@@ -987,28 +1079,31 @@ class Parser(lexer: Lexer, private val optimize: Boolean) {
             mustSkip(TokenType.Symbol.RIGHT_PAREN)
         }
 
-        val signature = Signature(name, args.map { it.dataType!! })
+        val signature = Signature(name, args.map { it.getDataType(source)!! })
 
         val (isNative, dataType, id) = Memory.getFunction(signature)
 
         return if (isNative) {
             val systemID = Linker[signature]
 
-            Node.SystemCall(location, name, dataType, systemID, args)
+            Node.SystemCall(context, name, dataType, systemID, args)
         }
         else {
-            Node.Invoke(location, name, dataType, id, args)
+            Node.Invoke(context, name, dataType, id, args)
         }
     }
 
     private fun getIndex(target: Node.Variable): Node.GetIndex {
-        val location = here()
+        val context = here()
+        val source = source()
 
         val type = target.dataType
 
-        val actualType = if (type is DataType.Alias) DataType.getAlias(type.name) else type
+        val actualType = if (type is DataType.Alias) DataType.getAlias(type.name, source) else type
 
-        if (actualType !is DataType.Array) error("Value of type '$type' cannot be indexed @ $location!")
+        if (actualType !is DataType.Array) {
+            svmlError("Value of type '$type' cannot be indexed", source, context)
+        }
 
         val indices = mutableListOf<Node>()
 
@@ -1018,10 +1113,14 @@ class Parser(lexer: Lexer, private val optimize: Boolean) {
             mustSkip(TokenType.Symbol.RIGHT_SQUARE)
         }
 
-        val node = Node.GetIndex(location, target, indices)
+        val node = Node.GetIndex(context, target, indices)
 
-        node.dataType
-            ?: error("Indexed value of dimension '${actualType.dimension}' cannot be indexed with '${indices.size}' indices @ $location")
+        node.getDataType(source)
+            ?: svmlError(
+                "Indexed value of dimension '${actualType.dimension}' cannot be indexed with '${indices.size}' indices",
+                source,
+                context
+            )
 
         return node
     }
@@ -1037,7 +1136,7 @@ class Parser(lexer: Lexer, private val optimize: Boolean) {
 
         match(TokenType.Keyword.IF)        -> conditional()
 
-        else                               -> error("Not a terminal '${token.type}' @ ${here()}.")
+        else                               -> svmlError("Not a terminal '${token.type}'", source(), here())
     }
 
     private fun value(): Node.Value {
@@ -1068,23 +1167,23 @@ class Parser(lexer: Lexer, private val optimize: Boolean) {
         if (skip(TokenType.Symbol.AT)) name() else null
 
     private fun createVariable(constant: Boolean, name: Node.Name, dataType: DataType): Node.Variable {
-        val location = here()
+        val context = here()
 
-        Memory.addVariable(constant, name.name, dataType, location)
+        Memory.addVariable(constant, name.name, dataType, context)
 
-        val (mode, variable) = Memory.getVariable(name.name, location)
+        val (mode, variable) = Memory.getVariable(name.name, context)
 
         val (_, type, id) = variable
 
-        return Node.Variable(location, name.name, id, mode, type)
+        return Node.Variable(context, name.name, id, mode, type)
     }
 
     private fun Node.Name.toVariable(): Node.Variable {
-        val (mode, variable) = Memory.getVariable(name, location)
+        val (mode, variable) = Memory.getVariable(name, context)
 
         val (_, type, address) = variable
 
-        return Node.Variable(location, name, address, mode, type)
+        return Node.Variable(context, name, address, mode, type)
     }
 
     private fun nested(): Node {

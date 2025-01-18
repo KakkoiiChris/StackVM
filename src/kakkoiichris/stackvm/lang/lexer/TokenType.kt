@@ -60,10 +60,15 @@ interface TokenType {
         },
 
         EQUAL("="),
+
         LESS("<"),
+
         LESS_EQUAL("<="),
+
         GREATER(">"),
+
         GREATER_EQUAL(">="),
+
         DOUBLE_AMPERSAND("&&"),
 
         DOUBLE_AMPERSAND_EQUAL("&&=") {
@@ -77,18 +82,31 @@ interface TokenType {
         },
 
         DOUBLE_EQUAL("=="),
+
         EXCLAMATION("!"),
+
         EXCLAMATION_EQUAL("!="),
+
         LEFT_PAREN("("),
+
         RIGHT_PAREN(")"),
+
         LEFT_BRACE("{"),
+
         RIGHT_BRACE("}"),
+
         LEFT_SQUARE("["),
+
         RIGHT_SQUARE("]"),
+
         SEMICOLON(";"),
+
         COMMA(","),
+
         AT("@"),
+
         COLON(":"),
+
         POUND("#");
 
         open val desugared: Symbol? = null

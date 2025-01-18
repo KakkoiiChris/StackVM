@@ -1,7 +1,7 @@
 package kakkoiichris.stackvm.linker
 
 import kakkoiichris.stackvm.cpu.CPU
-import kakkoiichris.stackvm.lang.lexer.Location
+import kakkoiichris.stackvm.lang.lexer.Context
 import kakkoiichris.stackvm.lang.lexer.TokenType
 import kakkoiichris.stackvm.lang.parser.DataType
 import kakkoiichris.stackvm.lang.parser.Node
@@ -68,7 +68,7 @@ object Linker {
         functions[id]
 
     fun addFunction(name: String, format: String="", vararg params: DataType, method: Method) {
-        val node = Node.Name(Location.none(), TokenType.Name(name))
+        val node = Node.Name(Context.none(), TokenType.Name(name))
 
         val function = Function(format, method)
 

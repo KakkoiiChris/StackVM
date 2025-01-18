@@ -1,26 +1,26 @@
 package kakkoiichris.stackvm.lang.lexer
 
+import kakkoiichris.stackvm.lang.Source
+
 data class Context(
-    val name: String,
+    val source: Source,
     val row: Int,
     val column: Int,
     val start: Int,
-    val end: Int
+    val length: Int
 ) {
-    /**
-     * @return The horizontal length of this token
-     */
-    val length get() = end - start
-
     /**
      * @param other The end [Context] to encompass
      *
      * @return A new [Context] instance spanning from this token to the other token
      */
-    operator fun rangeTo(other: Context) =
-        Context(name, row, column, start, other.end - 1)
+    fun withLexeme(lexeme: String) =
+        Context(source, row, column, start, lexeme.length)
+
+    fun withEnd(end: Int) =
+        Context(source, row, column, start, end - start)
 
     companion object {
-        val none = Context("", 0, 0, 0, 0)
+        fun none() = Context(Source("", ""), 0, 0, 0, 0)
     }
 }

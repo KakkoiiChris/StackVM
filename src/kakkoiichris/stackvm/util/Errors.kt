@@ -31,7 +31,7 @@ class SVMLError(message: String) : RuntimeException(message)
  */
 fun svmlError(message: String, source: Source, context: Context): Nothing {
     val fullErrorMessage = buildString {
-        appendLine("Jolt Error $JOLT $message!")
+        appendLine("SVML Error :: $message!")
         appendLine()
         appendLine("${context.row}| ${source.getLine(context.row)}")
 

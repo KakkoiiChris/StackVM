@@ -11,6 +11,7 @@ import kakkoiichris.stackvm.lang.compiler.Compiler
 import kakkoiichris.stackvm.lang.lexer.Lexer
 import kakkoiichris.stackvm.lang.parser.Parser
 import kakkoiichris.stackvm.linker.Linker
+import kakkoiichris.stackvm.util.SVMLError
 import kakkoiichris.stackvm.util.truncate
 import java.io.*
 import kotlin.time.measureTimedValue
@@ -59,14 +60,21 @@ fun main(args: Array<String>) {
         }
     }
 
-    when (mode) {
-        Mode.REPL    -> repl(cpu)
+    try {
+        when (mode) {
+            Mode.REPL    -> repl(cpu)
 
-        Mode.COMPILE -> compileFile(srcFile, dstFile)
+            Mode.COMPILE -> compileFile(srcFile, dstFile)
 
-        Mode.RUN     -> runFile(cpu, srcFile)
+            Mode.RUN     -> runFile(cpu, srcFile)
 
-        Mode.FORMAT  -> formatFile(srcFile, dstFile)
+            Mode.FORMAT  -> formatFile(srcFile, dstFile)
+        }
+    }
+    catch (e: SVMLError) {
+        System.err.println(e.message)
+
+        e.printStackTrace()
     }
 }
 

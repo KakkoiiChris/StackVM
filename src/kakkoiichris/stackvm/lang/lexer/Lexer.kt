@@ -2,15 +2,23 @@ package kakkoiichris.stackvm.lang.lexer
 
 import kakkoiichris.stackvm.lang.Source
 import kakkoiichris.stackvm.lang.parser.DataType
+import kakkoiichris.stackvm.util.svmlError
 
 class Lexer(private val source: Source) : Iterator<Token> {
     companion object {
         private const val NUL = '\u0000'
+
+        private val literals = mapOf(
+            "true" to TokenType.Value(1.0, DataType.Primitive.BOOL),
+            "false" to TokenType.Value(0.0, DataType.Primitive.BOOL)
+        )
     }
 
     private var pos = 0
     private var row = 1
     private var col = 1
+
+    private val lexeme = StringBuilder()
 
     override fun hasNext() = pos <= source.text.length
 
@@ -34,6 +42,8 @@ class Lexer(private val source: Source) : Iterator<Token> {
                 continue
             }
 
+            lexeme.clear()
+
             if (match(Char::isLetter)) {
                 return word()
             }
@@ -56,7 +66,7 @@ class Lexer(private val source: Source) : Iterator<Token> {
         return Token(here(), TokenType.End)
     }
 
-    private fun here() = Location(source.name, row, col)
+    private fun here() = Context(source, row, col, pos, 1)
 
     private fun peek(offset: Int = 0) = if (pos + offset < source.text.length)
         source.text[pos + offset]
@@ -78,6 +88,8 @@ class Lexer(private val source: Source) : Iterator<Token> {
 
     private fun step(amount: Int = 1) {
         repeat(amount) {
+            lexeme.append(peek())
+
             if (match('\n')) {
                 row++
                 col = 1
@@ -108,13 +120,13 @@ class Lexer(private val source: Source) : Iterator<Token> {
 
     private fun mustSkip(char: Char) {
         if (!skip(char)) {
-            error("Illegal char '${peek()}' @ ${here()}!")
+            svmlError("Illegal char '${peek()}'", source, here())
         }
     }
 
     private fun mustSkip(string: String) {
         if (!skip(string)) {
-            error("Illegal string '${look(string.length)}' @ ${here()}!")
+            svmlError("Illegal string '${look(string.length)}'", source, here())
         }
     }
 
@@ -156,7 +168,7 @@ class Lexer(private val source: Source) : Iterator<Token> {
     }
 
     private fun word(): Token {
-        val location = here()
+        var context = here()
 
         val result = buildString {
             do {
@@ -165,25 +177,35 @@ class Lexer(private val source: Source) : Iterator<Token> {
             while (match(Char::isLetterOrDigit) || match('_'))
         }
 
+        val lexeme = lexeme.toString()
+
+        context = context.withLexeme(lexeme)
+
         if (result.equals("true", ignoreCase = true)) {
-            return Token(location, TokenType.Value(1.0, DataType.Primitive.BOOL))
+            return Token(context, TokenType.Value(1.0, DataType.Primitive.BOOL))
         }
 
         if (result.equals("false", ignoreCase = true)) {
-            return Token(location, TokenType.Value(0.0, DataType.Primitive.BOOL))
+            return Token(context, TokenType.Value(0.0, DataType.Primitive.BOOL))
+        }
+
+        val literal = literals[result]
+
+        if (literal != null) {
+            return Token(context, literal)
         }
 
         val keyword = TokenType.Keyword.entries.firstOrNull { it.name.equals(result, ignoreCase = true) }
 
         if (keyword != null) {
-            return Token(location, keyword)
+            return Token(context, keyword)
         }
 
-        return Token(location, TokenType.Name(result))
+        return Token(context, TokenType.Name(result))
     }
 
     private fun number(): Token {
-        val location = here()
+        var context = here()
 
         val result = buildString {
             do {
@@ -208,15 +230,19 @@ class Lexer(private val source: Source) : Iterator<Token> {
             }
         }
 
-        if (result.contains("[Ee.]".toRegex())) {
-            val value = result.toDoubleOrNull() ?: error("Floating point number '$result' is out of bounds @ $location!")
+        val lexeme = lexeme.toString()
 
-            return Token(location, TokenType.Value(value, DataType.Primitive.FLOAT))
+        context = context.withLexeme(lexeme)
+
+        if (result.contains("[Ee.]".toRegex())) {
+            val value = result.toDoubleOrNull() ?: svmlError("Floating point number '$result' is out of bounds", source, context)
+
+            return Token(context, TokenType.Value(value, DataType.Primitive.FLOAT))
         }
 
-        val value = result.toIntOrNull() ?: error("Integer number '$result' is out of bounds @ $location!")
+        val value = result.toIntOrNull() ?: svmlError("Integer number '$result' is out of bounds", source, context)
 
-        return Token(location, TokenType.Value(value.toDouble(), DataType.Primitive.INT))
+        return Token(context, TokenType.Value(value.toDouble(), DataType.Primitive.INT))
     }
 
     private fun hex(length: Int) =
@@ -249,14 +275,14 @@ class Lexer(private val source: Source) : Iterator<Token> {
 
         skip('u')       -> hex(4)
 
-        else            -> error("Illegal character escape sequence '\\${peek()}' @ ${here()}!")
+        else            -> svmlError("Illegal character escape sequence '\\${peek()}'", source, here())
     }
     else {
         get()
     }
 
     private fun char(): Token {
-        val location = here()
+        var context = here()
 
         mustSkip('\'')
 
@@ -264,13 +290,17 @@ class Lexer(private val source: Source) : Iterator<Token> {
 
         mustSkip('\'')
 
+        val lexeme = lexeme.toString()
+
+        context = context.withLexeme(lexeme)
+
         val value = result.code.toDouble()
 
-        return Token(location, TokenType.Value(value, DataType.Primitive.CHAR))
+        return Token(context, TokenType.Value(value, DataType.Primitive.CHAR))
     }
 
     private fun string(): Token {
-        val location = here()
+        var context = here()
 
         mustSkip('"')
 
@@ -280,11 +310,15 @@ class Lexer(private val source: Source) : Iterator<Token> {
             }
         }
 
-        return Token(location, TokenType.String(value))
+        val lexeme = lexeme.toString()
+
+        context = context.withLexeme(lexeme)
+
+        return Token(context, TokenType.String(value))
     }
 
     private fun symbol(): Token {
-        val location = here()
+        var context = here()
 
         val symbol = when {
             skip('+') -> when {
@@ -348,7 +382,7 @@ class Lexer(private val source: Source) : Iterator<Token> {
                     else      -> TokenType.Symbol.DOUBLE_AMPERSAND
                 }
 
-                else      -> error("Unknown symbol '&' @ $location!")
+                else      -> svmlError("Unknown symbol '&'", source, here())
             }
 
             skip('|') -> when {
@@ -358,7 +392,7 @@ class Lexer(private val source: Source) : Iterator<Token> {
                     else      -> TokenType.Symbol.DOUBLE_PIPE
                 }
 
-                else      -> error("Unknown symbol '|' @ $location!")
+                else      -> svmlError("Unknown symbol '|'", source, here())
             }
 
             skip('(') -> TokenType.Symbol.LEFT_PAREN
@@ -383,9 +417,13 @@ class Lexer(private val source: Source) : Iterator<Token> {
 
             skip('#') -> TokenType.Symbol.POUND
 
-            else      -> error("Unknown character '${peek()}' @ $location!")
+            else      -> svmlError("Unknown character '${peek()}'", source, here())
         }
 
-        return Token(location, symbol)
+        val lexeme = lexeme.toString()
+
+        context = context.withLexeme(lexeme)
+
+        return Token(context, symbol)
     }
 }

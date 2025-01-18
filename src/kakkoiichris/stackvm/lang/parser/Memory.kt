@@ -1,7 +1,8 @@
 package kakkoiichris.stackvm.lang.parser
 
-import kakkoiichris.stackvm.lang.lexer.Location
+import kakkoiichris.stackvm.lang.lexer.Context
 import kakkoiichris.stackvm.lang.lexer.TokenType
+import kakkoiichris.stackvm.util.svmlError
 import java.util.*
 
 object Memory {
@@ -50,18 +51,18 @@ object Memory {
         return scopes.peek()
     }
 
-    fun addVariable(isConstant: Boolean, name: TokenType.Name, dataType: DataType, location: Location) {
+    fun addVariable(isConstant: Boolean, name: TokenType.Name, dataType: DataType, context: Context) {
         val scope = peek()
 
         if (scope.addVariable(isConstant, name, dataType)) return
 
-        error("Redeclared variable '${name.value}' @ ${location}!")
+        error("Redeclared variable '${name.value}' @ ${context}!")
     }
 
     fun getVariable(variable: Node.Variable): Lookup =
-        getVariable(variable.name, variable.location)
+        getVariable(variable.name, variable.context)
 
-    fun getVariable(name: TokenType.Name, location: Location): Lookup {
+    fun getVariable(name: TokenType.Name, context: Context): Lookup {
         var here: Scope? = peek()
 
         while (here != null && here != global) {
@@ -76,17 +77,17 @@ object Memory {
 
         if (variable != null) return Lookup(true, variable)
 
-        error("Undeclared variable '${name.value}' @ ${location}!")
+        error("Undeclared variable '${name.value}' @ ${context}!")
     }
 
     fun getFunctionID() = functionID++
 
-    fun addFunction(dataType: DataType, id: Int, signature: Signature, isNative: Boolean) {
-        if (peek().addFunction(dataType, id, signature, isNative)) return
+    fun addFunction(dataType: DataType, id: Int, signature: Signature, isNative: Boolean):Boolean {
+        if (peek().addFunction(dataType, id, signature, isNative)) return true
 
-        if (global.addFunction(dataType, id, signature, isNative)) return
+        if (global.addFunction(dataType, id, signature, isNative)) return true
 
-        error("Redeclared function '$signature' @ ${signature.name.location}!")
+        return false
     }
 
     fun getFunction(signature: Signature): FunctionRecord {
@@ -100,7 +101,7 @@ object Memory {
             here = here.parent
         }
 
-        error("Undeclared function '$signature' @ ${signature.name.location}!")
+        error("Undeclared function '$signature' @ ${signature.name.context}!")
     }
 
     class Scope(val parent: Scope? = null) {
