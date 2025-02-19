@@ -111,93 +111,50 @@ abstract class CPU(private val config: Config = Config()) {
 
         if (index !in Bytecode.Instruction.entries.indices) error("Value '$index' is not an instruction @ $instructionPointer!")
 
-        val ins = Bytecode.Instruction.entries[index]
+        val instruction = Bytecode.Instruction.entries[index]
 
-        //println(ins)
-
-        when (ins) {
+        when (instruction) {
             Bytecode.Instruction.HALT    -> halt()
-
             Bytecode.Instruction.PUSH    -> push()
-
             Bytecode.Instruction.POP     -> pop()
-
             Bytecode.Instruction.DUP     -> dup()
-
             Bytecode.Instruction.ADD     -> add()
-
             Bytecode.Instruction.SUB     -> sub()
-
             Bytecode.Instruction.MUL     -> mul()
-
             Bytecode.Instruction.DIV     -> div()
-
             Bytecode.Instruction.IDIV    -> idiv()
-
             Bytecode.Instruction.MOD     -> mod()
-
             Bytecode.Instruction.IMOD    -> imod()
-
             Bytecode.Instruction.NEG     -> neg()
-
             Bytecode.Instruction.AND     -> and()
-
             Bytecode.Instruction.OR      -> or()
-
             Bytecode.Instruction.NOT     -> not()
-
             Bytecode.Instruction.EQU     -> equ()
-
             Bytecode.Instruction.GRT     -> grt()
-
             Bytecode.Instruction.GEQ     -> geq()
-
             Bytecode.Instruction.JMP     -> jmp()
-
             Bytecode.Instruction.JIF     -> jif()
-
             Bytecode.Instruction.GLOB    -> glob()
-
             Bytecode.Instruction.HEAP    -> heap()
-
             Bytecode.Instruction.LOD     -> lod()
-
             Bytecode.Instruction.ALOD    -> alod()
-
             Bytecode.Instruction.ILOD    -> ilod()
-
             Bytecode.Instruction.IALOD   -> ialod()
-
             Bytecode.Instruction.STO     -> sto()
-
             Bytecode.Instruction.ASTO    -> asto()
-
             Bytecode.Instruction.ISTO    -> isto()
-
             Bytecode.Instruction.IASTO   -> iasto()
-
             Bytecode.Instruction.SIZE    -> size()
-
             Bytecode.Instruction.ASIZE   -> asize()
-
             Bytecode.Instruction.ISIZE   -> isize()
-
             Bytecode.Instruction.IASIZE  -> iasize()
-
             Bytecode.Instruction.ALLOC   -> alloc()
-
             Bytecode.Instruction.REALLOC -> realloc()
-
             Bytecode.Instruction.FREE    -> free()
-
             Bytecode.Instruction.CALL    -> call()
-
             Bytecode.Instruction.RET     -> ret()
-
             Bytecode.Instruction.FRAME   -> frame()
-
             Bytecode.Instruction.ARG     -> arg()
-
             Bytecode.Instruction.SYS     -> sys()
         }
     }

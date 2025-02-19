@@ -3,6 +3,7 @@ package kakkoiichris.stackvm
 import kakkoiichris.stackvm.cpu.CPU
 import kakkoiichris.stackvm.cpu.DebugCPU
 import kakkoiichris.stackvm.cpu.ReleaseCPU
+import kakkoiichris.stackvm.cpu.VisualizerCPU
 import kakkoiichris.stackvm.lang.Allocator
 import kakkoiichris.stackvm.lang.Directory
 import kakkoiichris.stackvm.lang.Source
@@ -37,12 +38,16 @@ fun main(args: Array<String>) {
 
     while (a < args.size) {
         when (args[a++].lowercase()) {
-            "-d" -> {
-                cpu = DebugCPU
-            }
-
             "-c" -> {
                 mode = Mode.COMPILE
+                srcFile = args[a++]
+                dstFile = args[a++]
+            }
+
+            "-d" -> cpu = DebugCPU
+
+            "-f" -> {
+                mode = Mode.FORMAT
                 srcFile = args[a++]
                 dstFile = args[a++]
             }
@@ -52,10 +57,9 @@ fun main(args: Array<String>) {
                 srcFile = args[a++]
             }
 
-            "-f" -> {
-                mode = Mode.FORMAT
+            "-v" -> {
+                mode = Mode.VISUAL
                 srcFile = args[a++]
-                dstFile = args[a++]
             }
         }
     }
@@ -67,6 +71,8 @@ fun main(args: Array<String>) {
             Mode.COMPILE -> compileFile(srcFile, dstFile)
 
             Mode.RUN     -> runFile(cpu, srcFile)
+
+            Mode.VISUAL     -> visualizeFile(srcFile)
 
             Mode.FORMAT  -> formatFile(srcFile, dstFile)
         }
@@ -82,6 +88,7 @@ private enum class Mode {
     REPL,
     COMPILE,
     RUN,
+    VISUAL,
     FORMAT
 }
 
@@ -164,6 +171,29 @@ private fun compileFile(srcName: String, dstName: String) {
     out.close()
 }
 
+private fun visualizeFile(srcName: String) {
+    val srcFile = File(srcName)
+
+    val `in` = DataInputStream(BufferedInputStream(FileInputStream(srcFile)))
+
+    val length = `in`.readInt()
+
+    val values = DoubleArray(length)
+
+    for (i in 0 until length) {
+        values[i] = `in`.readDouble()
+    }
+
+    val cpu = VisualizerCPU(srcName)
+
+    cpu.initialize(values)
+
+    Linker.link()
+
+    val result = cpu.run()
+
+    //println("\n< ${result.truncate()} (${runTime.inWholeNanoseconds / 1E9}s)\n")
+}
 
 private fun runFile(cpu: CPU, srcName: String) {
     val srcFile = File(srcName)

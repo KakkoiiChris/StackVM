@@ -451,7 +451,7 @@ class Compiler(
 
         var tokens = mutableListOf<Token>()
 
-        tokens += Bytecode.Comment("${node.signature} @ ${node.context}")
+        tokens += Bytecode.Comment("${node.signature} @ ${node.context.getCodeStamp()}")
 
         val start = pos.toDouble()
 

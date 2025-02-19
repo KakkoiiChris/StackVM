@@ -20,6 +20,9 @@ data class Context(
     fun withEnd(end: Int) =
         Context(source, row, column, start, end - start)
 
+    fun getCodeStamp()=
+        "${source.name} (Row $row, Column $column)"
+
     companion object {
         fun none() = Context(Source("", ""), 0, 0, 0, 0)
     }
