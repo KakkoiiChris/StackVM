@@ -223,20 +223,20 @@ abstract class CPU(private val config: Config = Config()) {
         if (heap) {
             heap = false
 
-            return memory[tablePointerOrigin + fetchInt()].toInt()
+            return memory[tablePointerOrigin + popStackInt()].toInt()
         }
 
-        return fetchInt() + getLoadOffset()
+        return popStackInt() + getLoadOffset()
     }
 
     protected fun getStoreAddress(): Int {
         if (heap) {
             heap = false
 
-            return memory[tablePointerOrigin + fetchInt()].toInt()
+            return memory[tablePointerOrigin + popStackInt()].toInt()
         }
 
-        return fetchInt() + framePointer
+        return popStackInt() + framePointer
     }
 
     protected fun allocateMemory(id: Int, size: Int): Int {

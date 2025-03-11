@@ -184,8 +184,9 @@ class Compiler(
             tokens += visit(node.node)
         }
 
-        tokens += STO
+        tokens += PUSH
         tokens += node.address
+        tokens += STO
 
         return tokens
     }
@@ -208,15 +209,17 @@ class Compiler(
         if (node.variable.dataType.isHeapAllocated(node.variable.context.source)) {
             tokens += ALLOC
             tokens += node.id
+            tokens += PUSH
+            tokens += node.id
             tokens += HEAP
             tokens += ASTO
-            tokens += node.id
 
             addMemory(node.id)
         }
         else {
-            tokens += ASTO
+            tokens += PUSH
             tokens += node.address
+            tokens += ASTO
         }
 
         return tokens
@@ -465,13 +468,15 @@ class Compiler(
             if (param.dataType.isHeapAllocated(param.context.source)) {
                 tokens += ALLOC
                 tokens += param.id
+                tokens += PUSH
+                tokens += param.id
                 tokens += HEAP
                 tokens += ASTO
-                tokens += param.id
             }
             else {
-                tokens += if (param.dataType is DataType.Array) ASTO else STO
+                tokens += PUSH
                 tokens += param.address
+                tokens += if (param.dataType is DataType.Array) ASTO else STO
             }
         }
 
@@ -550,17 +555,20 @@ class Compiler(
         val tokens = mutableListOf<Token>()
 
         if (node.dataType.isHeapAllocated(node.context.source)) {
+            tokens += PUSH
+            tokens += node.id
             tokens += HEAP
             tokens += ALOD
-            tokens += node.id
         }
         else {
+            tokens += PUSH
+            tokens += node.address
+
             if (node.isGlobal) {
                 tokens += GLOB
             }
 
             tokens += if (DataType.isArray(node.dataType, node.context.source)) ALOD else LOD
-            tokens += node.address
         }
 
         return tokens
@@ -658,18 +666,21 @@ class Compiler(
         if (node.variable.dataType.isHeapAllocated(node.variable.context.source)) {
             tokens += REALLOC
             tokens += node.variable.id
+            tokens += PUSH
+            tokens += node.variable.id
             tokens += HEAP
             tokens += ASTO
-            tokens += node.variable.id
         }
         else if (DataType.isArray(node.getDataType(node.variable.context.source), node.variable.context.source)) {
-            tokens += ASTO
+            tokens += PUSH
             tokens += node.variable.address
+            tokens += ASTO
         }
         else {
             tokens += DUP
-            tokens += STO
+            tokens += PUSH
             tokens += node.variable.address
+            tokens += STO
         }
 
         return tokens
@@ -727,16 +738,18 @@ class Compiler(
 
         if (node.variable.dataType.isHeapAllocated(node.variable.context.source)) {
             tokens += HEAP
-            tokens += instruction
+            tokens += PUSH
             tokens += node.variable.id
+            tokens += instruction
         }
         else {
             if (node.variable.isGlobal) {
                 tokens += GLOB
             }
 
-            tokens += instruction
+            tokens += PUSH
             tokens += node.variable.address
+            tokens += instruction
         }
 
         tokens += indices.size
