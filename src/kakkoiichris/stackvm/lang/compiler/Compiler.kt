@@ -755,21 +755,22 @@ class Compiler(
             tokens += PUSH
             tokens += node.variable.address
 
-            for ((i, index) in indices.withIndex()) {
-                tokens += index
+            for ((i, index) in indices.dropLast(1).withIndex()) {
+                tokens += INC
                 tokens += PUSH
                 tokens += sizes[i]
+                tokens += INC
+                tokens += index
                 tokens += MUL
-            }
-
-            for (i in 0..<dimension) {
                 tokens += ADD
             }
 
+            tokens += INC
+            tokens += indices.last()
+            tokens += ADD
+
             tokens += instruction
         }
-
-        tokens += indices.size
 
         return tokens
     }
@@ -784,12 +785,13 @@ class Compiler(
 
         tokens += visit(node.value)
 
-        for (index in indices) {
-            tokens += index
-        }
+        val arrayType = node.getArrayType(node.variable.context.source)
 
-        val instruction =
-            PUSH//TODO if (node.indices.size < node.getArrayType(node.variable.context.source).dimension) IASTO else ISTO
+        val dimension = arrayType.dimension
+
+        val sizes = arrayType.sizes
+
+        val instruction = if (node.indices.size < dimension) ASTO else STO
 
         if (node.variable.dataType.isHeapAllocated(node.variable.context.source)) {
             tokens += HEAP
@@ -797,13 +799,29 @@ class Compiler(
             tokens += node.variable.id
         }
         else {
-            tokens += instruction
-            tokens += node.variable.address
-        }
+            if (node.variable.isGlobal) {
+                tokens += GLOB
+            }
 
-        tokens += indices.size
-        tokens += PUSH
-        tokens += 0.0
+            tokens += PUSH
+            tokens += node.variable.address
+
+            for ((i, index) in indices.dropLast(1).withIndex()) {
+                tokens += INC
+                tokens += PUSH
+                tokens += sizes[i]
+                tokens += INC
+                tokens += index
+                tokens += MUL
+                tokens += ADD
+            }
+
+            tokens += INC
+            tokens += indices.last()
+            tokens += ADD
+
+            tokens += instruction
+        }
 
         return tokens
     }

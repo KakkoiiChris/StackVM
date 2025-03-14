@@ -77,7 +77,7 @@ class Parser(lexer: Lexer, private val optimize: Boolean) {
     }
 
     private fun program(): Node.Program {
-        importFile(Node.Name(Context.none(), TokenType.Name("common")))
+        //importFile(Node.Name(Context.none(), TokenType.Name("common")))
 
         step()
 

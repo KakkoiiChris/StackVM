@@ -184,6 +184,26 @@ class VisualizerCPU(name: String) : CPU() {
         pushStack(value)
     }
 
+    override fun inc() {
+        val a = popStack()
+
+        val value = a + 1
+
+        println("INC #${value.truncate()}")
+
+        pushStack(value)
+    }
+
+    override fun dec() {
+        val a = popStack()
+
+        val value = a - 1
+
+        println("DEC #${value.truncate()}")
+
+        pushStack(value)
+    }
+
     override fun and() {
         val b = popStack()
         val a = popStack()

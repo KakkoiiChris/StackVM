@@ -126,6 +126,8 @@ abstract class CPU(private val config: Config = Config()) {
             Bytecode.Instruction.MOD     -> mod()
             Bytecode.Instruction.IMOD    -> imod()
             Bytecode.Instruction.NEG     -> neg()
+            Bytecode.Instruction.INC     -> inc()
+            Bytecode.Instruction.DEC     -> dec()
             Bytecode.Instruction.AND     -> and()
             Bytecode.Instruction.OR      -> or()
             Bytecode.Instruction.NOT     -> not()
@@ -320,6 +322,10 @@ abstract class CPU(private val config: Config = Config()) {
     abstract fun imod()
 
     abstract fun neg()
+
+    abstract fun inc()
+
+    abstract fun dec()
 
     abstract fun and()
 

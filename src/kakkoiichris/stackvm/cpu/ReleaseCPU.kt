@@ -86,6 +86,18 @@ object ReleaseCPU : CPU() {
         pushStack(-a)
     }
 
+    override fun inc() {
+        val a = popStack()
+
+        pushStack(a + 1)
+    }
+
+    override fun dec() {
+        val a = popStack()
+
+        pushStack(a - 1)
+    }
+
     override fun and() {
         val b = popStack()
         val a = popStack()
