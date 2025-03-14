@@ -629,7 +629,7 @@ class Compiler(
         }
 
         val instruction =
-            if (node.indices.size < node.getArrayType(node.variable.context.source).dimension - 1) IASIZE else ISIZE
+            PUSH//TODO if (node.indices.size < node.getArrayType(node.variable.context.source).dimension - 1) IASIZE else ISIZE
 
         if (node.variable.dataType.isHeapAllocated(node.variable.context.source)) {
             tokens += HEAP
@@ -671,7 +671,11 @@ class Compiler(
             tokens += HEAP
             tokens += ASTO
         }
-        else if (DataType.isArray(node.getDataType(node.variable.context.source), node.variable.context.source)) {
+        else if (DataType.isArray(
+                node.variable.getDataType(node.variable.context.source),
+                node.variable.context.source
+            )
+        ) {
             tokens += PUSH
             tokens += node.variable.address
             tokens += ASTO
@@ -729,12 +733,13 @@ class Compiler(
             .reversed()
             .map { visit(it) }
 
-        for (index in indices) {
-            tokens += index
-        }
+        val arrayType = node.getArrayType(node.variable.context.source)
 
-        val instruction =
-            if (node.indices.size < node.getArrayType(node.variable.context.source).dimension) IALOD else ILOD
+        val dimension = arrayType.dimension
+
+        val sizes = arrayType.sizes
+
+        val instruction = if (node.indices.size < dimension) ALOD else LOD
 
         if (node.variable.dataType.isHeapAllocated(node.variable.context.source)) {
             tokens += HEAP
@@ -749,6 +754,18 @@ class Compiler(
 
             tokens += PUSH
             tokens += node.variable.address
+
+            for ((i, index) in indices.withIndex()) {
+                tokens += index
+                tokens += PUSH
+                tokens += sizes[i]
+                tokens += MUL
+            }
+
+            for (i in 0..<dimension) {
+                tokens += ADD
+            }
+
             tokens += instruction
         }
 
@@ -772,7 +789,7 @@ class Compiler(
         }
 
         val instruction =
-            if (node.indices.size < node.getArrayType(node.variable.context.source).dimension) IASTO else ISTO
+            PUSH//TODO if (node.indices.size < node.getArrayType(node.variable.context.source).dimension) IASTO else ISTO
 
         if (node.variable.dataType.isHeapAllocated(node.variable.context.source)) {
             tokens += HEAP
