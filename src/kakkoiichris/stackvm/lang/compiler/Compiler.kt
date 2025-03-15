@@ -765,9 +765,11 @@ class Compiler(
                 tokens += ADD
             }
 
-            tokens += INC
-            tokens += indices.last()
-            tokens += ADD
+            if (indices.size == dimension) {
+                tokens += INC
+                tokens += indices.last()
+                tokens += ADD
+            }
 
             tokens += instruction
         }
@@ -816,9 +818,11 @@ class Compiler(
                 tokens += ADD
             }
 
-            tokens += INC
-            tokens += indices.last()
-            tokens += ADD
+            if (indices.size == dimension) {
+                tokens += INC
+                tokens += indices.last()
+                tokens += ADD
+            }
 
             tokens += instruction
         }
