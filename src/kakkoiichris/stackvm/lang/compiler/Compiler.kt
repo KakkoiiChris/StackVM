@@ -162,11 +162,9 @@ class Compiler(
             tokens += visit(statement)
         }
 
-        val mainReturnPos = pos
+        tokens[1] =pos.toDouble().ok
 
         tokens += visit(program.mainReturn)
-
-        tokens[1] = mainReturnPos.toDouble().ok
 
         tokens += freeMemory()
 
@@ -730,8 +728,7 @@ class Compiler(
 
         val indices = node
             .indices
-            .reversed()
-            .map { visit(it) }
+            //.reversed()
 
         val arrayType = node.getArrayType(node.variable.context.source)
 
@@ -760,14 +757,14 @@ class Compiler(
                 tokens += PUSH
                 tokens += sizes[i]
                 tokens += INC
-                tokens += index
+                tokens += visit(index)
                 tokens += MUL
                 tokens += ADD
             }
 
             if (indices.size == dimension) {
                 tokens += INC
-                tokens += indices.last()
+                tokens += visit(indices.last())
                 tokens += ADD
             }
 
@@ -782,8 +779,7 @@ class Compiler(
 
         val indices = node
             .indices
-            .reversed()
-            .map { visit(it) }
+            //.reversed()
 
         tokens += visit(node.value)
 
@@ -808,20 +804,31 @@ class Compiler(
             tokens += PUSH
             tokens += node.variable.address
 
-            for ((i, index) in indices.dropLast(1).withIndex()) {
+            if (indices.size == dimension) {
+                for ((i, index) in indices.dropLast(1).withIndex()) {
+                    tokens += INC
+                    tokens += PUSH
+                    tokens += sizes[i]
+                    tokens += INC
+                    tokens += visit(index)
+                    tokens += MUL
+                    tokens += ADD
+                }
+
                 tokens += INC
-                tokens += PUSH
-                tokens += sizes[i]
-                tokens += INC
-                tokens += index
-                tokens += MUL
+                tokens += visit(indices.last())
                 tokens += ADD
             }
-
-            if (indices.size == dimension) {
-                tokens += INC
-                tokens += indices.last()
-                tokens += ADD
+            else {
+                for ((i, index) in indices.withIndex()) {
+                    tokens += INC
+                    tokens += PUSH
+                    tokens += sizes[i]
+                    tokens += INC
+                    tokens += visit(index)
+                    tokens += MUL
+                    tokens += ADD
+                }
             }
 
             tokens += instruction
