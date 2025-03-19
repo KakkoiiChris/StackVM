@@ -6,6 +6,7 @@ interface TokenType {
     enum class Keyword : TokenType {
         LET,
         VAR,
+        MUT,
         IF,
         ELSE,
         WHILE,

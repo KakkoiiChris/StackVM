@@ -271,6 +271,8 @@ class Parser(lexer: Lexer, private val optimize: Boolean) {
             mustSkip(TokenType.Keyword.VAR)
         }
 
+        val mutable = skip(TokenType.Keyword.MUT)
+
         val name = name()
 
         var type = if (skip(TokenType.Symbol.COLON)) type() else null
@@ -287,6 +289,10 @@ class Parser(lexer: Lexer, private val optimize: Boolean) {
 
         type!!
 
+        if (mutable && !DataType.isArray(type.type.value, type.context.source)) {
+            System.err.println("Mutable modifier is redundant!")
+        }
+
         if (node != null && !DataType.isEquivalent(type.type.value, node.getDataType(source)!!, source)) {
             svmlError(
                 "Cannot declare a variable of type '${type.type.value}' with value of type '${
@@ -297,11 +303,11 @@ class Parser(lexer: Lexer, private val optimize: Boolean) {
             )
         }
 
-        val variable = createVariable(constant, name, type.type.value)
+        val variable = createVariable(constant, mutable, name, type.type.value)
 
         val (_, activation) = Memory.getVariable(variable)
 
-        val (_, _, address) = activation
+        val (_, _, _, address) = activation
 
         mustSkip(TokenType.Symbol.SEMICOLON)
 
@@ -428,11 +434,11 @@ class Parser(lexer: Lexer, private val optimize: Boolean) {
                 type = Type(Context.none(), TokenType.Type(node.getDataType(source)!!))
             }
 
-            val variable = createVariable(false, name, type.type.value)
+            val variable = createVariable(false, false, name, type.type.value)
 
             val (_, activation) = Memory.getVariable(variable)
 
-            val (_, _, id) = activation
+            val (_, _, _, id) = activation
 
             init = Node.DeclareSingle(name.context, variable, id, node)
 
@@ -516,7 +522,7 @@ class Parser(lexer: Lexer, private val optimize: Boolean) {
 
                 val paramType = type()
 
-                params += createVariable(true, paramName, paramType.type.value)
+                params += createVariable(true, false, paramName, paramType.type.value)
             }
             while (skip(TokenType.Symbol.COMMA))
 
@@ -754,7 +760,7 @@ class Parser(lexer: Lexer, private val optimize: Boolean) {
 
         val (_, variable) = Memory.getVariable(expr)
 
-        val (constant, dataType, _) = variable
+        val (constant, _, dataType, _) = variable
 
         if (constant) {
             svmlError("Variable '${expr.name.value}' cannot be reassigned", source, expr.context)
@@ -778,10 +784,14 @@ class Parser(lexer: Lexer, private val optimize: Boolean) {
 
         val (_, variable) = Memory.getVariable(expr.variable)
 
-        var (constant, dataType, _) = variable
+        var (_, mutable, dataType, _) = variable
 
-        if (constant) {
-            svmlError("Variable '${expr.variable.name.value}' cannot be reassigned", source, expr.variable.context)
+        if (!mutable) {
+            svmlError(
+                "Variable '${expr.variable.name.value}' indices cannot be reassigned",
+                source,
+                expr.variable.context
+            )
         }
 
         if (!DataType.isArray(dataType, source)) {
@@ -816,7 +826,7 @@ class Parser(lexer: Lexer, private val optimize: Boolean) {
 
         val (_, variable) = Memory.getVariable(expr)
 
-        val (constant, dataType, _) = variable
+        val (constant, _, dataType, _) = variable
 
         if (constant) {
             svmlError("Variable '${expr.name.value}' cannot be reassigned", source, expr.context)
@@ -850,10 +860,10 @@ class Parser(lexer: Lexer, private val optimize: Boolean) {
 
         val (_, variable) = Memory.getVariable(expr.variable)
 
-        val (constant, dataType, _) = variable
+        val (_, mutable, dataType, _) = variable
 
-        if (constant) {
-            svmlError("Variable '${expr.variable.name.value}' cannot be reassigned", source, expr.variable.context)
+        if (!mutable) {
+            svmlError("Variable '${expr.variable.name.value}' indices cannot be reassigned", source, expr.variable.context)
         }
 
         if (dataType !is DataType.Array) {
@@ -1166,14 +1176,19 @@ class Parser(lexer: Lexer, private val optimize: Boolean) {
     private fun label() =
         if (skip(TokenType.Symbol.AT)) name() else null
 
-    private fun createVariable(constant: Boolean, name: Node.Name, dataType: DataType): Node.Variable {
+    private fun createVariable(
+        constant: Boolean,
+        mutable: Boolean,
+        name: Node.Name,
+        dataType: DataType
+    ): Node.Variable {
         val context = here()
 
-        Memory.addVariable(constant, name.name, dataType, context)
+        Memory.addVariable(constant, mutable, name.name, dataType, context)
 
         val (mode, variable) = Memory.getVariable(name.name, context)
 
-        val (_, type, id) = variable
+        val (_, _, type, id) = variable
 
         return Node.Variable(context, name.name, id, mode, type)
     }
@@ -1181,7 +1196,7 @@ class Parser(lexer: Lexer, private val optimize: Boolean) {
     private fun Node.Name.toVariable(): Node.Variable {
         val (mode, variable) = Memory.getVariable(name, context)
 
-        val (_, type, address) = variable
+        val (_, _, type, address) = variable
 
         return Node.Variable(context, name, address, mode, type)
     }

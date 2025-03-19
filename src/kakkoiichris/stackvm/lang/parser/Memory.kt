@@ -2,7 +2,6 @@ package kakkoiichris.stackvm.lang.parser
 
 import kakkoiichris.stackvm.lang.lexer.Context
 import kakkoiichris.stackvm.lang.lexer.TokenType
-import kakkoiichris.stackvm.util.svmlError
 import java.util.*
 
 object Memory {
@@ -51,10 +50,16 @@ object Memory {
         return scopes.peek()
     }
 
-    fun addVariable(isConstant: Boolean, name: TokenType.Name, dataType: DataType, context: Context) {
+    fun addVariable(
+        isConstant: Boolean,
+        isMutable: Boolean,
+        name: TokenType.Name,
+        dataType: DataType,
+        context: Context
+    ) {
         val scope = peek()
 
-        if (scope.addVariable(isConstant, name, dataType)) return
+        if (scope.addVariable(isConstant, isMutable, name, dataType)) return
 
         error("Redeclared variable '${name.value}' @ ${context}!")
     }
@@ -82,7 +87,7 @@ object Memory {
 
     fun getFunctionID() = functionID++
 
-    fun addFunction(dataType: DataType, id: Int, signature: Signature, isNative: Boolean):Boolean {
+    fun addFunction(dataType: DataType, id: Int, signature: Signature, isNative: Boolean): Boolean {
         if (peek().addFunction(dataType, id, signature, isNative)) return true
 
         if (global.addFunction(dataType, id, signature, isNative)) return true
@@ -113,10 +118,10 @@ object Memory {
             functions.clear()
         }
 
-        fun addVariable(isConstant: Boolean, name: TokenType.Name, dataType: DataType): Boolean {
+        fun addVariable(isConstant: Boolean, isMutable: Boolean, name: TokenType.Name, dataType: DataType): Boolean {
             if (name.value in variables) return false
 
-            variables[name.value] = VariableRecord(isConstant, dataType, variableID++)
+            variables[name.value] = VariableRecord(isConstant, isMutable, dataType, variableID++)
 
             return true
         }
@@ -140,7 +145,7 @@ object Memory {
 
     data class Lookup(val isGlobal: Boolean, val record: VariableRecord)
 
-    data class VariableRecord(val isConstant: Boolean, val dataType: DataType, val id: Int)
+    data class VariableRecord(val isConstant: Boolean, val isMutable: Boolean, val dataType: DataType, val id: Int)
 
     data class FunctionRecord(val isNative: Boolean, val dataType: DataType, val id: Int)
 }
