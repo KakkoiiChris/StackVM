@@ -232,9 +232,11 @@ class Compiler(
         if (i == dimensions.lastIndex) {
             val dimension = dimensions[i]
 
-            repeat(dimension) {
-                tokens += PUSH
-                tokens += 0.0
+            tokens += PUSH
+            tokens += 0.0
+
+            repeat(dimension - 1) {
+                tokens += DUP
             }
 
             tokens += PUSH
