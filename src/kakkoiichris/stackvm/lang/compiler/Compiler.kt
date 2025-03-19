@@ -162,7 +162,7 @@ class Compiler(
             tokens += visit(statement)
         }
 
-        tokens[1] =pos.toDouble().ok
+        tokens[1] = pos.toDouble().ok
 
         tokens += visit(program.mainReturn)
 
@@ -223,26 +223,30 @@ class Compiler(
         return tokens
     }
 
-    private fun getDefaultArray(vararg sizes: Int) =
-        getSubArray(sizes[0], sizes.drop(1).toIntArray())
+    private fun getDefaultArray(vararg dimensions: Int) =
+        getSubArray(dimensions, 0)
 
-    private fun getSubArray(size: Int, rest: IntArray): List<Token> {
+    private fun getSubArray(dimensions: IntArray, i: Int): List<Token> {
         val tokens = mutableListOf<Token>()
 
-        if (rest.isEmpty()) {
-            repeat(size) {
+        if (i == dimensions.lastIndex) {
+            val dimension = dimensions[i]
+
+            repeat(dimension) {
                 tokens += PUSH
                 tokens += 0.0
             }
 
             tokens += PUSH
-            tokens += size
+            tokens += dimension
         }
         else {
+            val dimension = dimensions[i]
+
             var totalSize = 0
 
-            repeat(size) {
-                val subArray = getSubArray(rest[0], rest.drop(1).toIntArray())
+            repeat(dimension) {
+                val subArray = getSubArray(dimensions, i + 1)
 
                 totalSize += subArray.size / 2
 
@@ -726,9 +730,7 @@ class Compiler(
     override fun visitGetIndex(node: Node.GetIndex): List<Token> {
         val tokens = mutableListOf<Token>()
 
-        val indices = node
-            .indices
-            //.reversed()
+        val indices = node.indices
 
         val arrayType = node.getArrayType(node.variable.context.source)
 
@@ -738,34 +740,36 @@ class Compiler(
 
         val instruction = if (node.indices.size < dimension) ALOD else LOD
 
-        if (node.variable.dataType.isHeapAllocated(node.variable.context.source)) {
-            tokens += HEAP
+        val isHeap = node.variable.dataType.isHeapAllocated(node.variable.context.source)
+
+        val location = if (isHeap) node.variable.id else node.variable.address
+
+        tokens += PUSH
+        tokens += location
+
+        for ((i, index) in indices.dropLast(1).withIndex()) {
+            tokens += INC
             tokens += PUSH
-            tokens += node.variable.id
+            tokens += sizes[i]
+            tokens += INC
+            tokens += visit(index)
+            tokens += MUL
+            tokens += ADD
+        }
+
+        if (indices.size == dimension) {
+            tokens += INC
+            tokens += visit(indices.last())
+            tokens += ADD
+        }
+
+        if (isHeap) {
+            tokens += HEAP
             tokens += instruction
         }
         else {
             if (node.variable.isGlobal) {
                 tokens += GLOB
-            }
-
-            tokens += PUSH
-            tokens += node.variable.address
-
-            for ((i, index) in indices.dropLast(1).withIndex()) {
-                tokens += INC
-                tokens += PUSH
-                tokens += sizes[i]
-                tokens += INC
-                tokens += visit(index)
-                tokens += MUL
-                tokens += ADD
-            }
-
-            if (indices.size == dimension) {
-                tokens += INC
-                tokens += visit(indices.last())
-                tokens += ADD
             }
 
             tokens += instruction
@@ -777,11 +781,7 @@ class Compiler(
     override fun visitSetIndex(node: Node.SetIndex): List<Token> {
         val tokens = mutableListOf<Token>()
 
-        val indices = node
-            .indices
-            //.reversed()
-
-        tokens += visit(node.value)
+        val indices = node.indices
 
         val arrayType = node.getArrayType(node.variable.context.source)
 
@@ -791,44 +791,36 @@ class Compiler(
 
         val instruction = if (node.indices.size < dimension) ASTO else STO
 
-        if (node.variable.dataType.isHeapAllocated(node.variable.context.source)) {
+        val isHeap = node.variable.dataType.isHeapAllocated(node.variable.context.source)
+
+        val location = if (isHeap) node.variable.id else node.variable.address
+
+        tokens += PUSH
+        tokens += location
+
+        for ((i, index) in indices.dropLast(1).withIndex()) {
+            tokens += INC
+            tokens += PUSH
+            tokens += sizes[i]
+            tokens += INC
+            tokens += visit(index)
+            tokens += MUL
+            tokens += ADD
+        }
+
+        if (indices.size == dimension) {
+            tokens += INC
+            tokens += visit(indices.last())
+            tokens += ADD
+        }
+
+        if (isHeap) {
             tokens += HEAP
             tokens += instruction
-            tokens += node.variable.id
         }
         else {
             if (node.variable.isGlobal) {
                 tokens += GLOB
-            }
-
-            tokens += PUSH
-            tokens += node.variable.address
-
-            if (indices.size == dimension) {
-                for ((i, index) in indices.dropLast(1).withIndex()) {
-                    tokens += INC
-                    tokens += PUSH
-                    tokens += sizes[i]
-                    tokens += INC
-                    tokens += visit(index)
-                    tokens += MUL
-                    tokens += ADD
-                }
-
-                tokens += INC
-                tokens += visit(indices.last())
-                tokens += ADD
-            }
-            else {
-                for ((i, index) in indices.withIndex()) {
-                    tokens += INC
-                    tokens += PUSH
-                    tokens += sizes[i]
-                    tokens += INC
-                    tokens += visit(index)
-                    tokens += MUL
-                    tokens += ADD
-                }
             }
 
             tokens += instruction
