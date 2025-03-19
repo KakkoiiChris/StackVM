@@ -525,7 +525,9 @@ class Compiler(
 
         tokens += visit(node.node)
 
-        tokens += POP
+        if (node.node !is Node.SetIndex) {
+            tokens += POP
+        }
 
         return tokens
     }
