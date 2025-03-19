@@ -797,6 +797,8 @@ class Compiler(
 
         val location = if (isHeap) node.variable.id else node.variable.address
 
+        tokens += visit(node.value)
+
         tokens += PUSH
         tokens += location
 
