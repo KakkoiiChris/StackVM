@@ -157,18 +157,14 @@ object ReleaseCPU : CPU() {
         global = true
     }
 
-    override fun heap() {
-        heap = true
-    }
-
     override fun lod() {
-        val address = getLoadAddress()
+        val address = getAddress()
 
         pushStack(memory[address])
     }
 
     override fun alod() {
-        val address = getLoadAddress()
+        val address = getAddress()
         val size = memory[address].toInt()
 
         for (i in size downTo 0) {
@@ -176,40 +172,15 @@ object ReleaseCPU : CPU() {
         }
     }
 
-    override fun ilod() {
-        var address = getLoadAddress()
-        val indexCount = fetchInt()
-
-        for (i in 0 until indexCount - 1) {
-            address++
-
-            val subSize = memory[address].toInt()
-
-            address += popStackInt() * (subSize + 1)
-        }
-
-        address += popStackInt() + 1
+    override fun hlod() {
+        val address = getHeapAddress()
 
         pushStack(memory[address])
     }
 
-    override fun ialod() {
-        var address = getLoadAddress()
-        val indexCount = fetchInt()
-
-        for (i in 0 until indexCount - 1) {
-            address++
-
-            val subSize = memory[address].toInt()
-
-            address += popStackInt() * (subSize + 1)
-        }
-
-        address++
-
+    override fun halod() {
+        val address = getHeapAddress()
         val size = memory[address].toInt()
-
-        address += popStackInt() * size
 
         for (i in size downTo 0) {
             pushStack(memory[address + i])
@@ -217,13 +188,13 @@ object ReleaseCPU : CPU() {
     }
 
     override fun sto() {
-        val address = getStoreAddress()
+        val address = getAddress()
 
         memory[address] = popStack()
     }
 
     override fun asto() {
-        val address = getStoreAddress()
+        val address = getAddress()
         val size = popStack()
 
         memory[address] = size
@@ -233,37 +204,14 @@ object ReleaseCPU : CPU() {
         }
     }
 
-    override fun isto() {
-        var address = getStoreAddress()
-        val indexCount = fetchInt()
-
-        for (i in 0 until indexCount - 1) {
-            address++
-
-            val subSize = memory[address].toInt()
-
-            address += popStackInt() * (subSize + 1)
-        }
-
-        address += popStackInt() + 1
+    override fun hsto() {
+        val address = getHeapAddress()
 
         memory[address] = popStack()
     }
 
-    override fun iasto() {
-        var address = getStoreAddress()
-        val indexCount = fetchInt()
-
-        for (i in 0 until indexCount - 1) {
-            address++
-
-            val subSize = memory[address].toInt()
-
-            address += popStackInt() * (subSize + 1)
-        }
-
-        address += popStackInt() + 1
-
+    override fun hasto() {
+        val address = getHeapAddress()
         val size = popStack()
 
         memory[address] = size
@@ -274,7 +222,7 @@ object ReleaseCPU : CPU() {
     }
 
     override fun size() {
-        val address = getLoadAddress()
+        val address = getAddress()
 
         val totalSize = memory[address].toInt()
 
@@ -282,7 +230,7 @@ object ReleaseCPU : CPU() {
     }
 
     override fun asize() {
-        val address = getLoadAddress()
+        val address = getAddress()
 
         val size = memory[address].toInt()
         val subSize = (memory[address + 1] + 1).toInt()
@@ -292,45 +240,20 @@ object ReleaseCPU : CPU() {
         pushStack(totalSize.toDouble())
     }
 
-    override fun isize() {
-        var address = getLoadAddress()
-        val indexCount = fetchInt()
-
-        for (i in 0 until indexCount - 1) {
-            val subSize = memory[++address].toInt()
-
-            address += popStackInt() * (subSize + 1)
-        }
-
-        address += popStackInt() + 1
+    override fun hsize() {
+        val address = getHeapAddress()
 
         val totalSize = memory[address].toInt()
 
         pushStack(totalSize.toDouble())
     }
 
-    override fun iasize() {
-        var address = getLoadAddress()
-        val indexCount = fetchInt()
-        //showMemory(address)
-
-        for (i in 0 until indexCount - 1) {
-            address++
-            //showMemory(address)
-
-            val subSize = memory[address].toInt()
-
-            address += popStackInt() * (subSize + 1)
-            //showMemory(address)
-        }
-
-        var subSize = memory[++address].toInt()
-
-        address += popStackInt() * (subSize + 1)
-        //showMemory(address)
+    override fun hasize() {
+        val address = getHeapAddress()
 
         val size = memory[address].toInt()
-        subSize = (memory[address + 1] + 1).toInt()
+        val subSize = (memory[address + 1] + 1).toInt()
+
         val totalSize = size / subSize
 
         pushStack(totalSize.toDouble())

@@ -11,7 +11,6 @@ abstract class CPU(private val config: Config = Config()) {
 
         private val RUN_ADR = adr()
         private val GLO_ADR = adr()
-        private val HEP_ADR = adr()
         private val RES_ADR = adr()
         private val IPO_ADR = adr()
         private val IPA_ADR = adr()
@@ -32,8 +31,6 @@ abstract class CPU(private val config: Config = Config()) {
     internal var running by Register.Bool(RUN_ADR)
 
     protected var global by Register.Bool(GLO_ADR)
-
-    protected var heap by Register.Bool(HEP_ADR)
 
     internal var result by Register.Float(RES_ADR)
 
@@ -137,19 +134,18 @@ abstract class CPU(private val config: Config = Config()) {
             Bytecode.Instruction.JMP     -> jmp()
             Bytecode.Instruction.JIF     -> jif()
             Bytecode.Instruction.GLOB    -> glob()
-            Bytecode.Instruction.HEAP    -> heap()
             Bytecode.Instruction.LOD     -> lod()
             Bytecode.Instruction.ALOD    -> alod()
-            Bytecode.Instruction.ILOD    -> ilod()
-            Bytecode.Instruction.IALOD   -> ialod()
+            Bytecode.Instruction.HLOD    -> hlod()
+            Bytecode.Instruction.HALOD   -> halod()
             Bytecode.Instruction.STO     -> sto()
             Bytecode.Instruction.ASTO    -> asto()
-            Bytecode.Instruction.ISTO    -> isto()
-            Bytecode.Instruction.IASTO   -> iasto()
+            Bytecode.Instruction.HSTO    -> hsto()
+            Bytecode.Instruction.HASTO   -> hasto()
             Bytecode.Instruction.SIZE    -> size()
             Bytecode.Instruction.ASIZE   -> asize()
-            Bytecode.Instruction.ISIZE   -> isize()
-            Bytecode.Instruction.IASIZE  -> iasize()
+            Bytecode.Instruction.HSIZE   -> hsize()
+            Bytecode.Instruction.HASIZE  -> hasize()
             Bytecode.Instruction.ALLOC   -> alloc()
             Bytecode.Instruction.REALLOC -> realloc()
             Bytecode.Instruction.FREE    -> free()
@@ -221,24 +217,15 @@ abstract class CPU(private val config: Config = Config()) {
         return framePointer
     }
 
-    protected fun getLoadAddress(): Int {
-        if (heap) {
-            heap = false
-
-            return memory[tablePointerOrigin + popStackInt()].toInt()
-        }
-
-        return popStackInt() + getLoadOffset()
+    protected fun getAddress(): Int {
+        return getLoadOffset() + popStackInt()
     }
 
-    protected fun getStoreAddress(): Int {
-        if (heap) {
-            heap = false
+    protected fun getHeapAddress(): Int {
+        val offset = popStackInt()
+        val id = popStackInt()
 
-            return memory[tablePointerOrigin + popStackInt()].toInt()
-        }
-
-        return popStackInt() + framePointer
+        return memory[tablePointerOrigin + id].toInt() + offset
     }
 
     protected fun allocateMemory(id: Int, size: Int): Int {
@@ -345,31 +332,29 @@ abstract class CPU(private val config: Config = Config()) {
 
     abstract fun glob()
 
-    abstract fun heap()
-
     abstract fun lod()
 
     abstract fun alod()
 
-    abstract fun ilod()
+    abstract fun hlod()
 
-    abstract fun ialod()
+    abstract fun halod()
 
     abstract fun sto()
 
     abstract fun asto()
 
-    abstract fun isto()
+    abstract fun hsto()
 
-    abstract fun iasto()
+    abstract fun hasto()
 
     abstract fun size()
 
     abstract fun asize()
 
-    abstract fun isize()
+    abstract fun hsize()
 
-    abstract fun iasize()
+    abstract fun hasize()
 
     abstract fun alloc()
 

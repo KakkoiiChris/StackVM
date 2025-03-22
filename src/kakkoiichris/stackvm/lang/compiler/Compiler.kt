@@ -209,8 +209,9 @@ class Compiler(
             tokens += node.id
             tokens += PUSH
             tokens += node.id
-            tokens += HEAP
-            tokens += ASTO
+            tokens += PUSH
+            tokens += 0
+            tokens += HASTO
 
             addMemory(node.id)
         }
@@ -474,8 +475,9 @@ class Compiler(
                 tokens += param.id
                 tokens += PUSH
                 tokens += param.id
-                tokens += HEAP
-                tokens += ASTO
+                tokens += PUSH
+                tokens += 0
+                tokens += HASTO
             }
             else {
                 tokens += PUSH
@@ -563,8 +565,7 @@ class Compiler(
         if (node.dataType.isHeapAllocated(node.context.source)) {
             tokens += PUSH
             tokens += node.id
-            tokens += HEAP
-            tokens += ALOD
+            tokens += HALOD
         }
         else {
             tokens += PUSH
@@ -606,18 +607,31 @@ class Compiler(
     override fun visitSize(node: Node.Size): List<Token> {
         val tokens = mutableListOf<Token>()
 
-        if (DataType.isArray(node.variable.dataType, node.variable.context.source)) {
-            val instruction = if (node.getArrayType(node.variable.context.source).dimension > 1) ASIZE else SIZE
+        val isArray = DataType.isArray(node.variable.dataType, node.variable.context.source)
 
-            if (node.variable.dataType.isHeapAllocated(node.variable.context.source)) {
-                tokens += HEAP
-                tokens += instruction
-                tokens += node.variable.id
+        if (isArray) {
+            val arrayType = node.getArrayType(node.variable.context.source)
+
+            val isHeap = arrayType.isHeapAllocated(node.variable.context.source)
+
+            val instruction = if (arrayType.dimension > 1) {
+                if (isHeap) HASIZE else ASIZE
             }
             else {
-                tokens += instruction
-                tokens += node.variable.address
+                if (isHeap) HSIZE else SIZE
             }
+
+            val location = if (isHeap) node.variable.id else node.variable.address
+
+            tokens += PUSH
+            tokens += location
+
+            if (isHeap) {
+                tokens += PUSH
+                tokens += 0
+            }
+
+            tokens += instruction
         }
         else {
             tokens += PUSH
@@ -638,7 +652,7 @@ class Compiler(
             PUSH//TODO if (node.indices.size < node.getArrayType(node.variable.context.source).dimension - 1) IASIZE else ISIZE
 
         if (node.variable.dataType.isHeapAllocated(node.variable.context.source)) {
-            tokens += HEAP
+            //TODO tokens += HEAP
             tokens += instruction
             tokens += node.variable.id
             tokens += node.indices.size
@@ -669,19 +683,23 @@ class Compiler(
 
         tokens += visit(node.node)
 
-        if (node.variable.dataType.isHeapAllocated(node.variable.context.source)) {
+        val isHeap = node.variable.dataType.isHeapAllocated(node.variable.context.source)
+
+        val isArray = DataType.isArray(
+            node.variable.getDataType(node.variable.context.source),
+            node.variable.context.source
+        )
+
+        if (isHeap) {
             tokens += REALLOC
             tokens += node.variable.id
             tokens += PUSH
             tokens += node.variable.id
-            tokens += HEAP
-            tokens += ASTO
+            tokens += PUSH
+            tokens += 0
+            tokens += HASTO
         }
-        else if (DataType.isArray(
-                node.variable.getDataType(node.variable.context.source),
-                node.variable.context.source
-            )
-        ) {
+        else if (isArray) {
             tokens += PUSH
             tokens += node.variable.address
             tokens += ASTO
@@ -742,14 +760,24 @@ class Compiler(
 
         val sizes = arrayType.sizes
 
-        val instruction = if (node.indices.size < dimension) ALOD else LOD
-
         val isHeap = node.variable.dataType.isHeapAllocated(node.variable.context.source)
+
+        val instruction = if (node.indices.size < dimension) {
+            if (isHeap) HALOD else ALOD
+        }
+        else {
+            if (isHeap) HLOD else LOD
+        }
 
         val location = if (isHeap) node.variable.id else node.variable.address
 
         tokens += PUSH
         tokens += location
+
+        if (isHeap) {
+            tokens += PUSH
+            tokens += 0
+        }
 
         for ((i, index) in indices.dropLast(1).withIndex()) {
             tokens += INC
@@ -767,17 +795,11 @@ class Compiler(
             tokens += ADD
         }
 
-        if (isHeap) {
-            tokens += HEAP
-            tokens += instruction
+        if (node.variable.isGlobal) {
+            tokens += GLOB
         }
-        else {
-            if (node.variable.isGlobal) {
-                tokens += GLOB
-            }
 
-            tokens += instruction
-        }
+        tokens += instruction
 
         return tokens
     }
@@ -793,9 +815,14 @@ class Compiler(
 
         val sizes = arrayType.sizes
 
-        val instruction = if (node.indices.size < dimension) ASTO else STO
-
         val isHeap = node.variable.dataType.isHeapAllocated(node.variable.context.source)
+
+        val instruction = if (node.indices.size < dimension) {
+            if (isHeap) HALOD else ALOD
+        }
+        else {
+            if (isHeap) HLOD else LOD
+        }
 
         val location = if (isHeap) node.variable.id else node.variable.address
 
@@ -803,6 +830,11 @@ class Compiler(
 
         tokens += PUSH
         tokens += location
+
+        if (isHeap) {
+            tokens += PUSH
+            tokens += 0
+        }
 
         for ((i, index) in indices.dropLast(1).withIndex()) {
             tokens += INC
@@ -820,17 +852,11 @@ class Compiler(
             tokens += ADD
         }
 
-        if (isHeap) {
-            tokens += HEAP
-            tokens += instruction
+        if (node.variable.isGlobal) {
+            tokens += GLOB
         }
-        else {
-            if (node.variable.isGlobal) {
-                tokens += GLOB
-            }
 
-            tokens += instruction
-        }
+        tokens += instruction
 
         return tokens
     }

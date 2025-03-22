@@ -184,13 +184,13 @@ private fun visualizeFile(srcName: String) {
         values[i] = `in`.readDouble()
     }
 
-    val cpu = VisualizerCPU(srcName)
+    //val cpu = VisualizerCPU(srcName)
 
-    cpu.initialize(values)
+    //cpu.initialize(values)
 
-    Linker.link()
+    //Linker.link()
 
-    val result = cpu.run()
+    //val result = cpu.run()
 
     //println("\n< ${result.truncate()} (${runTime.inWholeNanoseconds / 1E9}s)\n")
 }

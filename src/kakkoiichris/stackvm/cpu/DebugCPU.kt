@@ -265,14 +265,8 @@ object DebugCPU : CPU() {
         println("GLOB")
     }
 
-    override fun heap() {
-        heap = true
-
-        println("HEAP")
-    }
-
     override fun lod() {
-        val address = getLoadAddress()
+        val address = getAddress()
         val value = memory[address]
 
         println("LOD @${address.toAddress()} <${value.truncate()}>")
@@ -281,7 +275,7 @@ object DebugCPU : CPU() {
     }
 
     override fun alod() {
-        val address = getLoadAddress()
+        val address = getAddress()
         val size = memory[address].toInt()
 
         val elements = MutableList(size + 1) { memory[address + it] }
@@ -293,52 +287,22 @@ object DebugCPU : CPU() {
         }
     }
 
-    override fun ilod() {
-        var address = getLoadAddress()
-        val indexCount = fetchInt()
-
-        val indices = List(indexCount) { popStackInt() }
-
-        for (index in indices.dropLast(1)) {
-            address++
-
-            val subSize = memory[address].toInt()
-
-            address += index * (subSize + 1)
-        }
-
-        address += indices.last() + 1
-
+    override fun hlod() {
+        val address = getHeapAddress()
         val value = memory[address]
 
-        println("ILOD @${address.toAddress()} #$indexCount <[${indices.joinToString(separator = "][")}], ${value.truncate()}>")
+        println("HLOD @${address.toAddress()} <${value.truncate()}>")
 
         pushStack(value)
     }
 
-    override fun ialod() {
-        var address = getLoadAddress()
-        val indexCount = fetchInt()
+    override fun halod() {
+        val address = getHeapAddress()
+        val size = memory[address].toInt()
 
-        val indices = List(indexCount) { popStackInt() }
+        val elements = MutableList(size + 1) { memory[address + it] }
 
-        for (index in indices.dropLast(1)) {
-            address++
-
-            val subSize = memory[address].toInt()
-
-            address += index * (subSize + 1)
-        }
-
-        address++
-
-        val size = memory[address]
-
-        address += (indices.last() * size).toInt()
-
-        val elements = DoubleArray(size.toInt() + 1) { memory[address + it] }
-
-        println("IALOD @${address.toAddress()} [${elements.joinToString(separator = ",") { it.truncate() }}]")
+        println("HALOD @${address.toAddress()} [${elements.joinToString(separator = ",") { it.truncate() }}]")
 
         for (element in elements.reversed()) {
             pushStack(element)
@@ -346,7 +310,7 @@ object DebugCPU : CPU() {
     }
 
     override fun sto() {
-        val address = getStoreAddress()
+        val address = getAddress()
         val value = popStack()
 
         println("STO @${address.toAddress()} <${value.truncate()}>")
@@ -355,7 +319,7 @@ object DebugCPU : CPU() {
     }
 
     override fun asto() {
-        val address = getStoreAddress()
+        val address = getAddress()
         val size = popStack()
 
         val elements = MutableList(size.toInt()) {
@@ -371,41 +335,17 @@ object DebugCPU : CPU() {
         }
     }
 
-    override fun isto() {
-        var address = getStoreAddress()
-        val indexCount = fetchInt()
-
-        for (i in 0 until indexCount - 1) {
-            address++
-
-            val subSize = memory[address].toInt()
-
-            address += popStackInt() * (subSize + 1)
-        }
-
-        address += popStackInt() + 1
-
+    override fun hsto() {
+        val address = getHeapAddress()
         val value = popStack()
 
-        println("ISTO @${address.toAddress()} #$indexCount <${value.truncate()}>")
+        println("HSTO @${address.toAddress()} <${value.truncate()}>")
 
         memory[address] = value
     }
 
-    override fun iasto() {
-        var address = getStoreAddress()
-        val indexCount = fetchInt()
-
-        for (i in 0 until indexCount - 1) {
-            address++
-
-            val subSize = memory[address].toInt()
-
-            address += popStackInt() * (subSize + 1)
-        }
-
-        address += popStackInt() + 1
-
+    override fun hasto() {
+        val address = getHeapAddress()
         val size = popStack()
 
         val elements = MutableList(size.toInt()) {
@@ -414,7 +354,7 @@ object DebugCPU : CPU() {
 
         elements.add(0, size)
 
-        println("IASTO @${address.toAddress()} #$indexCount [${elements.joinToString(separator = ",") { it.truncate() }}]")
+        println("HASTO @${address.toAddress()} [${elements.joinToString(separator = ",") { it.truncate() }}]")
 
         for (offset in elements.indices) {
             memory[address + offset] = elements[offset]
@@ -450,7 +390,7 @@ object DebugCPU : CPU() {
     }
 
     override fun size() {
-        val address = getLoadAddress()
+        val address = getAddress()
 
         val totalSize = memory[address].toInt()
 
@@ -460,7 +400,7 @@ object DebugCPU : CPU() {
     }
 
     override fun asize() {
-        val address = getLoadAddress()
+        val address = getAddress()
 
         val totalSize = memory[address].toInt() / (memory[address + 1] + 1).toInt()
 
@@ -469,50 +409,22 @@ object DebugCPU : CPU() {
         pushStack(totalSize.toDouble())
     }
 
-    override fun isize() {
-        var address = getLoadAddress()
-
-        val indexCount = fetchInt()
-
-        val indices = List(indexCount) { popStackInt() }
-
-        for (index in indices.dropLast(1)) {
-            address++
-
-            val subSize = memory[address].toInt()
-
-            address += index * (subSize + 1)
-        }
-
-        address += indices.last() + 1
+    override fun hsize() {
+        val address = getHeapAddress()
 
         val totalSize = memory[address].toInt()
 
-        println("ISIZE @${address.toAddress()} <$totalSize>")
+        println("HSIZE @${address.toAddress()} <$totalSize>")
 
         pushStack(totalSize.toDouble())
     }
 
-    override fun iasize() {
-        var address = getLoadAddress()
-
-        val indexCount = fetchInt()
-
-        val indices = List(indexCount) { popStackInt() }
-
-        for (index in indices.dropLast(1)) {
-            address++
-
-            val subSize = memory[address].toInt()
-
-            address += index * (subSize + 1)
-        }
-
-        address += indices.last() + 1
+    override fun hasize() {
+        val address = getHeapAddress()
 
         val totalSize = memory[address].toInt() / (memory[address + 1] + 1).toInt()
 
-        println("IASIZE @${address.toAddress()} <$totalSize>")
+        println("HASIZE @${address.toAddress()} <$totalSize>")
 
         pushStack(totalSize.toDouble())
     }
