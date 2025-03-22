@@ -905,7 +905,7 @@ class Parser(lexer: Lexer, private val optimize: Boolean) {
 
             mustSkip(operator)
 
-            expr = Node.Binary(location, Node.Binary.Operator[operator], expr, and())
+            expr = Node.Logical(location, Node.Logical.Operator.OR, expr, and())
 
             expr.getDataType(source)
         }
@@ -923,7 +923,7 @@ class Parser(lexer: Lexer, private val optimize: Boolean) {
 
             mustSkip(operator)
 
-            expr = Node.Binary(location, Node.Binary.Operator[operator], expr, equality())
+            expr = Node.Logical(location, Node.Logical.Operator.AND, expr, equality())
 
             expr.getDataType(source)
         }

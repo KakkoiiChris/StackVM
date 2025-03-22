@@ -56,9 +56,12 @@ class BytecodeFormatter(private val file: File) {
                     Line(bytecode.toString(), -1)
                 }
 
-                is Bytecode.Instruction -> getLine(here, bytecode)
+                is Bytecode.Instruction -> {
+                    println(bytecode)
+                    getLine(here, bytecode)
+                }
 
-                else                    -> error("Invalid start of line!")
+                else                    -> error("Invalid start of line '$bytecode' at '$pos'!")
             }
         }
 

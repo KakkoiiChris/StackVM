@@ -223,6 +223,12 @@ object Allocator : Node.Visitor<Unit> {
         visit(node.operandRight)
     }
 
+    override fun visitLogical(node: Node.Logical) {
+        visit(node.operandLeft)
+
+        visit(node.operandRight)
+    }
+
     override fun visitAssign(node: Node.Assign) {
         visit(node.variable)
 

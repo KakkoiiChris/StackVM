@@ -48,36 +48,36 @@ function writeLine(c: char): void {
 	write('\n');
 }
 
-//function write(s: string): void {
-//	for i = 0; i < #s; i += 1 {
-//		write(s[i]);
-//	}
-//}
+function write(s: string): void {
+	for i = 0; i < #s; i += 1 {
+		write(s[i]);
+	}
+}
 
-//function writeLine(s: string): void {
-//	write(s);
-//	write('\n');
-//}
+function writeLine(s: string): void {
+	write(s);
+	write('\n');
+}
 
-//function writeLine: void {
-//	write('\n');
-//}
+function writeLine: void {
+	write('\n');
+}
 
-//function write(a: int[]): void {
-//	if #a == 0 {
-//		write("{}");
-//		return;
-//	}
-//	
-//	write('{');
-//	
-//	for i = 0; i < #a; i += 1 {
-//		if i != 0 {
-//			write(',');
-//		}
-//		
-//		write(a[i]);
-//	}
-//	
-//	write('}');
-//}
+function write(a: int[]): void {
+	if #a == 0 {
+		write("{}");
+		return;
+	}
+	
+	write('{');
+	
+	for i = 0; i < #a; i += 1 {
+		if i != 0 {
+			write(',');
+		}
+		
+		write(a[i]);
+	}
+	
+	write('}');
+}

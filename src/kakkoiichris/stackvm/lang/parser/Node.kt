@@ -5,6 +5,7 @@ import kakkoiichris.stackvm.lang.compiler.Bytecode
 import kakkoiichris.stackvm.lang.lexer.Context
 import kakkoiichris.stackvm.lang.lexer.TokenType
 import kakkoiichris.stackvm.lang.parser.DataType.Primitive.*
+import kakkoiichris.stackvm.lang.parser.Node.Binary.Operator
 
 typealias Nodes = List<Node>
 
@@ -62,6 +63,8 @@ interface Node {
         fun visitIndexSize(node: IndexSize): X
 
         fun visitBinary(node: Binary): X
+
+        fun visitLogical(node: Logical): X
 
         fun visitAssign(node: Assign): X
 
@@ -572,6 +575,33 @@ interface Node {
             );
 
             open val intVersion get() = this
+
+            companion object {
+                operator fun get(symbol: TokenType) =
+                    entries.first { it.symbol == symbol }
+            }
+        }
+    }
+
+    class Logical(
+        override val context: Context,
+        val operator: Operator,
+        val operandLeft: Node,
+        val operandRight: Node
+    ) : Node {
+        override fun <X> accept(visitor: Visitor<X>):X=
+            visitor.visitLogical(this)
+
+        enum class Operator(val symbol: TokenType.Symbol, val instruction: Bytecode.Instruction) {
+            OR(
+                TokenType.Symbol.DOUBLE_PIPE,
+                Bytecode.Instruction.OR
+            ),
+
+            AND(
+                TokenType.Symbol.DOUBLE_AMPERSAND,
+                Bytecode.Instruction.AND
+            );
 
             companion object {
                 operator fun get(symbol: TokenType) =

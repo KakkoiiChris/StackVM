@@ -133,7 +133,7 @@ class Compiler(
         return tokens
     }
 
-    private fun resolveStartAndEnd(tokens: List<Token>, start: Double, end: Double) =
+    private fun resolveStartAndEnd(tokens: List<Token>, start: Double = 0.0, end: Double = 0.0) =
         tokens
             .map { it.resolveStartAndEnd(start, end) ?: it }
             .toMutableList()
@@ -674,6 +674,28 @@ class Compiler(
 
         node.operator.instructions
             .forEach { tokens += it }
+
+        return tokens
+    }
+
+    override fun visitLogical(node: Node.Logical): List<Token> {
+        var tokens = mutableListOf<Token>()
+
+        tokens += visit(node.operandLeft)
+
+        if (node.operator == Node.Logical.Operator.AND) {
+            tokens += NOT
+        }
+
+        tokens += DUP
+        tokens += JIF
+        tokens += Token.AwaitEnd()
+
+        tokens += visit(node.operandRight)
+
+        tokens += node.operator.instruction
+
+        tokens = resolveStartAndEnd(tokens, end = pos.toDouble())
 
         return tokens
     }
