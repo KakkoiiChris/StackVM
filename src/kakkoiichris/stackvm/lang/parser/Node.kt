@@ -5,7 +5,6 @@ import kakkoiichris.stackvm.lang.compiler.Bytecode
 import kakkoiichris.stackvm.lang.lexer.Context
 import kakkoiichris.stackvm.lang.lexer.TokenType
 import kakkoiichris.stackvm.lang.parser.DataType.Primitive.*
-import kakkoiichris.stackvm.lang.parser.Node.Binary.Operator
 
 typealias Nodes = List<Node>
 
@@ -184,7 +183,6 @@ interface Node {
     class Function(
         override val context: Context,
         val name: Name,
-        val id: Int,
         val params: List<Variable>,
         val dataType: DataType,
         val isNative: Boolean,
@@ -193,6 +191,8 @@ interface Node {
         var offset = -1
 
         val signature get() = Signature(name, params.map { it.dataType })
+
+        val id = signature.hashCode()
 
         override fun getDataType(source: Source) = dataType
 
@@ -347,17 +347,6 @@ interface Node {
             val typeRight = operandRight.getDataType(source)
 
             return when (operator) {
-                Operator.OR,
-                Operator.AND           -> when (typeLeft) {
-                    BOOL -> when (typeRight) {
-                        BOOL -> BOOL
-
-                        else -> error("Right operand of type '$typeRight' invalid for '$operator' operator @ ${operandRight.context}!")
-                    }
-
-                    else -> error("Left operand of type '$typeLeft' invalid for '$operator' operator @ ${operandLeft.context}!")
-                }
-
                 Operator.EQUAL,
                 Operator.NOT_EQUAL     -> when (typeLeft) {
                     BOOL  -> when (typeRight) {
@@ -495,16 +484,6 @@ interface Node {
             visitor.visitBinary(this)
 
         enum class Operator(val symbol: TokenType.Symbol, vararg val instructions: Bytecode.Instruction) {
-            OR(
-                TokenType.Symbol.DOUBLE_PIPE,
-                Bytecode.Instruction.OR
-            ),
-
-            AND(
-                TokenType.Symbol.DOUBLE_AMPERSAND,
-                Bytecode.Instruction.AND
-            ),
-
             EQUAL(
                 TokenType.Symbol.DOUBLE_EQUAL,
                 Bytecode.Instruction.EQU
@@ -589,7 +568,7 @@ interface Node {
         val operandLeft: Node,
         val operandRight: Node
     ) : Node {
-        override fun <X> accept(visitor: Visitor<X>):X=
+        override fun <X> accept(visitor: Visitor<X>): X =
             visitor.visitLogical(this)
 
         enum class Operator(val symbol: TokenType.Symbol, val instruction: Bytecode.Instruction) {
@@ -685,10 +664,12 @@ interface Node {
     }
 
     data class Name(val context: Context, val name: TokenType.Name) {
-        override fun equals(other: Any?): Boolean {
-            if (other !is Name) return false
+        override fun equals(other: Any?) = when (other) {
+            is Name   -> other.name.value == name.value
 
-            return name.value == other.name.value
+            is String -> other == name.value
+
+            else      -> false
         }
 
         override fun hashCode(): Int {

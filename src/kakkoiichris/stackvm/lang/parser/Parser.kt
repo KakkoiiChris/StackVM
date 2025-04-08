@@ -508,8 +508,6 @@ class Parser(lexer: Lexer, private val optimize: Boolean) {
 
         val name = name()
 
-        val id = Memory.getFunctionID()
-
         Memory.push()
 
         val params = mutableListOf<Node.Variable>()
@@ -544,7 +542,7 @@ class Parser(lexer: Lexer, private val optimize: Boolean) {
 
             val here = Memory.pop()!!
 
-            if (!Memory.addFunction(type.type.value, id, signature, isNative)) {
+            if (!Memory.addFunction(type.type.value, signature, isNative)) {
                 svmlError("Redeclared function '$signature'", source, name.context)
             }
 
@@ -616,7 +614,7 @@ class Parser(lexer: Lexer, private val optimize: Boolean) {
             resolveBranchReturns(returnType, body)
         }
 
-        return Node.Function(context, name, id, params, type.type.value, isNative, body)
+        return Node.Function(context, name, params, type.type.value, isNative, body)
     }
 
     private fun resolveBranches(parentContext: Context, nodes: Nodes) {

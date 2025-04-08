@@ -87,10 +87,10 @@ object Memory {
 
     fun getFunctionID() = functionID++
 
-    fun addFunction(dataType: DataType, id: Int, signature: Signature, isNative: Boolean): Boolean {
-        if (peek().addFunction(dataType, id, signature, isNative)) return true
+    fun addFunction(dataType: DataType, signature: Signature, isNative: Boolean): Boolean {
+        if (peek().addFunction(dataType, signature, isNative)) return true
 
-        if (global.addFunction(dataType, id, signature, isNative)) return true
+        if (global.addFunction(dataType, signature, isNative)) return true
 
         return false
     }
@@ -129,12 +129,12 @@ object Memory {
         fun getVariable(name: TokenType.Name) =
             variables[name.value]
 
-        fun addFunction(dataType: DataType, id: Int, signature: Signature, isNative: Boolean): Boolean {
+        fun addFunction(dataType: DataType, signature: Signature, isNative: Boolean): Boolean {
             val rep = signature.toString()
 
             if (rep in functions) return false
 
-            functions[rep] = FunctionRecord(isNative, dataType, id)
+            functions[rep] = FunctionRecord(isNative, dataType, signature.hashCode())
 
             return true
         }
