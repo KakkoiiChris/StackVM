@@ -86,7 +86,9 @@ interface Node {
         fun visitSetIndex(node: SetIndex): X
     }
 
-    class Program(override val context: Context, val statements: Nodes, val mainReturn: Return) : Node {
+    class Program(override val context: Context, val statements: Nodes) : Node {
+        lateinit var mainReturn: Return
+
         var offset = -1
 
         override fun <X> accept(visitor: Visitor<X>): X =
@@ -95,10 +97,11 @@ interface Node {
 
     class DeclareSingle(
         override val context: Context,
-        val variable: Variable,
-        val id: Int,
         val node: Node?
     ) : Node {
+        lateinit var variable: Variable
+        var id: Int = -1
+
         var address = -1
 
         override fun <X> accept(visitor: Visitor<X>): X =
@@ -107,10 +110,12 @@ interface Node {
 
     class DeclareArray(
         override val context: Context,
-        val variable: Variable,
-        val id: Int,
+
         val node: Node?
     ) : Node {
+        lateinit var variable: Variable
+        var id: Int = -1
+
         var address = -1
 
         override fun <X> accept(visitor: Visitor<X>): X =
@@ -607,13 +612,11 @@ interface Node {
     class Invoke(
         override val context: Context,
         val name: Name,
-        val dataType: DataType,
-        val id: Int,
         val args: Nodes
     ) : Node {
         var offset = 0
 
-        override fun getDataType(source: Source) = dataType
+        override fun getDataType(source: Source) = null//dataType
 
         override fun <X> accept(visitor: Visitor<X>): X =
             visitor.visitInvoke(this)

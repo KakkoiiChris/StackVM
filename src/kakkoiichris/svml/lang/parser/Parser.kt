@@ -32,11 +32,7 @@ class Parser(lexer: Lexer, private val optimize: Boolean) {
     fun parse(): Node.Program {
         Linker
 
-        val program = program()
-
-        Memory.reset()
-
-        return program
+        return program()
     }
 
     private fun here() = token.context
@@ -128,32 +124,7 @@ class Parser(lexer: Lexer, private val optimize: Boolean) {
             step()
         }
 
-        if (statements.none { isMainFunction(it, source) }) {
-            svmlError("No main function", source, here())
-        }
-
-        return Node.Program(location, statements, implicitMainReturn())
-    }
-
-    private fun isMainFunction(stmt: Node, source: Source) =
-        stmt is Node.Function &&
-            stmt.name.name.value == "main" && (
-            DataType.isEquivalent(stmt.dataType, DataType.Primitive.INT, source) ||
-                DataType.isEquivalent(stmt.dataType, DataType.Primitive.VOID, source)
-            )
-
-    private fun implicitMainReturn(): Node.Return {
-        val location = here()
-
-        val name = Node.Name(location, TokenType.Name("main"))
-
-        val mainSignature = Signature(name, emptyList())
-
-        val (_, dataType, id) = Memory.getFunction(mainSignature)
-
-        val invokeMain = Node.Invoke(here(), name, dataType, id, emptyList())
-
-        return Node.Return(here(), invokeMain)
+        return Node.Program(location, statements)
     }
 
     private fun import() {
@@ -313,19 +284,13 @@ class Parser(lexer: Lexer, private val optimize: Boolean) {
             )
         }
 
-        val variable = createVariable(constant, mutable, name, type.type.value)
-
-        val (_, activation) = Memory.getVariable(variable)
-
-        val (_, _, _, address) = activation
-
         mustSkip(TokenType.Symbol.SEMICOLON)
 
         if (DataType.isArray(type.type.value, source)) {
-            return Node.DeclareArray(context, variable, address, node)
+            return Node.DeclareArray(context, node)
         }
 
-        return Node.DeclareSingle(context, variable, address, node)
+        return Node.DeclareSingle(context, node)
     }
 
     private fun `if`(): Node.If {
@@ -345,15 +310,8 @@ class Parser(lexer: Lexer, private val optimize: Boolean) {
 
             mustSkip(TokenType.Symbol.LEFT_BRACE)
 
-            try {
-                Memory.push()
-
-                while (!match(TokenType.Symbol.RIGHT_BRACE)) {
-                    body += statement()
-                }
-            }
-            finally {
-                Memory.pop()
+            while (!match(TokenType.Symbol.RIGHT_BRACE)) {
+                body += statement()
             }
 
             mustSkip(TokenType.Symbol.RIGHT_BRACE)
@@ -379,13 +337,9 @@ class Parser(lexer: Lexer, private val optimize: Boolean) {
 
         mustSkip(TokenType.Symbol.LEFT_BRACE)
 
-        Memory.push()
-
         while (!match(TokenType.Symbol.RIGHT_BRACE)) {
             body += statement()
         }
-
-        Memory.pop()
 
         mustSkip(TokenType.Symbol.RIGHT_BRACE)
 
@@ -403,13 +357,9 @@ class Parser(lexer: Lexer, private val optimize: Boolean) {
 
         mustSkip(TokenType.Symbol.LEFT_BRACE)
 
-        Memory.push()
-
         while (!match(TokenType.Symbol.RIGHT_BRACE)) {
             body += statement()
         }
-
-        Memory.pop()
 
         mustSkip(TokenType.Symbol.RIGHT_BRACE)
         mustSkip(TokenType.Keyword.WHILE)
@@ -427,8 +377,6 @@ class Parser(lexer: Lexer, private val optimize: Boolean) {
 
         mustSkip(TokenType.Keyword.FOR)
 
-        Memory.push()
-
         var init: Node.DeclareSingle? = null
 
         if (!skip(TokenType.Symbol.SEMICOLON)) {
@@ -440,17 +388,7 @@ class Parser(lexer: Lexer, private val optimize: Boolean) {
 
             val node = expr()
 
-            if (type == null) {
-                type = Type(Context.none(), TokenType.Type(node.getDataType(source)!!))
-            }
-
-            val variable = createVariable(false, false, name, type.type.value)
-
-            val (_, activation) = Memory.getVariable(variable)
-
-            val (_, _, _, id) = activation
-
-            init = Node.DeclareSingle(name.context, variable, id, node)
+            init = Node.DeclareSingle(name.context,  node)
 
             mustSkip(TokenType.Symbol.SEMICOLON)
         }
@@ -478,8 +416,6 @@ class Parser(lexer: Lexer, private val optimize: Boolean) {
         while (!match(TokenType.Symbol.RIGHT_BRACE)) {
             body += statement()
         }
-
-        Memory.pop()
 
         mustSkip(TokenType.Symbol.RIGHT_BRACE)
 
@@ -518,8 +454,6 @@ class Parser(lexer: Lexer, private val optimize: Boolean) {
 
         val name = name()
 
-        Memory.push()
-
         val params = mutableListOf<Node.Variable>()
 
         if (skip(TokenType.Symbol.LEFT_PAREN) && !skip(TokenType.Symbol.RIGHT_PAREN)) {
@@ -529,8 +463,6 @@ class Parser(lexer: Lexer, private val optimize: Boolean) {
                 mustSkip(TokenType.Symbol.COLON)
 
                 val paramType = type()
-
-                params += createVariable(true, false, paramName, paramType.type.value)
             }
             while (skip(TokenType.Symbol.COMMA))
 
@@ -543,22 +475,6 @@ class Parser(lexer: Lexer, private val optimize: Boolean) {
 
         val body = mutableListOf<Node>()
 
-        fun registerFunction(type: Type, isNative: Boolean) {
-            val signature = Signature(name, params.map { it.getDataType(source) })
-
-            if (isNative && !Linker.hasFunction(signature)) {
-                svmlError("No system function for '$signature'", source, name.context)
-            }
-
-            val here = Memory.pop()!!
-
-            if (!Memory.addFunction(type.type.value, signature, isNative)) {
-                svmlError("Redeclared function '$signature'", source, name.context)
-            }
-
-            Memory.push(here)
-        }
-
         var isNative = false
 
         when {
@@ -568,16 +484,12 @@ class Parser(lexer: Lexer, private val optimize: Boolean) {
                 if (type == null) {
                     type = Type(Context.none(), TokenType.Type(DataType.Primitive.VOID))
                 }
-
-                registerFunction(type, true)
             }
 
             skip(TokenType.Symbol.EQUAL)     -> {
                 val expr = expr()
 
                 type = Type(expr.context, TokenType.Type(expr.getDataType(source)!!))
-
-                registerFunction(type, false)
 
                 body += Node.Return(here(), expr)
 
@@ -591,15 +503,11 @@ class Parser(lexer: Lexer, private val optimize: Boolean) {
                     type = Type(Context.none(), TokenType.Type(DataType.Primitive.VOID))
                 }
 
-                registerFunction(type, false)
-
                 while (!skip(TokenType.Symbol.RIGHT_BRACE)) {
                     body += statement()
                 }
             }
         }
-
-        Memory.pop()
 
         if (!isNative) {
             if (type.type.value == DataType.Primitive.VOID && body.last() !is Node.Return) {
@@ -764,81 +672,19 @@ class Parser(lexer: Lexer, private val optimize: Boolean) {
     }
 
     private fun assign(context: Context, expr: Node.Variable): Node.Assign {
-        val source = source()
-
-        val (_, variable) = Memory.getVariable(expr)
-
-        val (constant, _, dataType, _) = variable
-
-        if (constant) {
-            svmlError("Variable '${expr.name.value}' cannot be reassigned", source, expr.context)
-        }
-
         val node = or()
-
-        if (!DataType.isEquivalent(dataType, node.getDataType(source), source)) {
-            svmlError(
-                "Cannot assign a value of type '${node.getDataType(source)}' to a variable of type '$dataType'",
-                source,
-                context
-            )
-        }
 
         return Node.Assign(context, expr, node)
     }
 
     private fun assignIndex(context: Context, expr: Node.GetIndex): Node.SetIndex {
-        val source = source()
-
-        val (_, variable) = Memory.getVariable(expr.variable)
-
-        var (_, mutable, dataType, _) = variable
-
-        if (!mutable) {
-            svmlError(
-                "Variable '${expr.variable.name.value}' indices cannot be reassigned",
-                source,
-                expr.variable.context
-            )
-        }
-
-        if (!DataType.isArray(dataType, source)) {
-            svmlError("Cannot index a value of type '$dataType'", source, expr.variable.context)
-        }
-
-        dataType = DataType.asArray(dataType, source())
-
         val node = or()
-
-        var indexType = dataType
-
-        repeat(expr.indices.size) {
-            val subArrayType = (indexType as DataType.Array).subType
-
-            indexType = subArrayType
-        }
-
-        if (indexType != node.getDataType(source())) {
-            svmlError(
-                "Cannot assign a value of type '${node.getDataType(source)}' to array of type '${dataType.subType}'",
-                source,
-                context
-            )
-        }
 
         return Node.SetIndex(context, expr.variable, expr.indices, node)
     }
 
     private fun desugarAssign(context: Context, expr: Node.Variable, symbol: TokenType.Symbol): Node.Assign {
         val source = source()
-
-        val (_, variable) = Memory.getVariable(expr)
-
-        val (constant, _, dataType, _) = variable
-
-        if (constant) {
-            svmlError("Variable '${expr.name.value}' cannot be reassigned", source, expr.context)
-        }
 
         val node = or()
 
@@ -852,31 +698,11 @@ class Parser(lexer: Lexer, private val optimize: Boolean) {
 
         val intermediate = Node.Binary(context, operator, expr, node)
 
-        if (dataType != intermediate.getDataType(source)) {
-            svmlError(
-                "Cannot assign a value of type '${intermediate.getDataType(source)}' to a variable of type '$dataType'",
-                source,
-                context
-            )
-        }
-
         return Node.Assign(context, expr, intermediate)
     }
 
     private fun desugarAssignIndex(context: Context, expr: Node.GetIndex, symbol: TokenType.Symbol): Node.SetIndex {
         val source = source()
-
-        val (_, variable) = Memory.getVariable(expr.variable)
-
-        val (_, mutable, dataType, _) = variable
-
-        if (!mutable) {
-            svmlError("Variable '${expr.variable.name.value}' indices cannot be reassigned", source, expr.variable.context)
-        }
-
-        if (dataType !is DataType.Array) {
-            svmlError("Cannot assign an index for a value of type '$dataType'", source, expr.variable.context)
-        }
 
         val node = or()
 
@@ -889,16 +715,6 @@ class Parser(lexer: Lexer, private val optimize: Boolean) {
         }
 
         val intermediate = Node.Binary(context, operator, expr, node)
-
-        if (dataType.subType != intermediate.getDataType(source)) {
-            svmlError(
-                "Cannot assign a value of type '${
-                    intermediate.getDataType(
-                        source
-                    )
-                }' to array of type '${dataType.subType}'", source, context
-            )
-        }
 
         return Node.SetIndex(context, expr.variable, expr.indices, intermediate)
     }
@@ -1046,7 +862,7 @@ class Parser(lexer: Lexer, private val optimize: Boolean) {
     }
 
     private fun size(context: Context): Node {
-        val variable = name().toVariable()
+        val variable = name()
 
         if (skip(TokenType.Symbol.LEFT_SQUARE)) {
             val indices = mutableListOf<Node>()
@@ -1071,9 +887,9 @@ class Parser(lexer: Lexer, private val optimize: Boolean) {
             return when {
                 match(TokenType.Symbol.LEFT_PAREN)  -> invoke(name)
 
-                match(TokenType.Symbol.LEFT_SQUARE) -> getIndex(name.toVariable())
+                match(TokenType.Symbol.LEFT_SQUARE) -> getIndex(name)
 
-                else                                -> name.toVariable()
+                else                                -> name
             }
         }
 
@@ -1097,31 +913,12 @@ class Parser(lexer: Lexer, private val optimize: Boolean) {
             mustSkip(TokenType.Symbol.RIGHT_PAREN)
         }
 
-        val signature = Signature(name, args.map { it.getDataType(source)!! })
-
-        val (isNative, dataType, id) = Memory.getFunction(signature)
-
-        return if (isNative) {
-            val systemID = Linker[signature]
-
-            Node.SystemCall(context, name, dataType, systemID, args)
-        }
-        else {
-            Node.Invoke(context, name, dataType, id, args)
-        }
+        return Node.Invoke(context, name, args)
     }
 
     private fun getIndex(target: Node.Variable): Node.GetIndex {
         val context = here()
         val source = source()
-
-        val type = target.dataType
-
-        val actualType = if (type is DataType.Alias) DataType.getAlias(type.name, source) else type
-
-        if (actualType !is DataType.Array) {
-            svmlError("Value of type '$type' cannot be indexed", source, context)
-        }
 
         val indices = mutableListOf<Node>()
 
@@ -1132,13 +929,6 @@ class Parser(lexer: Lexer, private val optimize: Boolean) {
         }
 
         val node = Node.GetIndex(context, target, indices)
-
-        node.getDataType(source)
-            ?: svmlError(
-                "Indexed value of dimension '${actualType.dimension}' cannot be indexed with '${indices.size}' indices",
-                source,
-                context
-            )
 
         return node
     }
@@ -1183,31 +973,6 @@ class Parser(lexer: Lexer, private val optimize: Boolean) {
 
     private fun label() =
         if (skip(TokenType.Symbol.AT)) name() else null
-
-    private fun createVariable(
-        constant: Boolean,
-        mutable: Boolean,
-        name: Node.Name,
-        dataType: DataType
-    ): Node.Variable {
-        val context = here()
-
-        Memory.addVariable(constant, mutable, name.name, dataType, context)
-
-        val (mode, variable) = Memory.getVariable(name.name, context)
-
-        val (_, _, type, id) = variable
-
-        return Node.Variable(context, name.name, id, mode, type)
-    }
-
-    private fun Node.Name.toVariable(): Node.Variable {
-        val (mode, variable) = Memory.getVariable(name, context)
-
-        val (_, _, type, address) = variable
-
-        return Node.Variable(context, name, address, mode, type)
-    }
 
     private fun nested(): Node {
         mustSkip(TokenType.Symbol.LEFT_PAREN)
