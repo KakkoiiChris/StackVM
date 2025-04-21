@@ -12,7 +12,6 @@ package kakkoiichris.svml.lang.parser
 
 import kakkoiichris.svml.lang.Source
 import kakkoiichris.svml.lang.lexer.Context
-import kakkoiichris.svml.lang.lexer.TokenType
 import kakkoiichris.svml.util.svmlError
 
 sealed interface DataType {
@@ -41,27 +40,25 @@ sealed interface DataType {
 
         companion object {
             fun of(name: String): Alias {
-                val nameToken = TokenType.Name(name)
-
-                val nameNode = Node.Name(Context.none(), nameToken)
+                val nameNode = Node.Name(Context.none(), name)
 
                 return Alias(nameNode)
             }
         }
     }
 
-    data class User(val name: Node.Name) : DataType{
+    data class User(val name: Node.Name) : DataType {
         override fun getOffset(source: Source) = 0//(size * subType.getOffset(source)) + 1
 
-        override fun isHeapAllocated (source: Source) = false//size == -1 || subType.isHeapAllocated(source)
+        override fun isHeapAllocated(source: Source) = false//size == -1 || subType.isHeapAllocated(source)
 
-        override fun getString(source: Source) = name.name.value
+        override fun getString(source: Source) = name.value
     }
 
     data class Array(val subType: DataType, val size: Int) : DataType {
         override fun getOffset(source: Source) = (size * subType.getOffset(source)) + 1
 
-        override fun isHeapAllocated (source: Source) = size == -1 || subType.isHeapAllocated(source)
+        override fun isHeapAllocated(source: Source) = size == -1 || subType.isHeapAllocated(source)
 
         override fun getString(source: Source) = "${subType.getString(source)}[]"
 
@@ -93,17 +90,17 @@ sealed interface DataType {
         val string = Array(Primitive.CHAR, -1)
 
         fun hasAlias(name: Node.Name) =
-            name.name.value in aliases
+            name.value in aliases
 
         fun getAlias(name: Node.Name, source: Source) =
-            aliases[name.name.value] ?: svmlError("No type alias called '${name.name.value}'", source, name.context)
+            aliases[name.value] ?: svmlError("No type alias called '${name.value}'", source, name.context)
 
         fun addAlias(name: Node.Name, type: Type, source: Source) {
-            if (name.name.value in aliases) {
-                svmlError("Redefined type alias '${name.name.value}' @ ${name.context}!", source, name.context)
+            if (name.value in aliases) {
+                svmlError("Redefined type alias '${name.value}' @ ${name.context}!", source, name.context)
             }
 
-            aliases[name.name.value] = type.type.value
+            aliases[name.value] = type.value
         }
 
         fun isEquivalent(a: DataType?, b: DataType?, source: Source): Boolean = when (a) {
@@ -118,13 +115,13 @@ sealed interface DataType {
             }
 
             is Alias     -> when (b) {
-                is Alias -> a.name.name.value == b.name.name.value
+                is Alias -> a.name.value == b.name.value
 
                 else     -> isEquivalent(getAlias(a.name, source), b, source)
             }
 
             is User      -> when (b) {
-                is User -> a.name.name.value == b.name.name.value
+                is User -> a.name.value == b.name.value
 
                 else    -> isEquivalent(getAlias(a.name, source), b, source)
             }
@@ -155,4 +152,4 @@ sealed interface DataType {
     }
 }
 
-data class Type(val context: Context, val type: TokenType.Type)
+data class Type(val context: Context, val value: DataType)

@@ -10,24 +10,18 @@
  */
 package kakkoiichris.svml.lang.parser
 
-import kakkoiichris.svml.lang.Source
 import kakkoiichris.svml.lang.compiler.Bytecode
 import kakkoiichris.svml.lang.lexer.Context
 import kakkoiichris.svml.lang.lexer.TokenType
-import kakkoiichris.svml.lang.parser.DataType.Primitive.*
 
-typealias Nodes = List<Node>
+typealias Nodes = MutableList<Node>
 
-interface Node {
-    val context: Context
+sealed class Node(val context: Context) {
+    var dataType: DataType = DataType.Primitive.VOID
 
-    val subNodes: List<Node> get() = emptyList()
+    fun getArrayType() = DataType.asArray(dataType, context.source)
 
-    val isOrHasReturns get() = false
-
-    fun getDataType(source: Source): DataType? = VOID
-
-    fun <X> accept(visitor: Visitor<X>): X
+    abstract fun <X> accept(visitor: Visitor<X>): X
 
     interface Visitor<X> {
         fun visit(node: Node) =
@@ -35,9 +29,7 @@ interface Node {
 
         fun visitProgram(node: Program): X
 
-        fun visitDeclareSingle(node: DeclareSingle): X
-
-        fun visitDeclareArray(node: DeclareArray): X
+        fun visitDeclare(node: Declare): X
 
         fun visitIf(node: If): X
 
@@ -61,7 +53,7 @@ interface Node {
 
         fun visitString(node: String): X
 
-        fun visitVariable(node: Variable): X
+        fun visitName(node: Name): X
 
         fun visitArray(node: Array): X
 
@@ -79,54 +71,42 @@ interface Node {
 
         fun visitInvoke(node: Invoke): X
 
-        fun visitSystemCall(node: SystemCall): X
-
         fun visitGetIndex(node: GetIndex): X
 
         fun visitSetIndex(node: SetIndex): X
     }
 
-    class Program(override val context: Context, val statements: Nodes) : Node {
+    class Program(
+        context: Context,
+        val declarations: List<Declare>,
+        val functions: List<Function>
+    ) : Node(context) {
         lateinit var mainReturn: Return
 
         var offset = -1
+
+        val subNodes = declarations + functions
 
         override fun <X> accept(visitor: Visitor<X>): X =
             visitor.visitProgram(this)
     }
 
-    class DeclareSingle(
-        override val context: Context,
-        val node: Node?
-    ) : Node {
-        lateinit var variable: Variable
-        var id: Int = -1
-
+    class Declare(
+        context: Context,
+        val isConstant: Boolean,
+        val isMutable: Boolean,
+        val name: Name,
+        var type: Type?,
+        val assigned: Node?
+    ) : Node(context) {
+        var id = -1
         var address = -1
 
         override fun <X> accept(visitor: Visitor<X>): X =
-            visitor.visitDeclareSingle(this)
+            visitor.visitDeclare(this)
     }
 
-    class DeclareArray(
-        override val context: Context,
-
-        val node: Node?
-    ) : Node {
-        lateinit var variable: Variable
-        var id: Int = -1
-
-        var address = -1
-
-        override fun <X> accept(visitor: Visitor<X>): X =
-            visitor.visitDeclareArray(this)
-    }
-
-    class If(override val context: Context, val branches: List<Branch>) : Node {
-        override val subNodes get() = branches.flatMap { it.body }
-
-        override val isOrHasReturns get() = branches.any { branch -> branch.body.any { it.isOrHasReturns } }
-
+    class If(context: Context, val branches: List<Branch>) : Node(context) {
         override fun <X> accept(visitor: Visitor<X>): X =
             visitor.visitIf(this)
 
@@ -151,155 +131,94 @@ interface Node {
         data class Branch(val context: Context, val condition: Node?, val body: Nodes)
     }
 
-    class While(override val context: Context, val condition: Node, val label: Name?, val body: Nodes) : Node {
-        override val subNodes get() = body
-
-        override val isOrHasReturns get() = body.any { it.isOrHasReturns }
-
+    class While(context: Context, val condition: Node, val label: Name?, val body: Nodes) : Node(context) {
         override fun <X> accept(visitor: Visitor<X>): X =
             visitor.visitWhile(this)
     }
 
-    class Do(override val context: Context, val label: Name?, val body: Nodes, val condition: Node) : Node {
-        override val subNodes get() = body
-
-        override val isOrHasReturns get() = body.any { it.isOrHasReturns }
-
+    class Do(context: Context, val label: Name?, val body: Nodes, val condition: Node) : Node(context) {
         override fun <X> accept(visitor: Visitor<X>): X =
             visitor.visitDo(this)
     }
 
     class For(
-        override val context: Context,
-        val init: DeclareSingle?,
+        context: Context,
+        val init: Declare?,
         val condition: Node?,
         val increment: Node?,
         val label: Name?,
         val body: Nodes
-    ) : Node {
-        override val subNodes get() = body
-
-        override val isOrHasReturns get() = body.any { it.isOrHasReturns }
-
+    ) : Node(context) {
         override fun <X> accept(visitor: Visitor<X>): X =
             visitor.visitFor(this)
     }
 
-    class Break(override val context: Context, val label: Name?) : Node {
+    class Break(context: Context, val label: Name?) : Node(context) {
         override fun <X> accept(visitor: Visitor<X>): X =
             visitor.visitBreak(this)
     }
 
-    class Continue(override val context: Context, val label: Name?) : Node {
+    class Continue(context: Context, val label: Name?) : Node(context) {
         override fun <X> accept(visitor: Visitor<X>): X =
             visitor.visitContinue(this)
     }
 
     class Function(
-        override val context: Context,
+        context: Context,
         val name: Name,
-        val params: List<Variable>,
-        val dataType: DataType,
+        val params: List<Declare>,
+        val type: Type,
         val isNative: Boolean,
         val body: Nodes
-    ) : Node {
-        var offset = -1
-
-        val signature get() = Signature(name, params.map { it.dataType })
+    ) : Node(context) {
+        val signature = Signature(name, params.map { it.type!!.value })
 
         val id = signature.hashCode()
 
-        override fun getDataType(source: Source) = dataType
+        var offset = -1
 
         override fun <X> accept(visitor: Visitor<X>): X =
             visitor.visitFunction(this)
     }
 
-    class Return(override val context: Context, val node: Node?) : Node {
-        override fun getDataType(source: Source) = node?.getDataType(source) ?: VOID
-
-        override val isOrHasReturns get() = true
-
+    class Return(context: Context, val value: Node?) : Node(context) {
         override fun <X> accept(visitor: Visitor<X>): X =
             visitor.visitReturn(this)
     }
 
-    class Expression(override val context: Context, val node: Node) : Node {
+    class Expression(context: Context, val node: Node) : Node(context) {
         override fun <X> accept(visitor: Visitor<X>): X =
             visitor.visitExpression(this)
     }
 
-    class Value(override val context: Context, val value: TokenType.Value) : Node {
-        override fun getDataType(source: Source) = value.dataType
-
+    class Value(context: Context, val value: TokenType.Value) : Node(context) {
         override fun <X> accept(visitor: Visitor<X>): X =
             visitor.visitValue(this)
     }
 
-    class String(override val context: Context, val value: kotlin.String) : Node {
-        override fun getDataType(source: Source) = DataType.Alias(Name(context, TokenType.Name("string")))
-
+    class String(context: Context, val value: kotlin.String) : Node(context) {
         override fun <X> accept(visitor: Visitor<X>): X =
             visitor.visitString(this)
     }
 
-    class Variable(
-        override val context: Context,
-        val name: TokenType.Name,
-        val id: Int,
-        val isGlobal: Boolean,
-        val dataType: DataType
-    ) : Node {
+    class Name(
+        context: Context,
+        val value: kotlin.String,
+    ) : Node(context) {
+        var id = -1
         var address = -1
-
-        override fun getDataType(source: Source) = dataType
+        var isGlobal = false
 
         override fun <X> accept(visitor: Visitor<X>): X =
-            visitor.visitVariable(this)
+            visitor.visitName(this)
     }
 
-    class Array(override val context: Context, val elements: Nodes) : Node {
-        override fun getDataType(source: Source): DataType {
-            val firstType =
-                elements.firstOrNull()?.getDataType(source)
-                    ?: error("Type of empty array cannot be inferred @ $context!")
-
-            for (element in elements.drop(1)) {
-                val elementType = element.getDataType(source)
-
-                if (elementType != firstType) {
-                    error("Array of type '$firstType' cannot store value of type '$elementType' @ ${element.context}!")
-                }
-            }
-
-            return DataType.Array(firstType, elements.size)
-        }
-
+    class Array(context: Context, val elements: Nodes) : Node(context) {
         override fun <X> accept(visitor: Visitor<X>): X =
             visitor.visitArray(this)
     }
 
-    class Unary(override val context: Context, val operator: Operator, val operand: Node) : Node {
-        override fun getDataType(source: Source): DataType {
-            val type = operand.getDataType(source)
-
-            return when (operator) {
-                Operator.NEGATE -> when (type) {
-                    FLOAT -> FLOAT
-
-                    INT   -> INT
-
-                    else  -> error("Operand of type '$type' invalid for '$operator' operator @ ${operand.context}!")
-                }
-
-                Operator.INVERT -> when (type) {
-                    BOOL -> BOOL
-
-                    else -> error("Operand of type '$type' invalid for '$operator' operator @ ${operand.context}!")
-                }
-            }
-        }
-
+    class Unary(context: Context, val operator: Operator, val operand: Node) : Node(context) {
         override fun <X> accept(visitor: Visitor<X>): X =
             visitor.visitUnary(this)
 
@@ -321,180 +240,22 @@ interface Node {
         }
     }
 
-    class Size(override val context: Context, val variable: Variable) : Node {
-        override fun getDataType(source: Source) = DataType.Primitive.INT
-
-        fun getArrayType(source: Source): DataType.Array {
-            if (variable.dataType is DataType.Alias) {
-                return DataType.getAlias(variable.dataType.name, source) as DataType.Array
-            }
-
-            return variable.dataType as DataType.Array
-        }
-
+    class Size(context: Context, val name: Name) : Node(context) {
         override fun <X> accept(visitor: Visitor<X>): X =
             visitor.visitSize(this)
     }
 
-    class IndexSize(override val context: Context, val variable: Variable, val indices: List<Node>) : Node {
-        override fun getDataType(source: Source) = DataType.Primitive.INT
-
-        fun getArrayType(source: Source): DataType.Array {
-            if (variable.dataType is DataType.Alias) {
-                return DataType.getAlias(variable.dataType.name, source) as DataType.Array
-            }
-
-            return variable.dataType as DataType.Array
-        }
-
+    class IndexSize(context: Context, val name: Name, val indices: List<Node>) : Node(context) {
         override fun <X> accept(visitor: Visitor<X>): X =
             visitor.visitIndexSize(this)
     }
 
     class Binary(
-        override val context: Context,
+        context: Context,
         val operator: Operator,
         val operandLeft: Node,
         val operandRight: Node
-    ) : Node {
-        override fun getDataType(source: Source): DataType {
-            val typeLeft = operandLeft.getDataType(source)
-            val typeRight = operandRight.getDataType(source)
-
-            return when (operator) {
-                Operator.EQUAL,
-                Operator.NOT_EQUAL     -> when (typeLeft) {
-                    BOOL  -> when (typeRight) {
-                        BOOL -> BOOL
-
-                        else -> error("Right operand of type '$typeRight' invalid for '$operator' operator @ ${operandRight.context}!")
-                    }
-
-                    FLOAT -> when (typeRight) {
-                        FLOAT, INT -> BOOL
-
-                        else       -> error("Right operand of type '$typeRight' invalid for '$operator' operator @ ${operandRight.context}!")
-                    }
-
-                    INT   -> when (typeRight) {
-                        FLOAT, INT -> BOOL
-
-                        else       -> error("Right operand of type '$typeRight' invalid for '$operator' operator @ ${operandRight.context}!")
-                    }
-
-                    CHAR  -> when (typeRight) {
-                        CHAR -> BOOL
-
-                        else -> error("Right operand of type '$typeRight' invalid for '$operator' operator @ ${operandRight.context}!")
-                    }
-
-                    else  -> error("Left operand of type '$typeLeft' invalid for '$operator' operator @ ${operandLeft.context}!")
-                }
-
-                Operator.LESS,
-                Operator.LESS_EQUAL,
-                Operator.GREATER,
-                Operator.GREATER_EQUAL -> when (typeLeft) {
-                    FLOAT -> when (typeRight) {
-                        FLOAT, INT -> BOOL
-
-                        else       -> error("Right operand of type '$typeRight' invalid for '$operator' operator @ ${operandRight.context}!")
-                    }
-
-                    INT   -> when (typeRight) {
-                        FLOAT, INT -> BOOL
-
-                        else       -> error("Right operand of type '$typeRight' invalid for '$operator' operator @ ${operandRight.context}!")
-                    }
-
-                    CHAR  -> when (typeRight) {
-                        CHAR -> BOOL
-
-                        else -> error("Right operand of type '$typeRight' invalid for '$operator' operator @ ${operandRight.context}!")
-                    }
-
-                    else  -> error("Left operand of type '$typeLeft' invalid for '$operator' operator @ ${operandLeft.context}!")
-                }
-
-                Operator.ADD,
-                Operator.SUBTRACT      -> when (typeLeft) {
-                    INT   -> when (typeRight) {
-                        INT   -> INT
-
-                        FLOAT -> FLOAT
-
-                        else  -> error("Right operand of type '$typeRight' invalid for '$operator' operator @ ${operandRight.context}!")
-                    }
-
-                    FLOAT -> when (typeRight) {
-                        INT   -> FLOAT
-
-                        FLOAT -> FLOAT
-
-                        else  -> error("Right operand of type '$typeRight' invalid for '$operator' operator @ ${operandRight.context}!")
-                    }
-
-                    CHAR  -> when (typeRight) {
-                        INT  -> CHAR
-
-                        else -> error("Right operand of type '$typeRight' invalid for '$operator' operator @ ${operandRight.context}!")
-                    }
-
-                    else  -> error("Left operand of type '$typeLeft' invalid for '$operator' operator @ ${operandLeft.context}!")
-                }
-
-                Operator.MULTIPLY      -> when (typeLeft) {
-                    INT   -> when (typeRight) {
-                        INT   -> INT
-
-                        FLOAT -> FLOAT
-
-                        else  -> error("Right operand of type '$typeRight' invalid for '$operator' operator @ ${operandRight.context}!")
-                    }
-
-                    FLOAT -> when (typeRight) {
-                        INT   -> FLOAT
-
-                        FLOAT -> FLOAT
-
-                        else  -> error("Right operand of type '$typeRight' invalid for '$operator' operator @ ${operandRight.context}!")
-                    }
-
-                    else  -> error("Left operand of type '$typeLeft' invalid for '$operator' operator @ ${operandLeft.context}!")
-                }
-
-                Operator.DIVIDE,
-                Operator.MODULUS       -> when (typeLeft) {
-                    INT   -> when (typeRight) {
-                        FLOAT -> FLOAT
-
-                        else  -> error("Right operand of type '$typeRight' invalid for '$operator' operator @ ${operandRight.context}!")
-                    }
-
-                    FLOAT -> when (typeRight) {
-                        INT   -> FLOAT
-
-                        FLOAT -> FLOAT
-
-                        else  -> error("Right operand of type '$typeRight' invalid for '$operator' operator @ ${operandRight.context}!")
-                    }
-
-                    else  -> error("Left operand of type '$typeLeft' invalid for '$operator' operator @ ${operandLeft.context}!")
-                }
-
-                Operator.INT_DIVIDE,
-                Operator.INT_MODULUS   -> when (typeLeft) {
-                    INT  -> when (typeRight) {
-                        INT  -> INT
-
-                        else -> error("Right operand of type '$typeRight' invalid for '$operator' operator @ ${operandRight.context}!")
-                    }
-
-                    else -> error("Left operand of type '$typeLeft' invalid for '$operator' operator @ ${operandLeft.context}!")
-                }
-            }
-        }
-
+    ) : Node(context) {
         override fun <X> accept(visitor: Visitor<X>): X =
             visitor.visitBinary(this)
 
@@ -578,11 +339,11 @@ interface Node {
     }
 
     class Logical(
-        override val context: Context,
+        context: Context,
         val operator: Operator,
         val operandLeft: Node,
         val operandRight: Node
-    ) : Node {
+    ) : Node(context) {
         override fun <X> accept(visitor: Visitor<X>): X =
             visitor.visitLogical(this)
 
@@ -604,91 +365,36 @@ interface Node {
         }
     }
 
-    class Assign(override val context: Context, val variable: Variable, val node: Node) : Node {
+    class Assign(context: Context, val name: Name, val assigned: Node) : Node(context) {
         override fun <X> accept(visitor: Visitor<X>): X =
             visitor.visitAssign(this)
     }
 
     class Invoke(
-        override val context: Context,
+        context: Context,
         val name: Name,
         val args: Nodes
-    ) : Node {
+    ) : Node(context) {
+        var isNative = false
+        var id = -1
         var offset = 0
-
-        override fun getDataType(source: Source) = null//dataType
 
         override fun <X> accept(visitor: Visitor<X>): X =
             visitor.visitInvoke(this)
     }
 
-    class SystemCall(
-        override val context: Context,
-        val name: Name,
-        val dataType: DataType,
-        val id: Int,
-        val args: Nodes
-    ) : Node {
-        override fun getDataType(source: Source) = dataType
-
-        override fun <X> accept(visitor: Visitor<X>): X =
-            visitor.visitSystemCall(this)
-    }
-
-    class GetIndex(override val context: Context, val variable: Variable, val indices: List<Node>) : Node {
-        override fun getDataType(source: Source): DataType? {
-            var type = variable.dataType
-
-            if (type is DataType.Alias) type = DataType.getAlias(type.name, source)
-
-            var i = 0
-
-            while (i < indices.size) {
-                if (type !is DataType.Array) break
-
-                type = type.subType
-
-                i++
-            }
-
-            if (i < indices.size) return null
-
-            return type
-        }
-
-        fun getArrayType(source: Source): DataType.Array {
-            if (variable.dataType is DataType.Alias) {
-                return DataType.getAlias(variable.dataType.name, source) as DataType.Array
-            }
-
-            return variable.dataType as DataType.Array
-        }
-
+    class GetIndex(context: Context, val name: Name, val indices: List<Node>) : Node(context) {
         override fun <X> accept(visitor: Visitor<X>): X =
             visitor.visitGetIndex(this)
     }
 
-    class SetIndex(override val context: Context, val variable: Variable, val indices: List<Node>, val value: Node) :
-        Node {
-        fun getArrayType(source: Source) = DataType.asArray(variable.dataType, source)
-
+    class SetIndex(
+        context: Context,
+        val name: Name,
+        val indices: List<Node>,
+        val value: Node
+    ) : Node(context) {
         override fun <X> accept(visitor: Visitor<X>): X =
             visitor.visitSetIndex(this)
-    }
-
-    data class Name(val context: Context, val name: TokenType.Name) {
-        override fun equals(other: Any?) = when (other) {
-            is Name   -> other.name.value == name.value
-
-            is String -> other == name.value
-
-            else      -> false
-        }
-
-        override fun hashCode(): Int {
-            var result = context.hashCode()
-            result = 31 * result + name.value.hashCode()
-            return result
-        }
     }
 }

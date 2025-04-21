@@ -16,6 +16,7 @@ import kakkoiichris.svml.cpu.ReleaseCPU
 import kakkoiichris.svml.lang.Allocator
 import kakkoiichris.svml.lang.Directory
 import kakkoiichris.svml.lang.Source
+import kakkoiichris.svml.lang.Semantics
 import kakkoiichris.svml.lang.compiler.BytecodeFormatter
 import kakkoiichris.svml.lang.compiler.Compiler
 import kakkoiichris.svml.lang.lexer.Lexer
@@ -108,9 +109,11 @@ private fun compile(srcFile: File): DoubleArray {
 
     Linker.link()
 
-    val parser = Parser(lexer, false)
+    val parser = Parser(lexer)
 
     val program = parser.parse()
+
+    Semantics.check(program)
 
     Allocator.allocate(program)
 
@@ -129,7 +132,7 @@ private fun repl(cpu: CPU) {
             val (bytecodes, compileTime) = measureTimedValue {
                 val lexer = Lexer(Source("<REPL>", src))
 
-                val parser = Parser(lexer, false)
+                val parser = Parser(lexer)
 
                 val program = parser.parse()
 

@@ -34,7 +34,7 @@ class BytecodeFormatter(private val file: File) {
 
         Linker.link()
 
-        val parser = Parser(lexer, false)
+        val parser = Parser(lexer)
 
         val program = parser.parse()
 

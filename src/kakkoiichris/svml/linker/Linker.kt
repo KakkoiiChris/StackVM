@@ -78,7 +78,7 @@ object Linker {
         functions[id]
 
     fun addFunction(name: String, format: String="", vararg params: DataType, method: Method) {
-        val node = Node.Name(Context.none(), TokenType.Name(name))
+        val node = Node.Name(Context.none(), name)
 
         val function = Function(format, method)
 

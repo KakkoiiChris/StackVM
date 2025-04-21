@@ -1,17 +1,10 @@
-/*   ______  ____   ____  ____    ____  _____
- * .' ____ \|_  _| |_  _||_   \  /   _||_   _|
- * | (___ \_| \ \   / /    |   \/   |    | |
- *  _.____`.   \ \ / /     | |\  /| |    | |   _
- * | \____) |   \ ' /     _| |_\/_| |_  _| |__/ |
- *  \______.'    \_/     |_____||_____||________|
- *
- *         Stack Virtual Machine Language
- *     Copyright (C) 2024 Christian Alexander
- */
-package kakkoiichris.svml.lang.parser
+package kakkoiichris.svml.lang
 
 import kakkoiichris.svml.lang.lexer.Context
 import kakkoiichris.svml.lang.lexer.TokenType
+import kakkoiichris.svml.lang.parser.DataType
+import kakkoiichris.svml.lang.parser.Node
+import kakkoiichris.svml.lang.parser.Signature
 import java.util.*
 
 object Memory {
@@ -26,7 +19,7 @@ object Memory {
         scopes.push(global)
     }
 
-    fun reset() {
+    fun clear() {
         scopes.clear()
 
         global.clear()
@@ -63,7 +56,7 @@ object Memory {
     fun addVariable(
         isConstant: Boolean,
         isMutable: Boolean,
-        name: TokenType.Name,
+        name: String,
         dataType: DataType,
         context: Context
     ) {
@@ -71,13 +64,13 @@ object Memory {
 
         if (scope.addVariable(isConstant, isMutable, name, dataType)) return
 
-        error("Redeclared variable '${name.value}' @ ${context}!")
+        error("Redeclared variable '$name' @ ${context}!")
     }
 
-    fun getVariable(variable: Node.Variable): Lookup =
-        getVariable(variable.name, variable.context)
+    fun getVariable(name: Node.Name): Lookup =
+        getVariable(name.value, name.context)
 
-    fun getVariable(name: TokenType.Name, context: Context): Lookup {
+    fun getVariable(name: String, context: Context): Lookup {
         var here: Scope? = peek()
 
         while (here != null && here != global) {
@@ -92,7 +85,7 @@ object Memory {
 
         if (variable != null) return Lookup(true, variable)
 
-        error("Undeclared variable '${name.value}' @ ${context}!")
+        error("Undeclared variable '$name' @ ${context}!")
     }
 
     fun getFunctionID() = functionID++
@@ -128,16 +121,16 @@ object Memory {
             functions.clear()
         }
 
-        fun addVariable(isConstant: Boolean, isMutable: Boolean, name: TokenType.Name, dataType: DataType): Boolean {
-            if (name.value in variables) return false
+        fun addVariable(isConstant: Boolean, isMutable: Boolean, name: String, dataType: DataType): Boolean {
+            if (name in variables) return false
 
-            variables[name.value] = VariableRecord(isConstant, isMutable, dataType, variableID++)
+            variables[name] = VariableRecord(isConstant, isMutable, dataType, variableID++)
 
             return true
         }
 
-        fun getVariable(name: TokenType.Name) =
-            variables[name.value]
+        fun getVariable(name: String) =
+            variables[name]
 
         fun addFunction(dataType: DataType, signature: Signature, isNative: Boolean): Boolean {
             val rep = signature.toString()

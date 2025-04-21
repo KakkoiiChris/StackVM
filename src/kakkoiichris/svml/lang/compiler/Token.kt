@@ -54,23 +54,23 @@ interface Token {
 
     class AwaitLabelStart(private val label: Node.Name, private val offset: Int = 0) : Token {
         override fun resolveLabelStartAndEnd(label: Node.Name, start: Double, end: Double) =
-            if (this.label.name.value == label.name.value)
+            if (this.label.value == label.value)
                 Bytecode.Value(start + offset).ok
             else
                 null
 
         override fun toString() =
-            "AwaitLabelStart<$offset, ${label.name.value}>"
+            "AwaitLabelStart<$offset, ${label.value}>"
     }
 
     class AwaitLabelEnd(private val label: Node.Name, private val offset: Int = 0) : Token {
         override fun resolveLabelStartAndEnd(label: Node.Name, start: Double, end: Double) =
-            if (this.label.name.value == label.name.value)
+            if (this.label.value == label.value)
                 Bytecode.Value(end + offset).ok
             else
                 null
 
         override fun toString() =
-            "AwaitLabelEnd<$offset, ${label.name.value}>"
+            "AwaitLabelEnd<$offset, ${label.value}>"
     }
 }

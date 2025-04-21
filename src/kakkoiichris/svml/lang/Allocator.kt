@@ -10,8 +10,10 @@
  */
 package kakkoiichris.svml.lang
 
+import kakkoiichris.svml.lang.parser.DataType
 import kakkoiichris.svml.lang.parser.Node
 import kakkoiichris.svml.lang.parser.Nodes
+import kakkoiichris.svml.util.svmlError
 import java.util.*
 
 object Allocator : Node.Visitor<Unit> {
@@ -26,7 +28,11 @@ object Allocator : Node.Visitor<Unit> {
     private fun allocateDecls(nodes: Nodes, startAddress: Int): Int {
         var addressCounter = startAddress
 
-        val singles = nodes.filterIsInstance<Node.DeclareSingle>()
+        val decls = nodes
+            .filterIsInstance<Node.Declare>()
+            .groupBy { DataType.isArray(it.dataType, it.context.source) }
+
+        val singles = decls[false] ?: emptyList()
 
         for (decl in singles) {
             val address = addressCounter++
@@ -34,63 +40,53 @@ object Allocator : Node.Visitor<Unit> {
             addresses[decl.id] = address
 
             decl.address = address
+            decl.name.address = address
         }
 
-        val arrays = nodes.filterIsInstance<Node.DeclareArray>()
+        val arrays = decls[true] ?: emptyList()
 
         for (decl in arrays) {
-            if (decl.variable.dataType.isHeapAllocated(decl.context.source)) continue
+            if (decl.name.dataType.isHeapAllocated(decl.context.source)) continue
 
             val address = addressCounter
 
-            addressCounter += decl.variable.dataType.getOffset(decl.variable.context.source)
+            addressCounter += decl.name.dataType.getOffset(decl.name.context.source)
 
             addresses[decl.id] = address
 
             decl.address = address
+            decl.name.address = address
         }
 
         return addressCounter
     }
 
-    private fun allocateSingle(node: Node.DeclareSingle, startAddress: Int): Int {
+    private fun allocate(node: Node.Declare, startAddress: Int): Int {
         node.address = startAddress
 
         addresses[node.id] = startAddress
 
-        return startAddress + 1
-    }
-
-    private fun allocateArray(node: Node.DeclareArray, startAddress: Int): Int {
-        node.address = startAddress
-
-        addresses[node.id] = startAddress
-
-        return startAddress + node.getDataType(node.context.source)!!.getOffset(node.context.source)
+        return startAddress + node.dataType.getOffset(node.context.source)
     }
 
     override fun visitProgram(node: Node.Program) {
-        val offset = allocateDecls(node.statements, 0)
+        val subNodes = (node.declarations + node.functions).toMutableList()
+
+        val offset = allocateDecls(subNodes, 0)
 
         node.offset = offset
 
-        for (statement in node.statements) {
+        for (statement in subNodes) {
             offsets.push(offset)
 
             visit(statement)
         }
     }
 
-    override fun visitDeclareSingle(node: Node.DeclareSingle) {
-        visit(node.variable)
+    override fun visitDeclare(node: Node.Declare) {
+        visit(node.name)
 
-        node.node?.let { visit(it) }
-    }
-
-    override fun visitDeclareArray(node: Node.DeclareArray) {
-        visit(node.variable)
-
-        node.node?.let { visit(it) }
+        node.assigned?.let { visit(it) }
     }
 
     override fun visitIf(node: Node.If) {
@@ -141,7 +137,7 @@ object Allocator : Node.Visitor<Unit> {
         var offset = offsets.pop()
 
         if (node.init != null) {
-            offset = allocateSingle(node.init, offset)
+            offset = allocate(node.init, offset)
         }
 
         node.init?.let { visit(it) }
@@ -188,7 +184,7 @@ object Allocator : Node.Visitor<Unit> {
     }
 
     override fun visitReturn(node: Node.Return) {
-        node.node?.let { visit(it) }
+        node.value?.let { visit(it) }
     }
 
     override fun visitExpression(node: Node.Expression) {
@@ -199,10 +195,11 @@ object Allocator : Node.Visitor<Unit> {
 
     override fun visitString(node: Node.String) = Unit
 
-    override fun visitVariable(node: Node.Variable) {
+    override fun visitName(node: Node.Name) {
         if (node.dataType.isHeapAllocated(node.context.source)) return
 
-        node.address = addresses[node.id]!!
+        node.address = addresses[node.id]
+            ?: svmlError("Name '${node.value}' has no id", node.context.source, node.context)
     }
 
     override fun visitArray(node: Node.Array) {
@@ -216,11 +213,11 @@ object Allocator : Node.Visitor<Unit> {
     }
 
     override fun visitSize(node: Node.Size) {
-        visit(node.variable)
+        visit(node.name)
     }
 
     override fun visitIndexSize(node: Node.IndexSize) {
-        visit(node.variable)
+        visit(node.name)
 
         for (index in node.indices) {
             visit(index)
@@ -240,9 +237,9 @@ object Allocator : Node.Visitor<Unit> {
     }
 
     override fun visitAssign(node: Node.Assign) {
-        visit(node.variable)
+        visit(node.name)
 
-        visit(node.node)
+        visit(node.assigned)
     }
 
     override fun visitInvoke(node: Node.Invoke) {
@@ -253,14 +250,8 @@ object Allocator : Node.Visitor<Unit> {
         }
     }
 
-    override fun visitSystemCall(node: Node.SystemCall) {
-        for (arg in node.args) {
-            visit(arg)
-        }
-    }
-
     override fun visitGetIndex(node: Node.GetIndex) {
-        visit(node.variable)
+        visit(node.name)
 
         for (index in node.indices) {
             visit(index)
@@ -268,7 +259,7 @@ object Allocator : Node.Visitor<Unit> {
     }
 
     override fun visitSetIndex(node: Node.SetIndex) {
-        visit(node.variable)
+        visit(node.name)
 
         for (index in node.indices) {
             visit(index)

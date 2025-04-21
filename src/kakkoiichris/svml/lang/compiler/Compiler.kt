@@ -168,7 +168,7 @@ class Compiler(
 
         push()
 
-        for (statement in node.statements) {
+        for (statement in node.subNodes) {
             tokens += visit(statement)
         }
 
@@ -185,50 +185,47 @@ class Compiler(
         return tokens
     }
 
-    override fun visitDeclareSingle(node: Node.DeclareSingle): List<Token> {
+    override fun visitDeclare(node: Node.Declare): List<Token> {
         val tokens = mutableListOf<Token>()
 
-        if (node.node != null) {
-            tokens += visit(node.node)
-        }
+        if (DataType.isArray(node.dataType, node.context.source)) {
+            if (node.assigned != null) {
+                tokens += visit(node.assigned)
+            }
+            else if (!node.name.dataType.isHeapAllocated(node.name.context.source)) {
+                val sizes = (node.name.dataType as DataType.Array).sizes
 
-        tokens += PUSH
-        tokens += node.address
-        tokens += STO
+                tokens += getDefaultArray(*sizes)
+            }
+            else {
+                tokens += getDefaultArray(1)
+            }
 
-        return tokens
-    }
+            if (node.name.dataType.isHeapAllocated(node.name.context.source)) {
+                tokens += ALLOC
+                tokens += node.id
+                tokens += PUSH
+                tokens += node.id
+                tokens += PUSH
+                tokens += 0
+                tokens += HASTO
 
-    override fun visitDeclareArray(node: Node.DeclareArray): List<Token> {
-        val tokens = mutableListOf<Token>()
-
-        if (node.node != null) {
-            tokens += visit(node.node)
-        }
-        else if (!node.variable.dataType.isHeapAllocated(node.variable.context.source)) {
-            val sizes = (node.variable.dataType as DataType.Array).sizes
-
-            tokens += getDefaultArray(*sizes)
-        }
-        else {
-            tokens += getDefaultArray(1)
-        }
-
-        if (node.variable.dataType.isHeapAllocated(node.variable.context.source)) {
-            tokens += ALLOC
-            tokens += node.id
-            tokens += PUSH
-            tokens += node.id
-            tokens += PUSH
-            tokens += 0
-            tokens += HASTO
-
-            addMemory(node.id)
+                addMemory(node.id)
+            }
+            else {
+                tokens += PUSH
+                tokens += node.address
+                tokens += ASTO
+            }
         }
         else {
+            if (node.assigned != null) {
+                tokens += visit(node.assigned)
+            }
+
             tokens += PUSH
             tokens += node.address
-            tokens += ASTO
+            tokens += STO
         }
 
         return tokens
@@ -521,7 +518,7 @@ class Compiler(
     override fun visitReturn(node: Node.Return): List<Token> {
         val tokens = mutableListOf<Token>()
 
-        val subNode = node.node
+        val subNode = node.value
 
         if (subNode != null) {
             tokens += visit(subNode)
@@ -569,7 +566,7 @@ class Compiler(
         return tokens
     }
 
-    override fun visitVariable(node: Node.Variable): List<Token> {
+    override fun visitName(node: Node.Name): List<Token> {
         val tokens = mutableListOf<Token>()
 
         if (node.dataType.isHeapAllocated(node.context.source)) {
@@ -599,7 +596,7 @@ class Compiler(
         }
 
         tokens += PUSH
-        tokens += node.getDataType(node.context.source).getOffset(node.context.source) - 1
+        tokens += node.dataType.getOffset(node.context.source) - 1
 
         return tokens
     }
@@ -617,12 +614,12 @@ class Compiler(
     override fun visitSize(node: Node.Size): List<Token> {
         val tokens = mutableListOf<Token>()
 
-        val isArray = DataType.isArray(node.variable.dataType, node.variable.context.source)
+        val isArray = DataType.isArray(node.name.dataType, node.name.context.source)
 
         if (isArray) {
-            val arrayType = node.getArrayType(node.variable.context.source)
+            val arrayType = node.getArrayType()
 
-            val isHeap = arrayType.isHeapAllocated(node.variable.context.source)
+            val isHeap = arrayType.isHeapAllocated(node.name.context.source)
 
             val instruction = if (arrayType.dimension > 1) {
                 if (isHeap) HASIZE else ASIZE
@@ -631,7 +628,7 @@ class Compiler(
                 if (isHeap) HSIZE else SIZE
             }
 
-            val location = if (isHeap) node.variable.id else node.variable.address
+            val location = if (isHeap) node.name.id else node.name.address
 
             tokens += PUSH
             tokens += location
@@ -661,15 +658,15 @@ class Compiler(
         val instruction =
             PUSH//TODO if (node.indices.size < node.getArrayType(node.variable.context.source).dimension - 1) IASIZE else ISIZE
 
-        if (node.variable.dataType.isHeapAllocated(node.variable.context.source)) {
+        if (node.name.dataType.isHeapAllocated(node.name.context.source)) {
             //TODO tokens += HEAP
             tokens += instruction
-            tokens += node.variable.id
+            tokens += node.name.id
             tokens += node.indices.size
         }
         else {
             tokens += instruction
-            tokens += node.variable.address
+            tokens += node.name.address
             tokens += node.indices.size
         }
 
@@ -713,33 +710,33 @@ class Compiler(
     override fun visitAssign(node: Node.Assign): List<Token> {
         val tokens = mutableListOf<Token>()
 
-        tokens += visit(node.node)
+        tokens += visit(node.assigned)
 
-        val isHeap = node.variable.dataType.isHeapAllocated(node.variable.context.source)
+        val isHeap = node.name.dataType.isHeapAllocated(node.name.context.source)
 
         val isArray = DataType.isArray(
-            node.variable.getDataType(node.variable.context.source),
-            node.variable.context.source
+            node.name.dataType,
+            node.name.context.source
         )
 
         if (isHeap) {
             tokens += REALLOC
-            tokens += node.variable.id
+            tokens += node.name.id
             tokens += PUSH
-            tokens += node.variable.id
+            tokens += node.name.id
             tokens += PUSH
             tokens += 0
             tokens += HASTO
         }
         else if (isArray) {
             tokens += PUSH
-            tokens += node.variable.address
+            tokens += node.name.address
             tokens += ASTO
         }
         else {
             tokens += DUP
             tokens += PUSH
-            tokens += node.variable.address
+            tokens += node.name.address
             tokens += STO
         }
 
@@ -749,34 +746,31 @@ class Compiler(
     override fun visitInvoke(node: Node.Invoke): List<Token> {
         val tokens = mutableListOf<Token>()
 
-        for (arg in node.args) {
-            tokens += visit(arg)
+        if (node.isNative) {
+            tokens += ARG
+
+            for (arg in node.args) {
+                tokens += visit(arg)
+            }
+
+            tokens += SYS
+            tokens += node.id
         }
+        else {
+            for (arg in node.args) {
+                tokens += visit(arg)
+            }
 
-        val offset = offsetStack.peek()!!
+            val offset = offsetStack.peek()!!
 
-        tokens += FRAME
-        tokens += offset + node.offset
+            tokens += FRAME
+            tokens += offset + node.offset
 
-        val address = functions[node.id]!!
+            val address = functions[node.id]!!
 
-        tokens += CALL
-        tokens += address
-
-        return tokens
-    }
-
-    override fun visitSystemCall(node: Node.SystemCall): List<Token> {
-        val tokens = mutableListOf<Token>()
-
-        tokens += ARG
-
-        for (arg in node.args) {
-            tokens += visit(arg)
+            tokens += CALL
+            tokens += address
         }
-
-        tokens += SYS
-        tokens += node.id
 
         return tokens
     }
@@ -786,13 +780,13 @@ class Compiler(
 
         val indices = node.indices
 
-        val arrayType = node.getArrayType(node.variable.context.source)
+        val arrayType = node.getArrayType()
 
         val dimension = arrayType.dimension
 
         val sizes = arrayType.sizes
 
-        val isHeap = node.variable.dataType.isHeapAllocated(node.variable.context.source)
+        val isHeap = node.name.dataType.isHeapAllocated(node.name.context.source)
 
         val instruction = if (node.indices.size < dimension) {
             if (isHeap) HALOD else ALOD
@@ -801,7 +795,7 @@ class Compiler(
             if (isHeap) HLOD else LOD
         }
 
-        val location = if (isHeap) node.variable.id else node.variable.address
+        val location = if (isHeap) node.name.id else node.name.address
 
         tokens += PUSH
         tokens += location
@@ -827,7 +821,7 @@ class Compiler(
             tokens += ADD
         }
 
-        if (node.variable.isGlobal) {
+        if (node.name.isGlobal) {
             tokens += GLOB
         }
 
@@ -841,13 +835,13 @@ class Compiler(
 
         val indices = node.indices
 
-        val arrayType = node.getArrayType(node.variable.context.source)
+        val arrayType = node.getArrayType()
 
         val dimension = arrayType.dimension
 
         val sizes = arrayType.sizes
 
-        val isHeap = node.variable.dataType.isHeapAllocated(node.variable.context.source)
+        val isHeap = node.name.dataType.isHeapAllocated(node.name.context.source)
 
         val instruction = if (node.indices.size < dimension) {
             if (isHeap) HALOD else ALOD
@@ -856,7 +850,7 @@ class Compiler(
             if (isHeap) HLOD else LOD
         }
 
-        val location = if (isHeap) node.variable.id else node.variable.address
+        val location = if (isHeap) node.name.id else node.name.address
 
         tokens += visit(node.value)
 
@@ -884,7 +878,7 @@ class Compiler(
             tokens += ADD
         }
 
-        if (node.variable.isGlobal) {
+        if (node.name.isGlobal) {
             tokens += GLOB
         }
 
