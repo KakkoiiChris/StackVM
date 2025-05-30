@@ -17,6 +17,12 @@ object Semantics : Node.Visitor<DataType> {
 
         node.functions.forEach(::visit)
 
+        if (node.functions.none { isMainFunction(it, node.context.source) }) {
+            svmlError("No main function", node.context.source, node.context)
+        }
+
+        node.mainReturn = implicitMainReturn()
+
         Memory.clear()
 
         return VOID
@@ -26,6 +32,30 @@ object Semantics : Node.Visitor<DataType> {
         val signature = Signature(node.name, node.params.map { it.type!!.value })
 
         Memory.addFunction(node.type.value, signature, node.isNative)
+    }
+
+    private fun isMainFunction(stmt: Node, source: Source) =
+        stmt is Node.Function &&
+            stmt.name.value == "main" && (
+            DataType.isEquivalent(stmt.dataType, DataType.Primitive.INT, source) ||
+                DataType.isEquivalent(stmt.dataType, DataType.Primitive.VOID, source)
+            )
+
+    private fun implicitMainReturn(): Node.Return {
+        val context = Context.none()
+
+        val name = Node.Name(context, "main")
+
+        val mainSignature = Signature(name, emptyList())
+
+        val (_, dataType, id) = Memory.getFunction(mainSignature)
+
+        val invokeMain = Node.Invoke(context, name, mutableListOf())
+
+        invokeMain.dataType = dataType
+        invokeMain.id = id
+
+        return Node.Return(context, invokeMain)
     }
 
     override fun visitDeclare(node: Node.Declare): DataType {
@@ -360,6 +390,8 @@ object Semantics : Node.Visitor<DataType> {
     }
 
     override fun visitSize(node: Node.Size): DataType {
+        visit(node.name)
+
         val type = DataType.Primitive.INT
 
         node.dataType = type
@@ -526,9 +558,11 @@ object Semantics : Node.Visitor<DataType> {
     }
 
     override fun visitGetIndex(node: Node.GetIndex): DataType {
+        node.indices.forEach { visit(it) }
+
         var superType = DataType.asArray(visit(node.name), node.context.source)
 
-        repeat(node.indices.size-1) {
+        repeat(node.indices.size - 1) {
             if (!DataType.isArray(superType.subType, node.context.source)) {
                 TODO()
             }
@@ -544,6 +578,8 @@ object Semantics : Node.Visitor<DataType> {
     }
 
     override fun visitSetIndex(node: Node.SetIndex): DataType {
+        node.indices.forEach { visit(it) }
+
         var superType = DataType.asArray(visit(node.name), node.context.source)
 
         repeat(node.indices.size) {

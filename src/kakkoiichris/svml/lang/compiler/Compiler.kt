@@ -617,7 +617,7 @@ class Compiler(
         val isArray = DataType.isArray(node.name.dataType, node.name.context.source)
 
         if (isArray) {
-            val arrayType = node.getArrayType()
+            val arrayType = node.name.getArrayType()
 
             val isHeap = arrayType.isHeapAllocated(node.name.context.source)
 
@@ -780,7 +780,7 @@ class Compiler(
 
         val indices = node.indices
 
-        val arrayType = node.getArrayType()
+        val arrayType = node.name.getArrayType()
 
         val dimension = arrayType.dimension
 
