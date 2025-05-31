@@ -13,6 +13,7 @@ package kakkoiichris.svml.lang.compiler
 import kakkoiichris.svml.lang.compiler.Bytecode.Instruction.*
 import kakkoiichris.svml.lang.parser.DataType
 import kakkoiichris.svml.lang.parser.Node
+import kakkoiichris.svml.util.svmlError
 import java.util.*
 
 class Compiler(
@@ -766,7 +767,8 @@ class Compiler(
             tokens += FRAME
             tokens += offset + node.offset
 
-            val address = functions[node.id]!!
+            val address =
+                functions[node.id] ?: svmlError("Function id '${node.id}' not found", node.context.source, node.context)
 
             tokens += CALL
             tokens += address

@@ -489,7 +489,9 @@ object DebugCPU : CPU() {
     override fun sys() {
         val id = fetchInt()
 
-        val function = Linker[id]
+        println(id)
+
+        val function = Linker[id]!!
 
         val arguments = mutableListOf<Double>()
 

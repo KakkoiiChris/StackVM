@@ -15,8 +15,8 @@ import kakkoiichris.svml.cpu.DebugCPU
 import kakkoiichris.svml.cpu.ReleaseCPU
 import kakkoiichris.svml.lang.Allocator
 import kakkoiichris.svml.lang.Directory
-import kakkoiichris.svml.lang.Source
 import kakkoiichris.svml.lang.Semantics
+import kakkoiichris.svml.lang.Source
 import kakkoiichris.svml.lang.compiler.BytecodeFormatter
 import kakkoiichris.svml.lang.compiler.Compiler
 import kakkoiichris.svml.lang.lexer.Lexer
@@ -82,7 +82,7 @@ fun main(args: Array<String>) {
 
             Mode.RUN     -> runFile(cpu, srcFile)
 
-            Mode.VISUAL     -> visualizeFile(srcFile)
+            Mode.VISUAL  -> visualizeFile(srcFile)
 
             Mode.FORMAT  -> formatFile(srcFile, dstFile)
         }

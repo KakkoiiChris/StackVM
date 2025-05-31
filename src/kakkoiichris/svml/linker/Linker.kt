@@ -12,7 +12,6 @@ package kakkoiichris.svml.linker
 
 import kakkoiichris.svml.cpu.CPU
 import kakkoiichris.svml.lang.lexer.Context
-import kakkoiichris.svml.lang.lexer.TokenType
 import kakkoiichris.svml.lang.parser.DataType
 import kakkoiichris.svml.lang.parser.Node
 import kakkoiichris.svml.lang.parser.Signature
@@ -30,9 +29,7 @@ typealias Method = (cpu: CPU, data: LinkData) -> Values
 object Linker {
     private val links = mutableListOf<Link>()
 
-    private val functionTable = mutableMapOf<String, Int>()
-
-    private val functions = mutableListOf<Function>()
+    private val functionTable = mutableMapOf<Int, Function>()
 
     private val sources = mutableMapOf<String, File>()
 
@@ -68,25 +65,20 @@ object Linker {
     fun getFile(name: String) =
         sources[name]!!
 
-    fun hasFunction(signature: Signature): Boolean =
-        signature.toString() in functionTable
-
-    operator fun get(signature: Signature) =
-        functionTable[signature.toString()]!!
+    fun hasFunction(id: Int) =
+        id in functionTable
 
     operator fun get(id: Int) =
-        functions[id]
+        functionTable[id]
 
-    fun addFunction(name: String, format: String="", vararg params: DataType, method: Method) {
+    fun addFunction(name: String, format: String = "", vararg params: DataType, method: Method) {
         val node = Node.Name(Context.none(), name)
 
         val function = Function(format, method)
 
-        functions += function
-
         val signature = Signature(node, params.toList())
 
-        functionTable[signature.toString()] = functions.size - 1
+        functionTable[signature.toString().hashCode()] = function
     }
 
     class Function(private val format: String, private val method: Method) {

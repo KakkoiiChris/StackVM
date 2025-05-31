@@ -137,7 +137,7 @@ object Memory {
 
             if (rep in functions) return false
 
-            functions[rep] = FunctionRecord(isNative, dataType, signature.hashCode())
+            functions[rep] = FunctionRecord(isNative, dataType, rep.hashCode())
 
             return true
         }

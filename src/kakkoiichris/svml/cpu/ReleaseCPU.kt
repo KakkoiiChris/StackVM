@@ -312,7 +312,7 @@ object ReleaseCPU : CPU() {
     }
 
     override fun sys() {
-        val function = Linker[fetchInt()]
+        val function = Linker[fetchInt()]!!
 
         val arguments = mutableListOf<Double>()
 

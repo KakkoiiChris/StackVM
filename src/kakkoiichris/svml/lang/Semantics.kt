@@ -3,7 +3,7 @@ package kakkoiichris.svml.lang
 import kakkoiichris.svml.lang.lexer.Context
 import kakkoiichris.svml.lang.lexer.TokenType
 import kakkoiichris.svml.lang.parser.*
-import kakkoiichris.svml.lang.parser.DataType.Primitive.VOID
+import kakkoiichris.svml.linker.Linker
 import kakkoiichris.svml.util.svmlError
 
 object Semantics : Node.Visitor<DataType> {
@@ -25,13 +25,11 @@ object Semantics : Node.Visitor<DataType> {
 
         Memory.clear()
 
-        return VOID
+        return DataType.Primitive.VOID
     }
 
     private fun prepareFunction(node: Node.Function) {
-        val signature = Signature(node.name, node.params.map { it.type!!.value })
-
-        Memory.addFunction(node.type.value, signature, node.isNative)
+        Memory.addFunction(node.type.value, node.signature, node.isNative)
     }
 
     private fun isMainFunction(stmt: Node, source: Source) =
@@ -86,7 +84,7 @@ object Semantics : Node.Visitor<DataType> {
         node.id = id
         node.name.id = id
 
-        return VOID
+        return DataType.Primitive.VOID
     }
 
     override fun visitIf(node: Node.If): DataType {
@@ -105,7 +103,7 @@ object Semantics : Node.Visitor<DataType> {
             }
         }
 
-        return VOID
+        return DataType.Primitive.VOID
     }
 
     override fun visitWhile(node: Node.While): DataType {
@@ -122,7 +120,7 @@ object Semantics : Node.Visitor<DataType> {
             Memory.pop()
         }
 
-        return VOID
+        return DataType.Primitive.VOID
     }
 
     override fun visitDo(node: Node.Do): DataType {
@@ -139,7 +137,7 @@ object Semantics : Node.Visitor<DataType> {
 
         visit(node.condition)
 
-        return VOID
+        return DataType.Primitive.VOID
     }
 
     override fun visitFor(node: Node.For): DataType {
@@ -158,15 +156,15 @@ object Semantics : Node.Visitor<DataType> {
             Memory.pop()
         }
 
-        return VOID
+        return DataType.Primitive.VOID
     }
 
     override fun visitBreak(node: Node.Break): DataType {
-        return VOID
+        return DataType.Primitive.VOID
     }
 
     override fun visitContinue(node: Node.Continue): DataType {
-        return VOID
+        return DataType.Primitive.VOID
     }
 
     override fun visitFunction(node: Node.Function): DataType {
@@ -186,10 +184,15 @@ object Semantics : Node.Visitor<DataType> {
         }
 
         if (!node.isNative) {
-            if (DataType.isEquivalent(node.type.value, VOID, node.context.source) && node.body.last() !is Node.Return) {
+            if (DataType.isEquivalent(
+                    node.type.value,
+                    DataType.Primitive.VOID,
+                    node.context.source
+                ) && node.body.lastOrNull() !is Node.Return
+            ) {
                 node.body += Node.Return(
                     Context.none(),
-                    Node.Value(Context.none(), TokenType.Value(0.0, VOID))
+                    Node.Value(Context.none(), TokenType.Value(0.0, DataType.Primitive.VOID))
                 )
             }
 
@@ -211,8 +214,13 @@ object Semantics : Node.Visitor<DataType> {
 
             resolveBranchReturns(returnType, node.body)
         }
+        else {
+            if(!Linker.hasFunction(node.id)) {
+                TODO()
+            }
+        }
 
-        return VOID
+        return DataType.Primitive.VOID
     }
 
     private fun resolveBranches(parentContext: Context, nodes: Nodes) {
@@ -314,7 +322,7 @@ object Semantics : Node.Visitor<DataType> {
     override
 
     fun visitReturn(node: Node.Return): DataType {
-        val type = node.value?.let { visit(it) } ?: VOID
+        val type = node.value?.let { visit(it) } ?: DataType.Primitive.VOID
 
         node.dataType = type
 
@@ -542,7 +550,7 @@ object Semantics : Node.Visitor<DataType> {
             TODO("TYPE MISMATCH")
         }
 
-        return VOID
+        return DataType.Primitive.VOID
     }
 
     override fun visitInvoke(node: Node.Invoke): DataType {
@@ -596,6 +604,6 @@ object Semantics : Node.Visitor<DataType> {
             TODO()
         }
 
-        return VOID
+        return DataType.Primitive.VOID
     }
 }

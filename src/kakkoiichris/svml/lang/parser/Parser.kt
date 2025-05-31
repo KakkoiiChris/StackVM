@@ -35,9 +35,11 @@ class Parser(lexer: Lexer) {
         return program()
     }
 
-    private fun here() = token.context
+    private fun here() =
+        token.context
 
-    private fun source() = here().source
+    private fun source() =
+        here().source
 
     private fun matchAny(vararg types: TokenType) =
         types.any { it == token.type }
@@ -83,7 +85,7 @@ class Parser(lexer: Lexer) {
     }
 
     private fun program(): Node.Program {
-        importFile("common")
+        //importFile("common")
 
         step()
 
@@ -94,35 +96,29 @@ class Parser(lexer: Lexer) {
 
         while (lexers.isNotEmpty()) {
             while (!match(TokenType.End)) {
-                if (match(TokenType.Keyword.IMPORT)) {
-                    import()
+                when {
+                    match(TokenType.Keyword.IMPORT)                        -> {
+                        import()
+                    }
 
-                    continue
+                    match(TokenType.Keyword.ALIAS)                         -> {
+                        typeAlias()
+                    }
+
+                    matchAny(TokenType.Keyword.LET, TokenType.Keyword.VAR) -> {
+                        declarations += declare()
+                    }
+
+                    match(TokenType.Keyword.FUNCTION)                      -> {
+                        functions += function()
+                    }
+
+                    else                                                   -> svmlError(
+                        "Only imports and declarations allowed at the file level",
+                        source(),
+                        here()
+                    )
                 }
-
-                if (match(TokenType.Keyword.ALIAS)) {
-                    typeAlias()
-
-                    continue
-                }
-
-                if (matchAny(TokenType.Keyword.LET, TokenType.Keyword.VAR)) {
-                    declarations += declare()
-
-                    continue
-                }
-
-                if (match(TokenType.Keyword.FUNCTION)) {
-                    functions += function()
-
-                    continue
-                }
-
-                svmlError(
-                    "Only imports and declarations allowed at the file level",
-                    source(),
-                    here()
-                )
             }
 
             lexers.pop()
@@ -138,9 +134,9 @@ class Parser(lexer: Lexer) {
 
         val name = name()
 
-        importFile(name)
-
         mustSkip(TokenType.Symbol.SEMICOLON)
+
+        importFile(name)
     }
 
     private fun importFile(name: Node.Name) {

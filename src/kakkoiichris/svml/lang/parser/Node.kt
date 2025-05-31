@@ -173,7 +173,7 @@ sealed class Node(val context: Context) {
     ) : Node(context) {
         val signature = Signature(name, params.map { it.type!!.value })
 
-        val id = signature.hashCode()
+        val id = signature.toString().hashCode()
 
         var offset = -1
 

@@ -11,6 +11,7 @@
 package kakkoiichris.svml.lang.compiler
 
 import kakkoiichris.svml.lang.Allocator
+import kakkoiichris.svml.lang.Semantics
 import kakkoiichris.svml.lang.Source
 import kakkoiichris.svml.lang.lexer.Lexer
 import kakkoiichris.svml.lang.parser.Parser
@@ -37,6 +38,8 @@ class BytecodeFormatter(private val file: File) {
         val parser = Parser(lexer)
 
         val program = parser.parse()
+
+        Semantics.check(program)
 
         Allocator.allocate(program)
 
