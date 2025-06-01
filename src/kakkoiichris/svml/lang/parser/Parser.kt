@@ -850,7 +850,7 @@ class Parser(lexer: Lexer) {
     private fun string(): Node.String {
         val location = here()
 
-        val value = get<TokenType.String>()!!
+        val value = get<TokenType.String>() ?: svmlError("Expected string", source(), here())
 
         return Node.String(location, value.value)
     }
@@ -858,7 +858,7 @@ class Parser(lexer: Lexer) {
     private fun name(): Node.Name {
         val location = here()
 
-        val name = get<TokenType.Name>()!!
+        val name = get<TokenType.Name>() ?: svmlError("Expected name", source(), here())
 
         return Node.Name(location, name.value)
     }

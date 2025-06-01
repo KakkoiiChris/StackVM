@@ -21,7 +21,11 @@ object Semantics : Node.Visitor<DataType> {
             svmlError("No main function", node.context.source, node.context)
         }
 
-        node.mainReturn = implicitMainReturn()
+        val mainReturn = implicitMainReturn()
+
+        visit(mainReturn)
+
+        node.mainReturn = mainReturn
 
         Memory.clear()
 
@@ -215,7 +219,7 @@ object Semantics : Node.Visitor<DataType> {
             resolveBranchReturns(returnType, node.body)
         }
         else {
-            if(!Linker.hasFunction(node.id)) {
+            if (!Linker.hasFunction(node.id)) {
                 TODO()
             }
         }

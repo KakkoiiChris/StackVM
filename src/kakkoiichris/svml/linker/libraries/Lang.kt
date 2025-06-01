@@ -18,6 +18,12 @@ object Lang : Link {
     override val name = "lang"
 
     override fun open(linker: Linker) {
+        linker.addFunction("main") { _, _ ->
+            println("Hello, SVML! 🤗")
+
+            Linker.void
+        }
+
         linker.addFunction("toFloat", "I", DataType.Primitive.INT) { _, data ->
             val i = data.int()
 
