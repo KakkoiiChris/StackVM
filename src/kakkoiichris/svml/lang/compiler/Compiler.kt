@@ -13,7 +13,6 @@ package kakkoiichris.svml.lang.compiler
 import kakkoiichris.svml.lang.compiler.Bytecode.Instruction.*
 import kakkoiichris.svml.lang.parser.DataType
 import kakkoiichris.svml.lang.parser.Node
-import kakkoiichris.svml.util.svmlError
 import java.util.*
 
 class Compiler(
@@ -159,8 +158,13 @@ class Compiler(
             .map { it.resolveLast(last) ?: it }
             .toMutableList()
 
+    private fun resolveFunction(tokens: List<Token>, id: Int) =
+        tokens
+            .map { it.resolveFunction(id, functions[id]!!.toDouble()) ?: it }
+            .toMutableList()
+
     override fun visitProgram(node: Node.Program): List<Token> {
-        val tokens = mutableListOf<Token>()
+        var tokens = mutableListOf<Token>()
 
         tokens += JMP
         tokens += Double.NaN
@@ -176,6 +180,10 @@ class Compiler(
         tokens[1] = pos.toDouble().ok
 
         tokens += visit(program.mainReturn)
+
+        for (function in node.functions.filter { !it.isNative }) {
+            tokens = resolveFunction(tokens, function.id)
+        }
 
         tokens += freeMemory()
 
@@ -767,8 +775,8 @@ class Compiler(
             tokens += FRAME
             tokens += offset + node.offset
 
-            val address =
-                functions[node.id] ?: svmlError("Function id '${node.id}' not found", node.context.source, node.context)
+            //val address = functions[node.id] ?: svmlError("Function id '${node.id}' not found", node.context.source, node.context)
+            val address = Token.AwaitFunction(node.id, offset)
 
             tokens += CALL
             tokens += address

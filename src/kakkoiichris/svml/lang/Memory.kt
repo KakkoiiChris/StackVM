@@ -1,19 +1,15 @@
 package kakkoiichris.svml.lang
 
 import kakkoiichris.svml.lang.lexer.Context
-import kakkoiichris.svml.lang.lexer.TokenType
 import kakkoiichris.svml.lang.parser.DataType
 import kakkoiichris.svml.lang.parser.Node
 import kakkoiichris.svml.lang.parser.Signature
 import java.util.*
 
-object Memory {
+class Memory {
     private val scopes = Stack<Scope>()
 
     private val global = Scope()
-
-    private var variableID = 0
-    private var functionID = 0
 
     init {
         scopes.push(global)
@@ -88,8 +84,6 @@ object Memory {
         error("Undeclared variable '$name' @ ${context}!")
     }
 
-    fun getFunctionID() = functionID++
-
     fun addFunction(dataType: DataType, signature: Signature, isNative: Boolean): Boolean {
         if (peek().addFunction(dataType, signature, isNative)) return true
 
@@ -151,4 +145,8 @@ object Memory {
     data class VariableRecord(val isConstant: Boolean, val isMutable: Boolean, val dataType: DataType, val id: Int)
 
     data class FunctionRecord(val isNative: Boolean, val dataType: DataType, val id: Int)
+
+    companion object {
+        private var variableID = 0
+    }
 }

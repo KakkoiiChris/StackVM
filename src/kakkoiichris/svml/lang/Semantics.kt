@@ -7,6 +7,8 @@ import kakkoiichris.svml.linker.Linker
 import kakkoiichris.svml.util.svmlError
 
 object Semantics : Node.Visitor<DataType> {
+    private val memory = Memory()
+
     fun check(program: Node.Program) =
         visit(program)
 
@@ -27,13 +29,13 @@ object Semantics : Node.Visitor<DataType> {
 
         node.mainReturn = mainReturn
 
-        Memory.clear()
+        memory.clear()
 
         return DataType.Primitive.VOID
     }
 
     private fun prepareFunction(node: Node.Function) {
-        Memory.addFunction(node.type.value, node.signature, node.isNative)
+        memory.addFunction(node.type.value, node.signature, node.isNative)
     }
 
     private fun isMainFunction(stmt: Node, source: Source) =
@@ -50,7 +52,7 @@ object Semantics : Node.Visitor<DataType> {
 
         val mainSignature = Signature(name, emptyList())
 
-        val (_, dataType, id) = Memory.getFunction(mainSignature)
+        val (_, dataType, id) = memory.getFunction(mainSignature)
 
         val invokeMain = Node.Invoke(context, name, mutableListOf())
 
@@ -75,9 +77,9 @@ object Semantics : Node.Visitor<DataType> {
             )
         }
 
-        Memory.addVariable(node.isConstant, node.isMutable, node.name.value, type, node.context)
+        memory.addVariable(node.isConstant, node.isMutable, node.name.value, type, node.context)
 
-        val (isGlobal, record) = Memory.getVariable(node.name)
+        val (isGlobal, record) = memory.getVariable(node.name)
 
         node.name.isGlobal = isGlobal
 
@@ -96,14 +98,14 @@ object Semantics : Node.Visitor<DataType> {
             branch.condition?.let { visit(it) }
 
             try {
-                Memory.push()
+                memory.push()
 
                 for (subNode in branch.body) {
                     visit(subNode)
                 }
             }
             finally {
-                Memory.pop()
+                memory.pop()
             }
         }
 
@@ -114,14 +116,14 @@ object Semantics : Node.Visitor<DataType> {
         visit(node.condition)
 
         try {
-            Memory.push()
+            memory.push()
 
             for (subNode in node.body) {
                 visit(subNode)
             }
         }
         finally {
-            Memory.pop()
+            memory.pop()
         }
 
         return DataType.Primitive.VOID
@@ -129,14 +131,14 @@ object Semantics : Node.Visitor<DataType> {
 
     override fun visitDo(node: Node.Do): DataType {
         try {
-            Memory.push()
+            memory.push()
 
             for (subNode in node.body) {
                 visit(subNode)
             }
         }
         finally {
-            Memory.pop()
+            memory.pop()
         }
 
         visit(node.condition)
@@ -150,14 +152,14 @@ object Semantics : Node.Visitor<DataType> {
         node.increment?.let { visit(it) }
 
         try {
-            Memory.push()
+            memory.push()
 
             for (subNode in node.body) {
                 visit(subNode)
             }
         }
         finally {
-            Memory.pop()
+            memory.pop()
         }
 
         return DataType.Primitive.VOID
@@ -173,7 +175,7 @@ object Semantics : Node.Visitor<DataType> {
 
     override fun visitFunction(node: Node.Function): DataType {
         try {
-            Memory.push()
+            memory.push()
 
             for (param in node.params) {
                 visit(param)
@@ -184,7 +186,7 @@ object Semantics : Node.Visitor<DataType> {
             }
         }
         finally {
-            Memory.pop()
+            memory.pop()
         }
 
         if (!node.isNative) {
@@ -354,7 +356,7 @@ object Semantics : Node.Visitor<DataType> {
     }
 
     override fun visitName(node: Node.Name): DataType {
-        val (isGlobal, record) = Memory.getVariable(node)
+        val (isGlobal, record) = memory.getVariable(node)
 
         node.isGlobal = isGlobal
 
@@ -536,7 +538,7 @@ object Semantics : Node.Visitor<DataType> {
     }
 
     override fun visitAssign(node: Node.Assign): DataType {
-        val (_, record) = Memory.getVariable(node.name)
+        val (_, record) = memory.getVariable(node.name)
 
         val (isConstant, isMutable, dataType, _) = record
 
@@ -558,9 +560,11 @@ object Semantics : Node.Visitor<DataType> {
     }
 
     override fun visitInvoke(node: Node.Invoke): DataType {
-        val signature = Signature(node.name, node.args.map { visit(it) })
+        val args = node.args.map { visit(it) }
 
-        val (isNative, dataType, id) = Memory.getFunction(signature)
+        val signature = Signature(node.name, args)
+
+        val (isNative, dataType, id) = memory.getFunction(signature)
 
         node.isNative = isNative
         node.id = id

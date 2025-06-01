@@ -19,6 +19,8 @@ interface Token {
 
     fun resolveLast(last: Double): Ok? = null
 
+    fun resolveFunction(id: Int, start: Double): Ok? = null
+
     class Ok(val bytecode: Bytecode) : Token {
         override fun resolveStartAndEnd(start: Double, end: Double) = this
 
@@ -72,5 +74,16 @@ interface Token {
 
         override fun toString() =
             "AwaitLabelEnd<$offset, ${label.value}>"
+    }
+
+    class AwaitFunction(private val id: Int, private val offset: Int = 0) : Token {
+        override fun resolveFunction(id: Int, start: Double): Ok? =
+            if (this.id == id)
+                Bytecode.Value(start).ok
+            else
+                null
+
+        override fun toString() =
+            "AwaitFunction<$offset, $id>"
     }
 }
