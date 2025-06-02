@@ -189,42 +189,43 @@ object Semantics : Node.Visitor<DataType> {
             memory.pop()
         }
 
-        if (!node.isNative) {
-            if (DataType.isEquivalent(
-                    node.type.value,
-                    DataType.Primitive.VOID,
-                    node.context.source
-                ) && node.body.lastOrNull() !is Node.Return
-            ) {
-                node.body += Node.Return(
-                    Context.none(),
-                    Node.Value(Context.none(), TokenType.Value(0.0, DataType.Primitive.VOID))
-                )
-            }
-
-            resolveBranches(node.context, node.body)
-
-            checkUnreachable(node.body)
-
-            val primaryReturn = getPrimaryReturn(node.body)
-
-            val returnType = primaryReturn.dataType
-
-            if (!DataType.isEquivalent(returnType, node.type.value, node.context.source)) {
-                svmlError(
-                    "Function must return value of type '${node.type.value}'",
-                    node.context.source,
-                    primaryReturn.context
-                )
-            }
-
-            resolveBranchReturns(returnType, node.body)
-        }
-        else {
+        if (node.isNative) {
             if (!Linker.hasFunction(node.id)) {
                 svmlError("No function link available for '${node.signature}'", node.context)
             }
+
+            return DataType.Primitive.VOID
         }
+
+        if (DataType.isEquivalent(
+                node.type.value,
+                DataType.Primitive.VOID,
+                node.context.source
+            ) && node.body.lastOrNull() !is Node.Return
+        ) {
+            node.body += Node.Return(
+                Context.none(),
+                Node.Value(Context.none(), TokenType.Value(0.0, DataType.Primitive.VOID))
+            )
+        }
+
+        resolveBranches(node.context, node.body)
+
+        checkUnreachable(node.body)
+
+        val primaryReturn = getPrimaryReturn(node.body)
+
+        val returnType = primaryReturn.dataType
+
+        if (!DataType.isEquivalent(returnType, node.type.value, node.context.source)) {
+            svmlError(
+                "Function must return value of type '${node.type.value}'",
+                node.context.source,
+                primaryReturn.context
+            )
+        }
+
+        resolveBranchReturnTypes(node.body, returnType)
 
         return DataType.Primitive.VOID
     }
@@ -235,11 +236,7 @@ object Semantics : Node.Visitor<DataType> {
 
             is Node.If     -> {
                 if (last.branches.last().condition != null) {
-                    svmlError(
-                        "Final if statement must return a value from else branch",
-                        last.context.source,
-                        last.context
-                    )
+                    svmlError("Final if statement must return a value from else branch", last.context)
                 }
 
                 for (branch in last.branches) {
@@ -261,32 +258,14 @@ object Semantics : Node.Visitor<DataType> {
 
     private fun checkUnreachable(nodes: Nodes) {
         for ((i, node) in nodes.withIndex()) {
-            if (!isOrHasReturns(node)) continue
+            checkUnreachable(getSubNodes(node))
+
+            if (node !is Node.Return) continue
 
             if (i == nodes.lastIndex) continue
 
-            if (node !is Node.If) continue
-
-            if (!node.branches.all { branch -> branch.body.lastOrNull()?.let { isOrHasReturns(it) } == true }) continue
-
-            if (node.branches.last().condition != null) continue
-
             svmlError("Unreachable code", node.context.source, nodes[i + 1].context)
         }
-    }
-
-    private fun isOrHasReturns(node: Node): Boolean = when (node) {
-        is Node.If     -> node.branches.any { branch -> branch.body.any(::isOrHasReturns) }
-
-        is Node.While  -> node.body.any(::isOrHasReturns)
-
-        is Node.Do     -> node.body.any(::isOrHasReturns)
-
-        is Node.For    -> node.body.any(::isOrHasReturns)
-
-        is Node.Return -> true
-
-        else           -> false
     }
 
     private fun getPrimaryReturn(nodes: Nodes): Node.Return = when (val last = nodes.last()) {
@@ -303,13 +282,13 @@ object Semantics : Node.Visitor<DataType> {
         else           -> svmlError("Function does not have a primary return", last.context.source, last.context)
     }
 
-    private fun resolveBranchReturns(dataType: DataType, nodes: Nodes) {
+    private fun resolveBranchReturnTypes(nodes: Nodes, dataType: DataType) {
         for (node in nodes) {
             if (node is Node.Return && node.dataType != dataType) {
                 svmlError("All paths must return the same type", node.context.source, node.context)
             }
 
-            resolveBranchReturns(dataType, getSubNodes(node))//TODO RETURN TOO EARLY?
+            resolveBranchReturnTypes(getSubNodes(node), dataType)//TODO RETURN TOO EARLY?
         }
     }
 
@@ -325,9 +304,7 @@ object Semantics : Node.Visitor<DataType> {
         else          -> emptyList()
     }.toMutableList()
 
-    override
-
-    fun visitReturn(node: Node.Return): DataType {
+    override fun visitReturn(node: Node.Return): DataType {
         val type = node.value?.let { visit(it) } ?: DataType.Primitive.VOID
 
         node.dataType = type
@@ -576,7 +553,10 @@ object Semantics : Node.Visitor<DataType> {
         val assigned = visit(node.assigned)
 
         if (!DataType.isEquivalent(dataType, assigned, node.context.source)) {
-            svmlError("Cannot assign a value of type '$assigned' to a variable of type '$dataType'", node.assigned.context)
+            svmlError(
+                "Cannot assign a value of type '$assigned' to a variable of type '$dataType'",
+                node.assigned.context
+            )
         }
 
         return DataType.Primitive.VOID
@@ -638,7 +618,10 @@ object Semantics : Node.Visitor<DataType> {
         val assigned = visit(node.value)
 
         if (!DataType.isEquivalent(type.subType, assigned, node.context.source)) {
-            svmlError("Cannot assign a value of type '$assigned' to a variable of type '${type.subType}'", node.value.context)
+            svmlError(
+                "Cannot assign a value of type '$assigned' to a variable of type '${type.subType}'",
+                node.value.context
+            )
         }
 
         return DataType.Primitive.VOID
