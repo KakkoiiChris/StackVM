@@ -519,10 +519,51 @@ class Compiler(
 
         val end = pos.toDouble()
 
+        /*if (optimize) {
+            tokens = simplifyParams(tokens)
+        }*/
+
         tokens = resolveStartAndEnd(tokens, start, end)
 
         return tokens
     }
+
+    /*private fun simplifyParams(tokens: MutableList<Token>): MutableList<Token> {
+        val locations = mutableListOf<Int>()
+
+        for ((i, window) in tokens.windowed(6).withIndex()) {
+            val oks = window.filterIsInstance<Token.Ok>()
+
+            if (oks.size != 6) continue
+
+            val (a, b, c, d, e, f) = oks.map { it.bytecode }
+
+            if (a != d || d != PUSH) continue
+
+            if (b != e) continue
+
+            if (c != STO) continue
+
+            if (f != LOD) continue
+
+            locations += i
+        }
+
+        var offset = 0
+
+        for (location in locations) {
+            repeat(6) {
+                tokens.removeAt(location + offset)
+            }
+
+            offset -= 6
+        }
+
+        return tokens
+    }
+
+    private operator fun List<*>.component6() =
+        get(5)*/
 
     override fun visitReturn(node: Node.Return): List<Token> {
         val tokens = mutableListOf<Token>()
