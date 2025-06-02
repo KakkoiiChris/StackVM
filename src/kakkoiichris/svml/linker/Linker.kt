@@ -20,6 +20,7 @@ import kakkoiichris.svml.linker.libraries.Lang
 import kakkoiichris.svml.linker.libraries.Math
 import kakkoiichris.svml.linker.libraries.Strings
 import kakkoiichris.svml.linker.libraries.gfx.Graphics
+import kakkoiichris.svml.util.svmlError
 import java.io.File
 
 typealias Values = List<Double>
@@ -74,16 +75,17 @@ object Linker {
     fun addFunction(name: String, format: String = "", vararg params: DataType, method: Method) {
         val node = Node.Name(Context.none(), name)
 
-        val function = Function(format, method)
-
         val signature = Signature(node, params.toList())
+
+        val function = Function(signature.toString(), format, method)
 
         functionTable[signature.toString().hashCode()] = function
     }
 
-    class Function(private val format: String, private val method: Method) {
+    class Function(private val signature: String, private val format: String, private val method: Method) {
         operator fun invoke(cpu: CPU, values: Values): Values {
             val data = LinkData.parse(format, values)
+                ?: svmlError("Invalid format '$format' for '$signature' function link")
 
             return method.invoke(cpu, data)
         }

@@ -14,8 +14,6 @@ function readFloat: float;
 
 function readInt: int;
 
-function readChar: char;
-
 function read: string;
 
 function readLine: string;

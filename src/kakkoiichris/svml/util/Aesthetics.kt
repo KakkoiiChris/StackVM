@@ -11,11 +11,6 @@
 package kakkoiichris.svml.util
 
 /**
- * The 'Lightning Bolt' emoji, used in many places in the UI.
- */
-const val JOLT = '⚡'
-
-/**
  * The double horizontal box drawing character, used to underline locations of errors.
  */
 const val UNDERLINE = '═'

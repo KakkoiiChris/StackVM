@@ -142,10 +142,6 @@ interface TokenType {
         override fun toString() = value
     }
 
-    data class Type(val value: DataType) : TokenType {
-        override fun toString() = value.toString()
-    }
-
     data object End : TokenType {
         override fun toString() = "EOF"
     }

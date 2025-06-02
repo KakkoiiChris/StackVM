@@ -815,12 +815,12 @@ class Compiler(
             tokens += 0
         }
 
-        for ((i, index) in indices.dropLast(1).withIndex()) {
+        for ((i, indexNode) in indices.dropLast(1).withIndex()) {
             tokens += INC
             tokens += PUSH
             tokens += sizes[i]
             tokens += INC
-            tokens += visit(index)
+            tokens += visit(indexNode)
             tokens += MUL
             tokens += ADD
         }
@@ -872,12 +872,12 @@ class Compiler(
             tokens += 0
         }
 
-        for ((i, index) in indices.dropLast(1).withIndex()) {
+        for ((i, indexNode) in indices.dropLast(1).withIndex()) {
             tokens += INC
             tokens += PUSH
             tokens += sizes[i]
             tokens += INC
-            tokens += visit(index)
+            tokens += visit(indexNode)
             tokens += MUL
             tokens += ADD
         }

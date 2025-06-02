@@ -222,7 +222,7 @@ object Semantics : Node.Visitor<DataType> {
         }
         else {
             if (!Linker.hasFunction(node.id)) {
-                TODO()
+                svmlError("No function link available for '${node.signature}'", node.context)
             }
         }
 
@@ -309,7 +309,7 @@ object Semantics : Node.Visitor<DataType> {
                 svmlError("All paths must return the same type", node.context.source, node.context)
             }
 
-            return resolveBranchReturns(dataType, getSubNodes(node))//TODO RETURN TOO EARLY?
+            resolveBranchReturns(dataType, getSubNodes(node))//TODO RETURN TOO EARLY?
         }
     }
 
@@ -374,7 +374,7 @@ object Semantics : Node.Visitor<DataType> {
         val first = types.first()
 
         if (!types.all { it == first }) {
-            TODO()
+            svmlError("Array literals must be homogenous", node.context)
         }
 
         val type = DataType.Array(first, types.size)
@@ -385,16 +385,16 @@ object Semantics : Node.Visitor<DataType> {
     }
 
     override fun visitUnary(node: Node.Unary): DataType {
-        val type = when (node.operator) {
-            Node.Unary.Operator.NEGATE -> when (visit(node.operand)) {
+        val type = when (val operator = node.operator) {
+            Node.Unary.Operator.NEGATE -> when (val operand = visit(node.operand)) {
                 DataType.Primitive.FLOAT -> DataType.Primitive.FLOAT
                 DataType.Primitive.INT   -> DataType.Primitive.INT
-                else                     -> TODO()
+                else                     -> invalidUnaryOperand(operator, operand, node.operand.context)
             }
 
-            Node.Unary.Operator.INVERT -> when (visit(node.operand)) {
+            Node.Unary.Operator.INVERT -> when (val operand = visit(node.operand)) {
                 DataType.Primitive.BOOL -> DataType.Primitive.BOOL
-                else                    -> TODO()
+                else                    -> invalidUnaryOperand(operator, operand, node.operand.context)
             }
         }
 
@@ -402,6 +402,9 @@ object Semantics : Node.Visitor<DataType> {
 
         return type
     }
+
+    private fun invalidUnaryOperand(operator: Node.Unary.Operator, operand: DataType, context: Context): Nothing =
+        svmlError("Unary '${operator.symbol}' operator not applicable for values of type '$operand'", context)
 
     override fun visitSize(node: Node.Size): DataType {
         visit(node.name)
@@ -422,98 +425,98 @@ object Semantics : Node.Visitor<DataType> {
     }
 
     override fun visitBinary(node: Node.Binary): DataType {
-        val type = when (node.operator) {
+        val type = when (val operator = node.operator) {
             Node.Binary.Operator.EQUAL,
-            Node.Binary.Operator.NOT_EQUAL     -> when (visit(node.operandLeft)) {
-                DataType.Primitive.BOOL  -> when (visit(node.operandRight)) {
+            Node.Binary.Operator.NOT_EQUAL     -> when (val left = visit(node.operandLeft)) {
+                DataType.Primitive.BOOL  -> when (val right = visit(node.operandRight)) {
                     DataType.Primitive.BOOL -> DataType.Primitive.BOOL
-                    else                    -> TODO()
+                    else                    -> invalidRightOperand(operator, right, node.operandRight.context)
                 }
 
-                DataType.Primitive.CHAR  -> when (visit(node.operandRight)) {
+                DataType.Primitive.CHAR  -> when (val right = visit(node.operandRight)) {
                     DataType.Primitive.CHAR -> DataType.Primitive.BOOL
-                    else                    -> TODO()
+                    else                    -> invalidRightOperand(operator, right, node.operandRight.context)
                 }
 
-                DataType.Primitive.FLOAT -> when (visit(node.operandRight)) {
+                DataType.Primitive.FLOAT -> when (val right = visit(node.operandRight)) {
                     DataType.Primitive.FLOAT -> DataType.Primitive.BOOL
                     DataType.Primitive.INT   -> DataType.Primitive.BOOL
-                    else                     -> TODO()
+                    else                     -> invalidRightOperand(operator, right, node.operandRight.context)
                 }
 
-                DataType.Primitive.INT   -> when (visit(node.operandRight)) {
+                DataType.Primitive.INT   -> when (val right = visit(node.operandRight)) {
                     DataType.Primitive.FLOAT -> DataType.Primitive.BOOL
                     DataType.Primitive.INT   -> DataType.Primitive.BOOL
-                    else                     -> TODO()
+                    else                     -> invalidRightOperand(operator, right, node.operandRight.context)
                 }
 
-                else                     -> TODO()
+                else                     -> invalidLeftOperand(operator, left, node.operandLeft.context)
             }
 
             Node.Binary.Operator.LESS,
             Node.Binary.Operator.LESS_EQUAL,
             Node.Binary.Operator.GREATER,
-            Node.Binary.Operator.GREATER_EQUAL -> when (visit(node.operandLeft)) {
-                DataType.Primitive.CHAR  -> when (visit(node.operandRight)) {
+            Node.Binary.Operator.GREATER_EQUAL -> when (val left = visit(node.operandLeft)) {
+                DataType.Primitive.CHAR  -> when (val right = visit(node.operandRight)) {
                     DataType.Primitive.CHAR -> DataType.Primitive.BOOL
-                    else                    -> TODO()
+                    else                    -> invalidRightOperand(operator, right, node.operandRight.context)
                 }
 
-                DataType.Primitive.FLOAT -> when (visit(node.operandRight)) {
+                DataType.Primitive.FLOAT -> when (val right = visit(node.operandRight)) {
                     DataType.Primitive.FLOAT -> DataType.Primitive.BOOL
                     DataType.Primitive.INT   -> DataType.Primitive.BOOL
-                    else                     -> TODO()
+                    else                     -> invalidRightOperand(operator, right, node.operandRight.context)
                 }
 
-                DataType.Primitive.INT   -> when (visit(node.operandRight)) {
+                DataType.Primitive.INT   -> when (val right = visit(node.operandRight)) {
                     DataType.Primitive.FLOAT -> DataType.Primitive.BOOL
                     DataType.Primitive.INT   -> DataType.Primitive.BOOL
-                    else                     -> TODO()
+                    else                     -> invalidRightOperand(operator, right, node.operandRight.context)
                 }
 
-                else                     -> TODO()
+                else                     -> invalidLeftOperand(operator, left, node.operandLeft.context)
             }
 
             Node.Binary.Operator.ADD,
-            Node.Binary.Operator.SUBTRACT      -> when (visit(node.operandLeft)) {
-                DataType.Primitive.CHAR  -> when (visit(node.operandRight)) {
+            Node.Binary.Operator.SUBTRACT      -> when (val left = visit(node.operandLeft)) {
+                DataType.Primitive.CHAR  -> when (val right = visit(node.operandRight)) {
                     DataType.Primitive.INT -> DataType.Primitive.CHAR
-                    else                   -> TODO()
+                    else                   -> invalidRightOperand(operator, right, node.operandRight.context)
                 }
 
-                DataType.Primitive.FLOAT -> when (visit(node.operandRight)) {
+                DataType.Primitive.FLOAT -> when (val right = visit(node.operandRight)) {
                     DataType.Primitive.FLOAT -> DataType.Primitive.FLOAT
                     DataType.Primitive.INT   -> DataType.Primitive.FLOAT
-                    else                     -> TODO()
+                    else                     -> invalidRightOperand(operator, right, node.operandRight.context)
                 }
 
-                DataType.Primitive.INT   -> when (visit(node.operandRight)) {
+                DataType.Primitive.INT   -> when (val right = visit(node.operandRight)) {
                     DataType.Primitive.FLOAT -> DataType.Primitive.FLOAT
                     DataType.Primitive.INT   -> DataType.Primitive.INT
-                    else                     -> TODO()
+                    else                     -> invalidRightOperand(operator, right, node.operandRight.context)
                 }
 
-                else                     -> TODO()
+                else                     -> invalidLeftOperand(operator, left, node.operandLeft.context)
             }
 
             Node.Binary.Operator.MULTIPLY,
             Node.Binary.Operator.DIVIDE,
             Node.Binary.Operator.INT_DIVIDE,
             Node.Binary.Operator.MODULUS,
-            Node.Binary.Operator.INT_MODULUS   -> when (visit(node.operandLeft)) {
-                DataType.Primitive.FLOAT -> when (visit(node.operandRight)) {
+            Node.Binary.Operator.INT_MODULUS   -> when (val left = visit(node.operandLeft)) {
+                DataType.Primitive.FLOAT -> when (val right = visit(node.operandRight)) {
                     DataType.Primitive.FLOAT -> DataType.Primitive.FLOAT
                     DataType.Primitive.INT   -> DataType.Primitive.FLOAT
-                    else                     -> TODO()
+                    else                     -> invalidRightOperand(operator, right, node.operandRight.context)
                 }
 
-                DataType.Primitive.INT   -> when (visit(node.operandRight)) {
+                DataType.Primitive.INT   -> when (val right = visit(node.operandRight)) {
                     DataType.Primitive.FLOAT -> DataType.Primitive.FLOAT
                     DataType.Primitive.INT   -> DataType.Primitive.INT
-                    else                     -> TODO()
+                    else                     -> invalidRightOperand(operator, right, node.operandRight.context)
                 }
 
-                else                     -> TODO()
+                else                     -> invalidLeftOperand(operator, left, node.operandLeft.context)
             }
         }
 
@@ -522,14 +525,34 @@ object Semantics : Node.Visitor<DataType> {
         return type
     }
 
+    private fun invalidLeftOperand(operator: Node.Binary.Operator, operand: DataType, context: Context): Nothing =
+        svmlError(
+            "Binary '${operator.symbol}' operator not applicable for left hand values of type '$operand'",
+            context
+        )
+
+
+    private fun invalidRightOperand(operator: Node.Binary.Operator, operand: DataType, context: Context): Nothing =
+        svmlError(
+            "Binary '${operator.symbol}' operator not applicable for right hand values of type '$operand'",
+            context
+        )
+
+
     override fun visitLogical(node: Node.Logical): DataType {
-        val type = when (visit(node.operandLeft)) {
-            DataType.Primitive.BOOL -> when (visit(node.operandRight)) {
+        val type = when (val left = visit(node.operandLeft)) {
+            DataType.Primitive.BOOL -> when (val right = visit(node.operandRight)) {
                 DataType.Primitive.BOOL -> DataType.Primitive.BOOL
-                else                    -> TODO("RIGHT NOT BOOL")
+                else                    -> svmlError(
+                    "Logical operator not applicable for right hand values of type '$right'",
+                    node.operandRight.context
+                )
             }
 
-            else                    -> TODO("LEFT NOT BOOL")
+            else                    -> svmlError(
+                "Logical operator not applicable for left hand values of type '$left'",
+                node.operandLeft.context
+            )
         }
 
         node.dataType = type
@@ -543,17 +566,17 @@ object Semantics : Node.Visitor<DataType> {
         val (isConstant, isMutable, dataType, _) = record
 
         if (isConstant) {
-            svmlError("Constant '${node.name.value}' cannot be reassigned", node.context.source, node.name.context)
+            svmlError("Constant '${node.name.value}' cannot be reassigned", node.name.context)
         }
 
         if (isMutable && !DataType.isArray(dataType, node.context.source)) {
-            svmlError("Non-array values cannot be marked as mutable", node.context.source, node.name.context)
+            svmlError("Non-array values cannot be marked as mutable", node.name.context)
         }
 
         val assigned = visit(node.assigned)
 
         if (!DataType.isEquivalent(dataType, assigned, node.context.source)) {
-            TODO("TYPE MISMATCH")
+            svmlError("Cannot assign a value of type '$assigned' to a variable of type '$dataType'", node.assigned.context)
         }
 
         return DataType.Primitive.VOID
@@ -574,19 +597,21 @@ object Semantics : Node.Visitor<DataType> {
     }
 
     override fun visitGetIndex(node: Node.GetIndex): DataType {
-        node.indices.forEach { visit(it) }
-
-        var superType = DataType.asArray(visit(node.name), node.context.source)
-
-        repeat(node.indices.size - 1) {
-            if (!DataType.isArray(superType.subType, node.context.source)) {
-                TODO()
+        node.indices.forEach {
+            if (visit(it) != DataType.Primitive.INT) {
+                svmlError("Array index must be of type '${DataType.Primitive.INT}'", it.context)
             }
-
-            superType = DataType.asArray(superType.subType, node.context.source)
         }
 
-        val type = superType.subType
+        var type = DataType.asArray(visit(node.name), node.context.source)
+
+        repeat(node.indices.size - 1) {
+            if (!DataType.isArray(type, node.context.source)) {
+                svmlError("Cannot index a value of type '$type'", node.context)
+            }
+
+            type = DataType.asArray(type.subType, node.context.source)
+        }
 
         node.dataType = type
 
@@ -594,22 +619,26 @@ object Semantics : Node.Visitor<DataType> {
     }
 
     override fun visitSetIndex(node: Node.SetIndex): DataType {
-        node.indices.forEach { visit(it) }
+        node.indices.forEach {
+            if (visit(it) != DataType.Primitive.INT) {
+                svmlError("Array index must be of type '${DataType.Primitive.INT}'", it.context)
+            }
+        }
 
-        var superType = DataType.asArray(visit(node.name), node.context.source)
+        var type = DataType.asArray(visit(node.name), node.context.source)
 
-        repeat(node.indices.size) {
-            if (!DataType.isArray(superType.subType, node.context.source)) {
-                TODO()
+        repeat(node.indices.size - 1) {
+            if (!DataType.isArray(type, node.context.source)) {
+                svmlError("Cannot index a value of type '$type'", node.name.context)
             }
 
-            superType = DataType.asArray(superType.subType, node.context.source)
+            type = DataType.asArray(type.subType, node.context.source)
         }
 
         val assigned = visit(node.value)
 
-        if (!DataType.isEquivalent(superType.subType, assigned, node.context.source)) {
-            TODO()
+        if (!DataType.isEquivalent(type.subType, assigned, node.context.source)) {
+            svmlError("Cannot assign a value of type '$assigned' to a variable of type '${type.subType}'", node.value.context)
         }
 
         return DataType.Primitive.VOID

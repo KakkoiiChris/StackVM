@@ -35,10 +35,6 @@ object Console : Link {
             listOf(input.nextInt().toDouble())
         }
 
-        linker.addFunction("readChar") { _, _ ->
-            TODO("readChar not implemented")
-        }
-
         linker.addFunction("read") { _, _ ->
             val text = input.next().toCharArray().map { it.code.toDouble() }
 

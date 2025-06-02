@@ -273,7 +273,7 @@ abstract class CPU(private val config: Config = Config()) {
 
         if (lastSize != size) {
             for (i in 0..lastSize) {
-                memory[address++] = 0.0
+                memory[address + i] = 0.0
             }
 
             address = allocateMemory(id, size)

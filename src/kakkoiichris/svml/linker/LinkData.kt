@@ -31,7 +31,7 @@ class LinkData private constructor(private val arguments: MutableMap<Int, Any>) 
         arguments[i++] as String
 
     companion object {
-        fun parse(format: String, values: Values): LinkData {
+        fun parse(format: String, values: Values): LinkData? {
             val arguments = mutableMapOf<Int, Any>()
 
             val parseOrder = format.uppercase().withIndex().reversed()
@@ -56,7 +56,7 @@ class LinkData private constructor(private val arguments: MutableMap<Int, Any>) 
                         string
                     }
 
-                    else -> TODO()
+                    else -> return null
                 }
             }
 

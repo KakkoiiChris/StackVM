@@ -85,7 +85,7 @@ class Parser(lexer: Lexer) {
     }
 
     private fun program(): Node.Program {
-        //importFile("common")
+        importFile("common")
 
         step()
 
@@ -134,9 +134,9 @@ class Parser(lexer: Lexer) {
 
         val name = name()
 
-        mustSkip(TokenType.Symbol.SEMICOLON)
-
         importFile(name)
+
+        mustSkip(TokenType.Symbol.SEMICOLON)
     }
 
     private fun importFile(name: Node.Name) {
