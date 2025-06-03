@@ -701,24 +701,54 @@ class Compiler(
     override fun visitIndexSize(node: Node.IndexSize): List<Token> {
         val tokens = mutableListOf<Token>()
 
-        for (index in node.indices) {
-            tokens += visit(index)
-        }
+        val indices = node.indices
 
-        val instruction =
-            PUSH//TODO if (node.indices.size < node.getArrayType(node.variable.context.source).dimension - 1) IASIZE else ISIZE
+        val arrayType = node.name.getArrayType()
 
-        if (node.name.dataType.isHeapAllocated(node.name.context.source)) {
-            //TODO tokens += HEAP
-            tokens += instruction
-            tokens += node.name.id
-            tokens += node.indices.size
+        val dimension = arrayType.dimension
+
+        val sizes = arrayType.sizes
+
+        val isHeap = node.name.dataType.isHeapAllocated(node.name.context.source)
+
+        val instruction = if (node.indices.size < dimension) {
+            if (isHeap) HASIZE else ASIZE
         }
         else {
-            tokens += instruction
-            tokens += node.name.address
-            tokens += node.indices.size
+            if (isHeap) HSIZE else SIZE
         }
+
+        val location = if (isHeap) node.name.id else node.name.address
+
+        tokens += PUSH
+        tokens += location
+
+        if (isHeap) {
+            tokens += PUSH
+            tokens += 0
+        }
+
+        for ((i, indexNode) in indices.dropLast(1).withIndex()) {
+            tokens += INC
+            tokens += PUSH
+            tokens += sizes[i]
+            tokens += INC
+            tokens += visit(indexNode)
+            tokens += MUL
+            tokens += ADD
+        }
+
+        if (indices.size == dimension) {
+            tokens += INC
+            tokens += visit(indices.last())
+            tokens += ADD
+        }
+
+        if (node.name.isGlobal) {
+            tokens += GLOB
+        }
+
+        tokens += instruction
 
         return tokens
     }
