@@ -846,7 +846,7 @@ class Compiler(
             tokens += FRAME
             tokens += offset + node.offset
 
-            //val address = functions[node.id] ?: svmlError("Function id '${node.id}' not found", node.context.source, node.context)
+            //svmlError("Function id '${node.id}' not found", node.context.source, node.context)
             val address = Token.AwaitFunction(node.id, offset)
 
             tokens += CALL
