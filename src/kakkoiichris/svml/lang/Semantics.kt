@@ -82,6 +82,7 @@ object Semantics : Node.Visitor<DataType> {
         val (isGlobal, record) = memory.getVariable(node.name)
 
         node.name.isGlobal = isGlobal
+        node.name.dataType = type
 
         val (_, _, _, id) = record
 
@@ -394,6 +395,8 @@ object Semantics : Node.Visitor<DataType> {
     }
 
     override fun visitIndexSize(node: Node.IndexSize): DataType {
+        visit(node.name)
+
         val type = DataType.Primitive.INT
 
         node.dataType = type
@@ -577,20 +580,42 @@ object Semantics : Node.Visitor<DataType> {
     }
 
     override fun visitGetIndex(node: Node.GetIndex): DataType {
+        visit(node.name)
+
         node.indices.forEach {
             if (visit(it) != DataType.Primitive.INT) {
                 svmlError("Array index must be of type '${DataType.Primitive.INT}'", it.context)
             }
         }
 
-        var type = DataType.asArray(visit(node.name), node.context.source)
+        var type = visit(node.name)
 
-        repeat(node.indices.size - 1) {
-            if (!DataType.isArray(type, node.context.source)) {
+        if (!DataType.isArray(type, node.context.source)) {
+            svmlError("Cannot index a value of type '$type'", node.name.context)
+        }
+
+        var array = DataType.asArray(visit(node.name), node.context.source)
+
+        var i = 0
+
+        while (i < node.dimension - 1) {
+            if (!DataType.isArray(array.subType, node.context.source)) {
                 svmlError("Cannot index a value of type '$type'", node.context)
             }
 
-            type = DataType.asArray(type.subType, node.context.source)
+            array = DataType.asArray(array.subType, node.context.source)
+
+            i++
+        }
+
+        type = array
+
+        if (i == node.dimension - 1) {
+            if (!DataType.isArray(array, node.context.source)) {
+                svmlError("Cannot index a value of type '$type'", node.context)
+            }
+
+            type = array.subType
         }
 
         node.dataType = type

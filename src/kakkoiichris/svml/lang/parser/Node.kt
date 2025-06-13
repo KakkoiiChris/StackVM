@@ -384,6 +384,8 @@ sealed class Node(val context: Context) {
     }
 
     class GetIndex(context: Context, val name: Name, val indices: List<Node>) : Node(context) {
+        val dimension get() = indices.size
+
         override fun <X> accept(visitor: Visitor<X>): X =
             visitor.visitGetIndex(this)
     }

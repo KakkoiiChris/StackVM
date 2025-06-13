@@ -711,7 +711,7 @@ class Compiler(
 
         val isHeap = node.name.dataType.isHeapAllocated(node.name.context.source)
 
-        val instruction = if (node.indices.size < dimension) {
+        val instruction = if (node.indices.size < dimension - 1) {
             if (isHeap) HASIZE else ASIZE
         }
         else {
@@ -738,8 +738,9 @@ class Compiler(
             tokens += ADD
         }
 
+        tokens += INC
+
         if (indices.size == dimension) {
-            tokens += INC
             tokens += visit(indices.last())
             tokens += ADD
         }
@@ -865,11 +866,13 @@ class Compiler(
 
         val dimension = arrayType.dimension
 
-        val sizes = arrayType.sizes
+        arrayType.sizes
 
         val isHeap = node.name.dataType.isHeapAllocated(node.name.context.source)
 
-        val instruction = if (node.indices.size < dimension) {
+        val peek = if (isHeap) HLOD else LOD
+
+        val instruction = if (indices.size < dimension) {
             if (isHeap) HALOD else ALOD
         }
         else {
@@ -886,10 +889,10 @@ class Compiler(
             tokens += 0
         }
 
-        for ((i, indexNode) in indices.dropLast(1).withIndex()) {
+        for (indexNode in indices.dropLast(1)) {
             tokens += INC
-            tokens += PUSH
-            tokens += sizes[i]
+            tokens += DUP
+            tokens += peek
             tokens += INC
             tokens += visit(indexNode)
             tokens += MUL
@@ -920,9 +923,9 @@ class Compiler(
 
         val dimension = arrayType.dimension
 
-        val sizes = arrayType.sizes
-
         val isHeap = node.name.dataType.isHeapAllocated(node.name.context.source)
+
+        val peek = if (isHeap) HLOD else LOD
 
         val instruction = if (node.indices.size < dimension) {
             if (isHeap) HALOD else ALOD
@@ -943,10 +946,10 @@ class Compiler(
             tokens += 0
         }
 
-        for ((i, indexNode) in indices.dropLast(1).withIndex()) {
+        for (indexNode in indices.dropLast(1)) {
             tokens += INC
-            tokens += PUSH
-            tokens += sizes[i]
+            tokens += DUP
+            tokens += peek
             tokens += INC
             tokens += visit(indexNode)
             tokens += MUL
