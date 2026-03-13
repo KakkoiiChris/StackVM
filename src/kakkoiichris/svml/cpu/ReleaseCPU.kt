@@ -16,8 +16,18 @@ import kakkoiichris.svml.util.float
 
 object ReleaseCPU : CPU() {
     override fun run(): Double {
+        val speed = 1000000000.0
+
+        var timer = 0.0
+
         while (running) {
-            decode()
+            if (timer >= speed) {
+                decode()
+
+                timer -= speed
+            }
+
+            timer += System.nanoTime() / 1E9
         }
 
         return result

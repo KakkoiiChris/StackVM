@@ -48,7 +48,7 @@ object Console : Link {
         }
 
         linker.addFunction("write", "B", DataType.Primitive.BOOL) { _, data ->
-            val b = data.bool()
+            val b = data.nextBool()
 
             print(b)
 
@@ -56,7 +56,7 @@ object Console : Link {
         }
 
         linker.addFunction("write", "I", DataType.Primitive.INT) { _, data ->
-            val i = data.int()
+            val i = data.nextInt()
 
             print(i)
 
@@ -64,7 +64,7 @@ object Console : Link {
         }
 
         linker.addFunction("write", "F", DataType.Primitive.FLOAT) { _, data ->
-            val f = data.float()
+            val f = data.nextFloat()
 
             print(f.truncate())
 
@@ -72,7 +72,7 @@ object Console : Link {
         }
 
         linker.addFunction("write", "C", DataType.Primitive.CHAR) { _, data ->
-            val c = data.char()
+            val c = data.nextChar()
 
             print(c)
 

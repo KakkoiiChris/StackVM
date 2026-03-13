@@ -236,9 +236,14 @@ class Parser(lexer: Lexer) {
 
             mustSkip(TokenType.Symbol.RIGHT_SQUARE)
 
-            val size = sizeNode?.value?.value?.toInt() ?: -1
+            type = if (sizeNode == null) {
+                DataType.Pointer(type)
+            }
+            else {
+                val size = sizeNode.value.value.toInt()
 
-            type = DataType.Array(type, size)
+                DataType.Array(type, size)
+            }
         }
 
         return Type(context, type)

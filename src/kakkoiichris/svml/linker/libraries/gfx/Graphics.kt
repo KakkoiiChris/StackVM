@@ -30,9 +30,9 @@ object Graphics : Link {
             DataType.Primitive.INT,
             DataType.string
         ) { _, data ->
-            val width = data.int()
-            val height = data.int()
-            val title = data.string()
+            val width = data.nextInt()
+            val height = data.nextInt()
+            val title = data.nextString()
 
             displays += Display(width, height, title)
 
@@ -40,7 +40,7 @@ object Graphics : Link {
         }
 
         linker.addFunction("gfxSetActive", "I", DataType.Primitive.INT) { _, data ->
-            val id = data.int()
+            val id = data.nextInt()
 
             active = displays[id]
 
@@ -77,10 +77,10 @@ object Graphics : Link {
             DataType.Primitive.INT,
             DataType.Primitive.INT
         ) { _, data ->
-            val red = data.int()
-            val green = data.int()
-            val blue = data.int()
-            val alpha = data.int()
+            val red = data.nextInt()
+            val green = data.nextInt()
+            val blue = data.nextInt()
+            val alpha = data.nextInt()
 
             active?.setColor(red, green, blue, alpha)
 
@@ -101,10 +101,10 @@ object Graphics : Link {
             DataType.Primitive.INT,
             DataType.Primitive.INT
         ) { _, data ->
-            val x = data.int()
-            val y = data.int()
-            val width = data.int()
-            val height = data.int()
+            val x = data.nextInt()
+            val y = data.nextInt()
+            val width = data.nextInt()
+            val height = data.nextInt()
 
             active?.fillRect(x, y, width, height)
 

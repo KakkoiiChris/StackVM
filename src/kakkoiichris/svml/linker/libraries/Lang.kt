@@ -25,31 +25,31 @@ object Lang : Link {
         }
 
         linker.addFunction("toFloat", "I", DataType.Primitive.INT) { _, data ->
-            val i = data.int()
+            val i = data.nextInt()
 
             listOf(i.toDouble())
         }
 
         linker.addFunction("toInt", "F", DataType.Primitive.FLOAT) { _, data ->
-            val f = data.float()
+            val f = data.nextFloat()
 
             listOf(f)
         }
 
         linker.addFunction("toInt", "C", DataType.Primitive.CHAR) { _, data ->
-            val c = data.char()
+            val c = data.nextChar()
 
             listOf(c.code.toDouble())
         }
 
         linker.addFunction("toChar", "I", DataType.Primitive.INT) { _, data ->
-            val i = data.int()
+            val i = data.nextInt()
 
             listOf(i.toDouble())
         }
 
         linker.addFunction("sleep", "F", DataType.Primitive.FLOAT) { _, data ->
-            val time = data.float()
+            val time = data.nextFloat()
 
             Thread.sleep((time * 1000).toLong())
 
@@ -57,7 +57,7 @@ object Lang : Link {
         }
 
         linker.addFunction("exit", "I", DataType.Primitive.INT) { cpu, data ->
-            val code = data.int()
+            val code = data.nextInt()
 
             cpu.result = code.toDouble()
             cpu.running = false

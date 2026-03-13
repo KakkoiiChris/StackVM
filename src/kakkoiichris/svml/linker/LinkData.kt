@@ -15,19 +15,19 @@ import kakkoiichris.svml.util.bool
 class LinkData private constructor(private val arguments: MutableMap<Int, Any>) {
     private var i = 0
 
-    fun bool() =
+    fun nextBool() =
         arguments[i++] as Boolean
 
-    fun float() =
+    fun nextFloat() =
         arguments[i++] as Double
 
-    fun int() =
+    fun nextInt() =
         arguments[i++] as Int
 
-    fun char() =
+    fun nextChar() =
         arguments[i++] as Char
 
-    fun string() =
+    fun nextString() =
         arguments[i++] as String
 
     companion object {

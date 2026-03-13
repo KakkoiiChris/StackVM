@@ -19,8 +19,8 @@ object Strings : Link {
 
     override fun open(linker: Linker) {
         linker.addFunction("concat", "SS", DataType.string, DataType.string) { _, data ->
-            val a = data.string()
-            val b = data.string()
+            val a = data.nextString()
+            val b = data.nextString()
 
             val result = a + b
 

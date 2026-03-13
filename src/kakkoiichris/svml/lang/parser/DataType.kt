@@ -58,9 +58,9 @@ sealed interface DataType {
     data class Array(val subType: DataType, val size: Int) : DataType {
         override fun getOffset(source: Source) = (size * subType.getOffset(source)) + 1
 
-        override fun isHeapAllocated(source: Source) = size == -1 || subType.isHeapAllocated(source)
+        override fun isHeapAllocated(source: Source) = subType.isHeapAllocated(source)
 
-        override fun getString(source: Source) = "${subType.getString(source)}[]"
+        override fun getString(source: Source) = "${subType.getString(source)}[$size]"
 
         val dimension: Int
             get() {
@@ -84,10 +84,16 @@ sealed interface DataType {
             "$subType[${if (size >= 1) size else ""}]"
     }
 
+    data class Pointer(val subType: DataType) : DataType {
+        override fun isHeapAllocated(source: Source) = true
+
+        override fun getString(source: Source) = "$subType[]"
+    }
+
     companion object {
         private val aliases = mutableMapOf<String, DataType>()
 
-        val string = Array(Primitive.CHAR, -1)
+        val string get() = Pointer(Primitive.CHAR)
 
         fun hasAlias(name: Node.Name) =
             name.value in aliases
@@ -134,14 +140,24 @@ sealed interface DataType {
 
                 else     -> false
             }
+
+            is Pointer   -> when (b) {
+                is Array -> isEquivalent(a.subType, b.subType, source)
+
+                else     -> false
+            }
         }
 
         fun isArray(t: DataType?, source: Source): Boolean {
             t ?: return false
 
-            if (t is Alias) return getAlias(t.name, source) is Array
+            if (t is Alias) {
+                val alias = getAlias(t.name, source)
 
-            return t is Array
+                return alias is Array || alias is Pointer
+            }
+
+            return t is Array || t is Pointer
         }
 
         fun asArray(t: DataType, source: Source): Array {
