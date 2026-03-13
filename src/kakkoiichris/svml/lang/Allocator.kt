@@ -25,43 +25,43 @@ object Allocator : Node.Visitor<Unit> {
         visit(program)
     }
 
-    private fun allocateDecls(nodes: Nodes, startAddress: Int): Int {
+    private fun allocateDeclarations(nodes: Nodes, startAddress: Int): Int {
         var addressCounter = startAddress
 
-        val decls = nodes
+        val declarations = nodes
             .filterIsInstance<Node.Declare>()
             .groupBy { DataType.isArray(it.dataType, it.context.source) }
 
-        val singles = decls[false] ?: emptyList()
+        val singles = declarations[false] ?: emptyList()
 
-        for (decl in singles) {
+        for (declare in singles) {
             val address = addressCounter++
 
-            addresses[decl.id] = address
+            addresses[declare.id] = address
 
-            decl.address = address
-            decl.name.address = address
+            declare.address = address
+            declare.name.address = address
         }
 
-        val arrays = decls[true] ?: emptyList()
+        val arrays = declarations[true] ?: emptyList()
 
-        for (decl in arrays) {
-            if (decl.name.dataType.isHeapAllocated(decl.context.source)) continue
+        for (declare in arrays) {
+            if (declare.name.dataType.isHeapAllocated(declare.context.source)) continue
 
             val address = addressCounter
 
-            addressCounter += decl.name.dataType.getOffset(decl.name.context.source)
+            addressCounter += declare.name.dataType.getOffset(declare.name.context.source)
 
-            addresses[decl.id] = address
+            addresses[declare.id] = address
 
-            decl.address = address
-            decl.name.address = address
+            declare.address = address
+            declare.name.address = address
         }
 
         return addressCounter
     }
 
-    private fun allocate(node: Node.Declare, startAddress: Int): Int {
+    private fun allocateDeclare(node: Node.Declare, startAddress: Int): Int {
         node.address = startAddress
 
         addresses[node.id] = startAddress
@@ -72,7 +72,7 @@ object Allocator : Node.Visitor<Unit> {
     override fun visitProgram(node: Node.Program) {
         val subNodes = (node.declarations + node.functions).toMutableList()
 
-        val offset = allocateDecls(subNodes, 0)
+        val offset = allocateDeclarations(subNodes, 0)
 
         node.offset = offset
 
@@ -93,7 +93,7 @@ object Allocator : Node.Visitor<Unit> {
         val startAddress = offsets.pop()
 
         for ((_, condition, body) in node.branches) {
-            val offset = allocateDecls(body, startAddress)
+            val offset = allocateDeclarations(body, startAddress)
 
             condition?.let { visit(it) }
 
@@ -108,7 +108,7 @@ object Allocator : Node.Visitor<Unit> {
     override fun visitWhile(node: Node.While) {
         var offset = offsets.pop()
 
-        offset = allocateDecls(node.body, offset)
+        offset = allocateDeclarations(node.body, offset)
 
         visit(node.condition)
 
@@ -122,7 +122,7 @@ object Allocator : Node.Visitor<Unit> {
     override fun visitDo(node: Node.Do) {
         var offset = offsets.pop()
 
-        offset = allocateDecls(node.body, offset)
+        offset = allocateDeclarations(node.body, offset)
 
         visit(node.condition)
 
@@ -137,7 +137,7 @@ object Allocator : Node.Visitor<Unit> {
         var offset = offsets.pop()
 
         if (node.init != null) {
-            offset = allocate(node.init, offset)
+            offset = allocateDeclare(node.init, offset)
         }
 
         node.init?.let { visit(it) }
@@ -146,7 +146,7 @@ object Allocator : Node.Visitor<Unit> {
 
         node.increment?.let { visit(it) }
 
-        offset = allocateDecls(node.body, offset)
+        offset = allocateDeclarations(node.body, offset)
 
         for (statement in node.body) {
             offsets.push(offset)
@@ -172,7 +172,7 @@ object Allocator : Node.Visitor<Unit> {
             offset += param.dataType.getOffset(param.context.source)
         }
 
-        offset = allocateDecls(node.body, offset)
+        offset = allocateDeclarations(node.body, offset)
 
         for (statement in node.body) {
             offsets.push(offset)
